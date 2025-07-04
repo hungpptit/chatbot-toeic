@@ -1,0 +1,29 @@
+.app-wrapper {
+  padding: 20px;
+  text-align: center;
+}
+
+.tab-buttons {
+  margin-bottom: 20px;
+}
+
+.tab-buttons button {
+  padding: 10px 20px;
+  margin: 0 10px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  background-color: #e0e0e0;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.tab-buttons button.active {
+  background-color: #2e7d32;
+  color: white;
+}
+
+.tab-content {
+  display: flex;
+  justify-content: center;
+}
