@@ -1,3 +1,4 @@
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -11,8 +12,23 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
 }
 
+* {
+  box-sizing: border-box; /* Đảm bảo padding và border không làm tăng kích thước */
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden; /* Ngăn cuộn toàn cục */
+}
+
+/* Các quy tắc khác giữ nguyên */
 a {
   font-weight: 500;
   color: #646cff;
@@ -20,13 +36,6 @@ a {
 }
 a:hover {
   color: #535bf2;
-}
-
-body {
-  margin: 0;
-
-  min-width: 320px;
-  min-height: 100vh;
 }
 
 h1 {

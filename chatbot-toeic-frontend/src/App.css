@@ -1,14 +1,16 @@
+
 .app-layout {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden; /* Ngăn cuộn toàn cục */
 }
 
 .main-layout {
   display: flex;
   flex: 1;
-  height: calc(100vh - 60px); /* Giả sử header cao 60px */
-  overflow: hidden;
+  height: calc(100vh - 60px); /* Trừ chiều cao header */
+  overflow: hidden; /* Ngăn cuộn ở cấp main-layout */
 }
 
 .sidebar {
@@ -16,11 +18,17 @@
   background-color: #f3f3f3;
   border-right: 1px solid #ccc;
   padding: 16px;
-  overflow-y: auto;
+  overflow-y: auto; /* Cuộn chỉ trong sidebar nếu cần */
+  height: 100%; /* Đảm bảo chiều cao khớp với main-layout */
 }
 
-.content-area {
+.c/* Định nghĩa thêm cho chatBox (nếu có trong content-area) */
+.chatBox {
   flex: 1;
-  overflow-y: auto;
   padding: 20px;
+  overflow-y: auto; /* Cuộn nội dung bên trong nếu cần */
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  margin-bottom: 10px;
 }

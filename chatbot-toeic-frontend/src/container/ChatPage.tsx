@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import "../styles/ChatPage.css";
+import Sidebar from "../components/Sidebar";
+import ChatDisplay from "../components/ChatDisplay";
+import InputArea from "../components/InputArea";
 
 interface Message {
   sender: "user" | "bot";
@@ -10,45 +13,41 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
 
+
+  const chatEndRef = useRef<HTMLDivElement>(null); // 👈 đặt ở trong chatBox
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage: Message = { sender: "user", text: input };
-    setMessages((prev) => [...prev, userMessage]);
-
-    // Giả lập trả lời từ bot — bạn thay bằng API thật
     const botReply: Message = {
       sender: "bot",
       text: "Đây là câu trả lời mô phỏng từ chatbot.",
     };
-    setMessages((prev) => [...prev, botReply]);
+
+    setMessages((prev) => [...prev, userMessage, botReply]);
     setInput("");
   };
 
+  // ✅ Auto scroll trong .chatBox
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+
   return (
     <div className="container">
-      <h1 className="title">Chatbot TOEIC</h1>
-      <div className="chatBox">
-        {messages.map((msg, idx) => (
-          <div
-            key={idx}
-            className={`message ${msg.sender === "user" ? "user" : "bot"}`}
-          >
-            {msg.text}
+      {/* <Header activeTab={activeTab} onChangeTab={handleChangeTab} /> */}
+      <div className="main-content">
+        <Sidebar />
+        <div className="chat-area">
+          <div className="chat-title">Chatbot TOEIC</div>
+          <div className="chatBox">
+            <ChatDisplay messages={messages} />
+            <div ref={chatEndRef} style={{ height: "1px" }} />
           </div>
-        ))}
-      </div>
-      <div className="inputArea">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Nhập câu hỏi..."
-          className="input"
-        />
-        <button onClick={handleSend} className="button">
-          Gửi
-        </button>
+          <InputArea input={input} setInput={setInput} handleSend={handleSend} />
+        </div>
       </div>
     </div>
   );

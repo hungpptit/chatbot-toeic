@@ -1,76 +1,166 @@
+/* ========== Container chính ========== */
 .container {
-  max-width: 600px;
-  margin: 40px auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 12px;
-  background-color: #fdfdfd;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  font-family: Arial, sans-serif;
-}
-
-.title {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #333;
-}
-
-.chatBox {
-  height: 400px;
-  overflow-y: auto;
-  padding: 10px;
-  background-color: #fafafa;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  margin-bottom: 15px;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  background-color: #f9f9f9;
+  overflow: hidden;
+  padding-top: 70px; /* nếu dùng header fixed */
+  margin-bottom: -20px;
+  padding-bottom: 10px;
 }
 
-.message {
-  padding: 10px 14px;
-  margin: 8px 0;
-  border-radius: 16px;
-  max-width: 80%;
-  word-wrap: break-word;
-  font-size: 14px;
-}
-
-.user {
-  background-color: #d0eaff;
-  align-self: flex-end;
-  margin-left: auto;
-}
-
-.bot {
-  background-color: #e7e7e7;
-  align-self: flex-start;
-  margin-right: auto;
-}
-
-.inputArea {
+/* ========== Main content ========== */
+.main-content {
   display: flex;
-  gap: 10px;
+  flex: 1;
+  height: calc(100vh - 60px); /* 60px là chiều cao header */
+  overflow: hidden;
 }
 
+/* ========== Sidebar ========== */
+.sidebar {
+  width: 250px;
+  background-color: forestgreen;
+  border-right: 1px solid #e0e0e0;
+  padding: 10px;
+  overflow-y: auto;
+  border-radius: 10px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+}
+.sidebar::-webkit-scrollbar {
+  display: none;
+}
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+.sidebar li {
+  padding: 10px;
+  cursor: pointer;
+}
+.sidebar li:hover {
+  background-color: #f0f0f0;
+}
+
+/* ========== Chat Area ========== */
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  height: 100%;
+  position: relative; /* để inputArea absolute */
+  overflow: hidden;
+   padding-bottom: 10px;
+   margin-bottom: -20px;
+}
+
+/* ========== Tiêu đề nhỏ ========== */
+.chat-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 8px;
+  padding-left: 4px;
+  margin-top: 0;
+}
+
+/* ========== ChatBox ========== */
+.chatBox {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #fff;
+  border-radius: 18px;
+  padding: 10px 14px;
+  padding-bottom: 100px; /* 👈 giúp không bị input che nội dung */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.chatBox::-webkit-scrollbar {
+  display: none;
+}
+
+/* ========== Message ========== */
+.message {
+  padding: 6px 9px;
+  margin: 6px 0;
+  border-radius: 16px;
+  max-width: 75%;
+  font-size: 15px;
+  word-wrap: break-word;
+}
+.message.user {
+  background-color: #d0eaff;
+  margin-left: auto;
+  align-self: flex-end;
+}
+.message.bot {
+  background-color: #e7e7e7;
+  margin-right: auto;
+  align-self: flex-start;
+}
+
+/* ========== Input Area (đè lên dưới) ========== */
+.inputArea {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  z-index: 10;
+  display: flex;
+  padding: 10px;
+  background-color: #fff;
+  border-radius: 18px;
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: -20px;
+  align-items: flex-end;
+}
+
+/* ========== Input & Button ========== */
 .input {
   flex: 1;
   padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #aaa;
+  border: 1px solid #ccc;
+  border-radius: 18px;
+  outline: none;
   font-size: 14px;
+  resize: none;        /* Không cho người dùng resize */
+  line-height: 1.4;
+  max-height: 300px;   /* Giới hạn chiều cao */
+  overflow-y: auto;
+   scrollbar-width: none;
+  -ms-overflow-style: none;
+   margin-right: 10px;
+}
+.input::-webkit-scrollbar {
+  display: none;
+}
+.button svg {
+  width: 20px;
+  height: 20px;
 }
 
 .button {
-  padding: 10px 20px;
-  background-color: #2e7d32;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%; /* Tròn */
+  background-color: #28a745;
   color: white;
   border: none;
-  border-radius: 8px;
   cursor: pointer;
-  font-weight: bold;
+  font-size: 0px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.2s ease;
+  flex-shrink: 0; /* Không bị co lại khi input mở rộng */
 }
 
 .button:hover {
-  background-color: #1b5e20;
+  background-color: #218838;
 }
