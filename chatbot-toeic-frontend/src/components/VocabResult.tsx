@@ -1,7 +1,7 @@
 // src/components/VocabResult.tsx
 import { useEffect, useState } from 'react';
 import { getVocabularyByWordAPI } from '../services/Vocabulary_services';
-import type { VocabularyData } from '../services/Vocabulary_services';
+import type { VocabularyData, Pronunciation } from '../services/Vocabulary_services';
 import '../styles/VocabResult.css';
 
 interface VocabResultProps {
@@ -33,8 +33,29 @@ export default function VocabResult({ word }: VocabResultProps) {
     speechSynthesis.speak(utterance);
   };
 
+  const classifyAccent = (phoneticText: string): 'UK' | 'US' => {
+    if (/ɒ|əʊ/.test(phoneticText)) return 'UK';
+    if (/ɑː|æ|ʔ/.test(phoneticText)) return 'US';
+    return 'UK'; // fallback an toàn
+  };
+
+  const normalizePronunciations = (list: Pronunciation[]) => {
+    const mapped = list.map(p => ({
+      ...p,
+      accent: p.accent === 'Other' ? classifyAccent(p.phoneticText) : p.accent
+    }));
+
+    // Giữ mỗi loại accent một bản duy nhất (loại trùng)
+    return mapped.filter(
+      (p, index, self) =>
+        index === self.findIndex(q => q.accent === p.accent)
+    );
+  };
+
   if (error) return <div className="result-box error">{error}</div>;
   if (!data) return <div className="result-box">Đang tải dữ liệu...</div>;
+
+  const pronunciations = normalizePronunciations(data.pronunciations || []);
 
   return (
     <div className="result-box">
@@ -44,7 +65,7 @@ export default function VocabResult({ word }: VocabResultProps) {
 
         <div className="pronounce">
           <div className="pronounce-row">
-            {data.pronunciations?.map((p) => (
+            {pronunciations.map((p) => (
               <div key={p.id} className="pronounce-item">
                 <span><b>{p.accent}</b> {p.phoneticText}</span>
                 <button className="speak-btn" onClick={() => speak(data.word, p.accent === 'UK' ? 'en-GB' : 'en-US')}>

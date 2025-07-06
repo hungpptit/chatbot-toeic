@@ -27,7 +27,47 @@ const callGemini = async (prompt) => {
   throw new Error('❌ All Gemini API keys failed');
 };
 
-// 🎯 Phân loại câu hỏi
+// 📥 Phân tích input thô thành object
+const parseUserInput = async (rawText) => {
+  const prompt = `Bạn là trợ lý trích xuất dữ liệu câu hỏi tiếng Anh. Dưới đây là một chuỗi đầu vào thô, hãy phân tích và trả về một object JSON với định dạng:
+
+{
+  "type": "Vocabulary-Lookup" | "Free" | "MultipleChoice",
+  "questionText": "nếu có",
+  "options": {
+    "A": "...",
+    "B": "...",
+    "C": "...",
+    "D": "..."
+  },
+  "word": "nếu là từ vựng đơn"
+}
+
+Nếu là từ vựng thì chỉ trả lại type = "Vocabulary-Lookup" và word.
+Nếu là câu hỏi trắc nghiệm thì có questionText và options.
+Nếu là tự do thì chỉ có type = "Free" và questionText.
+
+❗Không bao quanh JSON bằng \`\`\` hoặc ghi chú. Trả về đúng JSON thuần túy.
+
+Chuỗi:
+"""${rawText}"""`;
+
+  const reply = await callGemini(prompt);
+
+  // ✅ Loại bỏ markdown code block nếu có
+  const cleaned = reply.replace(/```json|```/g, "").trim();
+
+  try {
+    const parsed = JSON.parse(cleaned);
+    return parsed;
+  } catch (err) {
+    console.warn('❌ Không phân tích được JSON từ AI:', reply);
+    throw new Error('Không thể trích xuất dữ liệu từ chuỗi đầu vào');
+  }
+};
+
+
+// 🎯 Phân loại câu hỏi trắc nghiệm
 const detectQuestionType = async (questionText, options) => {
   const prompt = `Bạn là trợ lý phân loại câu hỏi tiếng Anh. Hãy xác định loại câu hỏi sau:
 - "Vocabulary" nếu là về từ vựng.
@@ -109,15 +149,14 @@ Chỉ trả lời đúng định dạng trên, không thêm gì khác.`;
   };
 };
 
-// 🇻🇳 Giải thích tiếng Việt (dùng luôn AI)
+// 🇻🇳 Giải thích nghĩa tiếng Việt
 const askVietnameseExplanation = async (word) => {
   const prompt = `Bạn là trợ lý tiếng Anh. Hãy giải thích nghĩa của từ "${word}" bằng tiếng Việt một cách đơn giản và dễ hiểu.`;
   return await callGemini(prompt);
 };
 
-// 🔁 Hàm chính
+// 🔁 Hàm chính gốc
 const getItemWithAI = async ({ type, questionText, options, word }) => {
-  // 🟩 Tự do
   if (!type && questionText && !options && !word) {
     return {
       type: 'Free',
@@ -126,7 +165,6 @@ const getItemWithAI = async ({ type, questionText, options, word }) => {
     };
   }
 
-  // 🟨 Từ vựng
   if (type === 'Vocabulary-Lookup') {
     let vocab = await Vocabulary.findOne({ where: { word } });
     let source = 'database';
@@ -156,11 +194,9 @@ const getItemWithAI = async ({ type, questionText, options, word }) => {
     });
 
     const viExplanation = await askVietnameseExplanation(word);
-
     return { source, vocab: full, viExplanation };
   }
 
-  // 🟥 Trắc nghiệm
   if (!type && questionText && options) {
     type = await detectQuestionType(questionText, options);
   }
@@ -193,4 +229,10 @@ const getItemWithAI = async ({ type, questionText, options, word }) => {
   return { source: 'ai', question: newQuestion };
 };
 
-export { getItemWithAI };
+// 💡 Hàm mới: xử lý từ chuỗi thô bất kỳ
+const getSmartItem = async (rawText) => {
+  const parsed = await parseUserInput(rawText);
+  return await getItemWithAI(parsed);
+};
+
+export { getItemWithAI, getSmartItem };

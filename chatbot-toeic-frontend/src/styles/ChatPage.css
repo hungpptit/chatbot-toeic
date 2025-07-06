@@ -100,8 +100,41 @@
 }
 .message.bot {
   background-color: #e7e7e7;
-  margin-right: auto;
   align-self: flex-start;
+  white-space: pre-wrap;
+  word-break: break-word;
+
+  display: inline-block;       
+  max-width: 85%;             
+  min-width: 60px;
+  width: fit-content;
+
+  padding: 8px 12px;
+  margin: 6px 0;
+  border-radius: 16px;
+  box-sizing: border-box;
+}
+.markdown-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding-left: 0px;
+  margin: 0;
+}
+
+.markdown-ul {
+  padding-left: 18px;  /* thay vì default 40px gây tràn */
+  margin: 6px 0;
+}
+
+.markdown-li {
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.markdown-p {
+  margin: 6px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* ========== Input Area (đè lên dưới) ========== */
