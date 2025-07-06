@@ -2,6 +2,7 @@ import { useState } from 'react';
 import VocabResult from '../components/VocabResult'; // <- import component
 import '../styles/VocabularyPage.css';
 
+
 export default function VocabularyPage() {
   const [word, setWord] = useState('');
   const [resultVisible, setResultVisible] = useState(false);
@@ -9,6 +10,9 @@ export default function VocabularyPage() {
   const handleSearch = () => {
     if (!word.trim()) return;
     setResultVisible(true);
+  };
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') handleSearch();
   };
 
   return (
@@ -24,7 +28,7 @@ export default function VocabularyPage() {
               setWord(e.target.value);
               setResultVisible(false); // reset khi gõ lại từ
             }}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            onKeyDown={handleKeyDown}
           />
           <button onClick={handleSearch}>Tìm</button>
         </div>

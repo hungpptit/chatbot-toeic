@@ -1,9 +1,13 @@
+
 .result-box {
   background: white;
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   margin-top: 24px;
+  height: 100%;
+  max-height: 70vh; 
+  overflow-y: auto;
 }
 
 .word-header h3 {
