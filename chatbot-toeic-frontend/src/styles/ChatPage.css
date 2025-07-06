@@ -164,3 +164,17 @@
 .button:hover {
   background-color: #218838;
 }
+.message.user {
+  background-color: #d0eaff;
+  margin-left: auto;
+  align-self: flex-end;
+  white-space: pre-wrap;
+  word-break: break-word;
+
+  /* 👇 Thêm các dòng sau */
+  max-width: 100%;         /* Không vượt quá khung chatBox */
+  width: fit-content;      /* Gói theo nội dung */
+  min-width: 60px;         /* Tránh quá bé nếu tin nhắn quá ngắn */
+  padding: 8px 12px;
+  box-sizing: border-box;
+}

@@ -16,6 +16,7 @@ const ChatDisplay: React.FC<ChatDisplayProps> = ({ messages }) => {
         <div
           key={idx}
           className={`message ${msg.sender === "user" ? "user" : "bot"}`}
+          style={{ whiteSpace: "pre-wrap" }}  // 👈 Giữ định dạng như input
         >
           {msg.text}
         </div>
