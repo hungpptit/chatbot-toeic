@@ -5,7 +5,6 @@ import ChatDisplay from "../components/ChatDisplay";
 import InputArea from "../components/InputArea";
 import { getQuestionFromRawText } from "../services/Question_services";
 
-
 interface Message {
   sender: "user" | "bot";
   text: string;
@@ -14,7 +13,19 @@ interface Message {
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // 🔁 Khôi phục conversationId nếu đã có trong localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem("conversationId");
+    if (stored) setConversationId(stored);
+  }, []);
+
+  // 👇 Scroll xuống khi có tin nhắn mới
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -24,7 +35,17 @@ export default function ChatPage() {
     setInput("");
 
     try {
-      const res = await getQuestionFromRawText(input);
+      const testConversationId = "6";
+      console.log("📤 Sending to BE:", input, testConversationId);
+      const res = await getQuestionFromRawText(input, testConversationId);
+
+      // ✅ Lưu lại conversationId nếu được backend trả về
+      if (res.conversationId) {
+        setConversationId(res.conversationId);
+        localStorage.setItem("conversationId", res.conversationId);
+      }
+
+      // 🧠 Soạn nội dung phản hồi
       let reply = "";
 
       if (res.type === "Vocabulary-Lookup") {
@@ -56,10 +77,6 @@ export default function ChatPage() {
       setMessages((prev) => [...prev, errorMessage]);
     }
   };
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
 
   return (
     <div className="container">

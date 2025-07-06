@@ -1,8 +1,15 @@
 import { getSmartItem } from '../services/question_service.js';
 
 const handleQuestionRequest = async (req, res) => {
+  console.log("💬 Body received from FE:", req.body);
   try {
-    const { rawText } = req.body;
+    const { rawText, conversationId } = req.body;
+    const parsedConversationId = conversationId ? parseInt(conversationId, 10) : undefined;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Chưa xác thực người dùng' });
+    }
 
     if (!rawText?.trim()) {
       return res.status(400).json({ error: 'Thiếu dữ liệu đầu vào (rawText)' });
@@ -10,7 +17,7 @@ const handleQuestionRequest = async (req, res) => {
 
     let result;
     try {
-      result = await getSmartItem(rawText);
+      result = await getSmartItem(rawText, userId, parsedConversationId);
     } catch (err) {
       console.error('❌ Error in getSmartItem:', err.message);
       return res.status(400).json({ error: 'Không xử lý được yêu cầu', detail: err.message });
@@ -30,6 +37,7 @@ const handleQuestionRequest = async (req, res) => {
         },
         answer: result.question.correctAnswer,
         explanation: result.question.explanation,
+        conversationId: result.conversationId, // ✅ đúng rồi
       });
     }
 
@@ -44,6 +52,7 @@ const handleQuestionRequest = async (req, res) => {
         synonyms: result.vocab.synonyms?.map(s => s.synonym) || [],
         antonyms: result.vocab.antonyms?.map(a => a.antonym) || [],
         viExplanation: result.viExplanation || '',
+        conversationId: result.conversationId, // ✅ đúng rồi
       });
     }
 
@@ -53,6 +62,7 @@ const handleQuestionRequest = async (req, res) => {
         type: 'Free',
         source: 'ai',
         answer: result.answer,
+        conversationId: result.conversationId, // ✅ đúng rồi
       });
     }
 

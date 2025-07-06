@@ -50,6 +50,7 @@ export type QuestionType = 'Vocabulary-Lookup' | 'Vocabulary' | 'Part 5' | 'Free
 export interface QuestionResponse {
   type: QuestionType;
   source: 'ai' | 'database';
+   conversationId?: string;
   question?: string;
   options?: {
     A: string;
@@ -72,7 +73,24 @@ export interface QuestionResponse {
  * @param rawText Chuỗi người dùng nhập vào
  * @returns Câu trả lời từ bot (trắc nghiệm / từ vựng / tự do)
  */
-export const getQuestionFromRawText = async (rawText: string): Promise<QuestionResponse> => {
-  const response = await axios.post<QuestionResponse>(API_BASE_URL, { rawText });
+export const getQuestionFromRawText = async (
+  rawText: string,
+  conversationId?: string
+): Promise<QuestionResponse & { conversationId?: string }> => {
+  const token = localStorage.getItem("token");
+
+  const response = await axios.post<QuestionResponse & { conversationId?: string }>(
+    API_BASE_URL,
+    {
+      rawText, // ✅ Đúng key mà backend cần
+      conversationId,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
   return response.data;
 };

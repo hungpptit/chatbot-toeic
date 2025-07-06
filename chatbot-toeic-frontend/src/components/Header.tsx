@@ -1,4 +1,5 @@
 import '../styles/Header.css';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   activeTab: 'home' | 'vocab' | 'chat';
@@ -6,6 +7,17 @@ interface HeaderProps {
 }
 
 export default function Header({ activeTab, onChangeTab }: HeaderProps) {
+  const navigate = useNavigate();
+
+  const isLoggedIn = !!localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const username = user?.name || 'Người dùng';
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/login');
+  };
+
   return (
     <header className="header">
       <h1 className="logo">📘 Chatbot TOEIC</h1>
@@ -28,6 +40,16 @@ export default function Header({ activeTab, onChangeTab }: HeaderProps) {
         >
           Chat TOEIC
         </button>
+
+        {/* Đăng nhập / Đăng xuất */}
+        {isLoggedIn ? (
+          <>
+            <span className="user-info">👤 {username}</span>
+            <button onClick={handleLogout}>Đăng xuất</button>
+          </>
+        ) : (
+          <button onClick={() => navigate('/login')}>Đăng nhập</button>
+        )}
       </nav>
     </header>
   );

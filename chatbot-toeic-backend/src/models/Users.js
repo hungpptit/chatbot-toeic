@@ -10,18 +10,30 @@ export default (sequelize, DataTypes) => {
     }
   }
 
-  User.init({
-    username: DataTypes.STRING,
-    email: DataTypes.STRING,
-    passwordHash: DataTypes.STRING,
-    createdAt: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
+ User.init({
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  },
+  username: DataTypes.STRING,
+  email: DataTypes.STRING,
+  password: DataTypes.STRING,
+   role_id: {
+      type: DataTypes.INTEGER,
+      defaultValue: 1, // 1: user, 2: admin
     },
-  }, {
-    sequelize,
-    modelName: 'User',
-  });
+  createdAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+}, {
+  sequelize,
+  modelName: 'User',
+  tableName: 'Users',         
+  freezeTableName: true,      
+  timestamps: true          
+});
 
   return User;
 };
