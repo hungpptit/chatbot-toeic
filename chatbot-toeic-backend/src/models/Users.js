@@ -11,17 +11,34 @@ export default (sequelize, DataTypes) => {
   }
 
   User.init({
-    username: DataTypes.STRING,
-    email: DataTypes.STRING,
-    passwordHash: DataTypes.STRING,
-    createdAt: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
-  }, {
-    sequelize,
-    modelName: 'User',
-  });
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  username: {
+    type: DataTypes.STRING(100),
+    allowNull: false
+  },
+  email: {
+    type: DataTypes.STRING(255),
+    allowNull: false
+  },
+  password: {
+    type: DataTypes.STRING(255),
+    allowNull: false
+  },
+  role_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  }
+}, {
+  sequelize,
+  modelName: 'User',
+  tableName: 'Users',
+  timestamps: false,
+});
+
 
   return User;
 };

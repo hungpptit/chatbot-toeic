@@ -1,31 +1,47 @@
-import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import ChatPage from './container/ChatPage';
 import VocabularyPage from './container/VocabularyPage';
+import LoginSignup from './container/login_signup';
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'vocab' | 'chat'>('home');
+const GOOGLE_CLIENT_ID = '1029337181318-1skvm4fd9cg3ehpvqu8t6m6q5lkbfk5o.apps.googleusercontent.com'; // ← Thay bằng client ID thực tế
 
-  let content;
-  switch (activeTab) {
-    case 'home':
-      content = <HomePage />;
-      break;
-    case 'vocab':
-      content = <VocabularyPage />;
-      break;
-    case 'chat':
-      content = <ChatPage />;
-      break;
-  }
+function AppContent() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const path = location.pathname;
+  const activeTab = path === '/chat' ? 'chat' : path === '/vocab' ? 'vocab' : 'home';
+
+  const handleTabChange = (tab: 'home' | 'chat' | 'vocab') => {
+    navigate(tab === 'home' ? '/home' : `/${tab}`);
+  };
 
   return (
     <div>
-      <Header activeTab={activeTab} onChangeTab={setActiveTab} />
+      <Header activeTab={activeTab} onChangeTab={handleTabChange} />
+
       <div style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
-        {content}
+        <Routes>
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/vocab" element={<VocabularyPage />} />
+          <Route path="/login" element={<LoginSignup />} />
+          <Route path="*" element={<HomePage />} />
+        </Routes>
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <Router>
+        <AppContent />
+      </Router>
+    </GoogleOAuthProvider>
   );
 }

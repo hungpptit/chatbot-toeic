@@ -4,6 +4,7 @@ import Sidebar from "../components/Sidebar";
 import ChatDisplay from "../components/ChatDisplay";
 import InputArea from "../components/InputArea";
 import { getQuestionFromRawText } from "../services/Question_services";
+import type { Conversation } from "../services/conversation_services";
 
 
 interface Message {
@@ -14,6 +15,7 @@ interface Message {
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const handleSend = async () => {
@@ -64,7 +66,7 @@ export default function ChatPage() {
   return (
     <div className="container">
       <div className="main-content">
-        <Sidebar />
+        <Sidebar onSelectConversation={(conv) => setSelectedConversation(conv)} />
         <div className="chat-area">
           <div className="chat-title">Chatbot TOEIC</div>
           <div className="chatBox">
