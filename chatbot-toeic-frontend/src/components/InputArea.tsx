@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from "react";
 
+
 interface InputAreaProps {
   input: string;
   setInput: (value: string) => void;

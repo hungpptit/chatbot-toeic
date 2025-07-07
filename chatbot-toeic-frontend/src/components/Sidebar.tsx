@@ -50,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelectConversation }) => {
     <div className="sidebar p-4 w-64 bg-gray-100 h-screen overflow-y-auto border-r">
       <button
         onClick={handleCreateNew}
-        className="mb-4 px-4 py-2 bg-blue-500 text-white rounded w-full hover:bg-blue-600 transition"
+        className="create-chat-btn"
       >
         + Tạo đoạn chat mới
       </button>
@@ -63,7 +63,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelectConversation }) => {
             <li
               key={conv.id}
               onClick={() => onSelectConversation(conv)}
-              className="cursor-pointer hover:bg-gray-200 p-2 rounded truncate"
+              className="conversation-item"
               title={conv.title}
             >
               {conv.title || 'Không tiêu đề'}
