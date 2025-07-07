@@ -3,14 +3,20 @@ import { getSmartItem } from '../services/question_service.js';
 const handleQuestionRequest = async (req, res) => {
   try {
     const { rawText } = req.body;
+    const conversationId = req.params.conversationId || "default";
+    console.log("📝 Conversation ID:", conversationId);
+    console.log("📝 Raw text:", rawText);
 
     if (!rawText?.trim()) {
       return res.status(400).json({ error: 'Thiếu dữ liệu đầu vào (rawText)' });
     }
 
+    // Nếu không có conversationId, có thể gán mặc định (ví dụ: "default" hoặc để null)
+    const convId = conversationId || "default"; // Điều chỉnh logic nếu cần
+
     let result;
     try {
-      result = await getSmartItem(rawText);
+      result = await getSmartItem(rawText, convId); // Truyền conversationId vào getSmartItem
     } catch (err) {
       console.error('❌ Error in getSmartItem:', err.message);
       return res.status(400).json({ error: 'Không xử lý được yêu cầu', detail: err.message });

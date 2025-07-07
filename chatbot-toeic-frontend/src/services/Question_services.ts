@@ -72,7 +72,15 @@ export interface QuestionResponse {
  * @param rawText Chuỗi người dùng nhập vào
  * @returns Câu trả lời từ bot (trắc nghiệm / từ vựng / tự do)
  */
-export const getQuestionFromRawText = async (rawText: string): Promise<QuestionResponse> => {
-  const response = await axios.post<QuestionResponse>(API_BASE_URL, { rawText });
+export const getQuestionFromRawText = async (
+  rawText: string,
+  conversationId?: string
+): Promise<QuestionResponse> => {
+  // Build URL: nếu có conversationId thì append, không thì giữ nguyên
+  const url = conversationId
+    ? `${API_BASE_URL}/${conversationId}`
+    : API_BASE_URL;
+
+  const response = await axios.post<QuestionResponse>(url, { rawText });
   return response.data;
 };

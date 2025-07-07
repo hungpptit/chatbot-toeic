@@ -63,11 +63,45 @@ const getMessagesByConversation = async (conversationId) => {
  * Lấy danh sách tin nhắn và format theo chuẩn Gemini API
  * Gemini format: [{ role: 'user' | 'model', parts: [{ text }] }]
  */
+// const getMessagesForGemini = async (conversationId) => {
+//   try {
+//     const { data: messages } = await getMessagesByConversation(conversationId);
+
+//     const contents = messages.map(msg => ({
+//       role: msg.role,
+//       parts: [{ text: msg.content }],
+//     }));
+
+//     return {
+//       code: 200,
+//       message: "Chuẩn bị input Gemini thành công",
+//       data: contents,
+//     };
+//   } catch (error) {
+//     console.error("Lỗi chuẩn bị Gemini content:", error);
+//     return { code: 500, message: "Lỗi server khi chuẩn bị Gemini input" };
+//   }
+// };
+/**
+ * Lấy danh sách tin nhắn và format theo chuẩn Gemini API (giới hạn 15 cặp gần nhất)
+ */
 const getMessagesForGemini = async (conversationId) => {
   try {
-    const { data: messages } = await getMessagesByConversation(conversationId);
+    const { data: allMessages } = await getMessagesByConversation(conversationId);
 
-    const contents = messages.map(msg => ({
+    // Lọc để lấy tối đa 15 cặp user-model gần nhất
+    const pairedMessages = [];
+    for (let i = 0; i < allMessages.length; i += 2) {
+      if (i + 1 < allMessages.length) {
+        pairedMessages.push(allMessages[i]); // user
+        pairedMessages.push(allMessages[i + 1]); // model
+      } else if (i < allMessages.length) {
+        pairedMessages.push(allMessages[i]); // user cuối nếu không có model (không áp dụng ở đây vì đã lưu cả hai)
+      }
+      if (pairedMessages.length >= 30) break; // Giới hạn 30 tin nhắn (15 cặp)
+    }
+
+    const contents = pairedMessages.map(msg => ({
       role: msg.role,
       parts: [{ text: msg.content }],
     }));

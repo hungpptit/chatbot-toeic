@@ -6,6 +6,7 @@ import InputArea from "../components/InputArea";
 import { getQuestionFromRawText } from "../services/Question_services";
 import type { Conversation } from "../services/conversation_services";
 import { getMessagesByConversationId, createMessageAPI } from "../services/message_services";
+import { useParams } from 'react-router-dom';
 
 
 
@@ -19,6 +20,8 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const { conversationId } = useParams();
+  
 
   const handleSend = async () => {
   if (!input.trim()) return; // Nếu không có input, không gửi
@@ -38,7 +41,7 @@ export default function ChatPage() {
     });
 
     // Gửi câu hỏi đến AI và nhận phản hồi
-    const res = await getQuestionFromRawText(input);
+    const res = await getQuestionFromRawText(input,conversationId);
     let reply = "";
 
     if (res.type === "Vocabulary-Lookup") {
@@ -83,6 +86,37 @@ export default function ChatPage() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+  if (conversationId) {
+    (async () => {
+      try {
+        const convId = Number(conversationId);
+        console.log("🔗 Loading conversation from URL with id =", convId);
+        
+        const rawMsgs = await getMessagesByConversationId(convId);
+        const displayMsgs = rawMsgs.map((msg) => ({
+          sender: msg.role === "user" ? "user" : "bot",
+          text: msg.content,
+        })) as Message[];
+
+        setMessages(displayMsgs);
+
+        setSelectedConversation({
+          id: convId,
+          title: `Conversation ${convId}`,
+          userId: 0,
+          createdAt: "",
+          updatedAt: "",
+        });
+
+      } catch (err) {
+        console.error("❌ Lỗi khi load tin nhắn từ URL:", err);
+      }
+    })();
+  }
+}, [conversationId]);
+
 
  
 

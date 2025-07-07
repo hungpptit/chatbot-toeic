@@ -26,7 +26,8 @@ function AppContent() {
       <div style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
         <Routes>
           <Route path="/home" element={<HomePage />} />
-          <Route path="/chat" element={<ChatPage />} />
+           <Route path="/chat" element={<ChatPage />} />
+          <Route path="/chat/:conversationId" element={<ChatPage />} />
           <Route path="/vocab" element={<VocabularyPage />} />
           <Route path="/login" element={<LoginSignup />} />
           <Route path="*" element={<HomePage />} />

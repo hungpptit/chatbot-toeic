@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   getConversationsByUserAPI,
   createConversationAPI,
@@ -12,6 +13,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ onSelectConversation }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const fetchConversations = useCallback(async () => {
     setLoading(true);
@@ -62,7 +64,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelectConversation }) => {
           {conversations.map((conv) => (
             <li
               key={conv.id}
-              onClick={() => onSelectConversation(conv)}
+              onClick={() => {
+                onSelectConversation(conv);
+                navigate(`/chat/${conv.id}`); // ✅ đổi URL khi click
+              }}
               className="conversation-item"
               title={conv.title}
             >

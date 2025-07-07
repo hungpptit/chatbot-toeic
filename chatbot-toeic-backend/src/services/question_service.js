@@ -1,15 +1,16 @@
 import db from '../models/index.js';
 import { GEMINI_API_KEYS, GEMINI_API_URL } from '../config.js';
 import axios from 'axios';
+import {getMessagesForGemini } from './message_service.js';
 
 const { Question, Vocabulary, Synonym, Antonym } = db;
 
 // 🔁 Gọi Gemini với fallback API key
-const callGemini = async (prompt) => {
+const callGemini = async (contents) => {
   for (const apiKey of GEMINI_API_KEYS) {
     try {
       const res = await axios.post(GEMINI_API_URL, {
-        contents: [{ parts: [{ text: prompt }] }],
+        contents, // Gửi trực tiếp mảng contents
       }, {
         headers: {
           'Content-Type': 'application/json',
@@ -28,8 +29,10 @@ const callGemini = async (prompt) => {
 };
 
 // 📥 Phân tích input thô thành object
-const parseUserInput = async (rawText) => {
-  const prompt = `Bạn là trợ lý trích xuất dữ liệu câu hỏi tiếng Anh. Dưới đây là một chuỗi đầu vào thô, hãy phân tích và trả về một object JSON với định dạng:
+// 📥 Phân tích input thô thành object
+const parseUserInput = async (rawText, conversationId) => {
+  const { data: history } = await getMessagesForGemini(conversationId); // Lấy lịch sử 15 cặp
+  const prompt = `Bạn là trợ lý trích xuất dữ liệu câu hỏi tiếng Anh. Dưới đây là lịch sử hội thoại và chuỗi đầu vào thô mới, hãy phân tích và trả về một object JSON với định dạng:
 
 {
   "type": "Vocabulary-Lookup" | "Free" | "MultipleChoice",
@@ -49,10 +52,12 @@ Nếu là tự do thì chỉ có type = "Free" và questionText.
 
 ❗Không bao quanh JSON bằng \`\`\` hoặc ghi chú. Trả về đúng JSON thuần túy.
 
-Chuỗi:
+Lịch sử:
+${JSON.stringify(history)}
+Chuỗi mới:
 """${rawText}"""`;
 
-  const reply = await callGemini(prompt);
+  const reply = await callGemini(history.concat({ role: "user", parts: [{ text: prompt }] }));
 
   // ✅ Loại bỏ markdown code block nếu có
   const cleaned = reply.replace(/```json|```/g, "").trim();
@@ -66,15 +71,17 @@ Chuỗi:
   }
 };
 
-
 // 🎯 Phân loại câu hỏi trắc nghiệm
-const detectQuestionType = async (questionText, options) => {
-  const prompt = `Bạn là trợ lý phân loại câu hỏi tiếng Anh. Hãy xác định loại câu hỏi sau:
+const detectQuestionType = async (questionText, options, conversationId) => {
+  const { data: history } = await getMessagesForGemini(conversationId);
+  const prompt = `Bạn là trợ lý phân loại câu hỏi tiếng Anh. Dưới đây là lịch sử hội thoại và câu hỏi mới, hãy xác định loại câu hỏi:
 - "Vocabulary" nếu là về từ vựng.
 - "Grammar" nếu là về ngữ pháp.
 - "Free" nếu là câu hỏi tự do không trắc nghiệm.
 
-Câu hỏi: ${questionText}
+Lịch sử:
+${JSON.stringify(history)}
+Câu hỏi mới: ${questionText}
 A. ${options?.A || '...'}
 B. ${options?.B || '...'}
 C. ${options?.C || '...'}
@@ -82,7 +89,7 @@ D. ${options?.D || '...'}
 
 Chỉ trả lời đúng một từ: Vocabulary / Grammar / Free`;
 
-  const reply = await callGemini(prompt);
+  const reply = await callGemini(history.concat({ role: "user", parts: [{ text: prompt }] }));
   const lower = reply.toLowerCase();
 
   if (lower.includes('vocabulary')) return 'Vocabulary';
@@ -91,13 +98,15 @@ Chỉ trả lời đúng một từ: Vocabulary / Grammar / Free`;
 };
 
 // 📌 Tự do
-const askFreeQuestion = async (questionText) => {
-  const prompt = `Bạn là trợ lý tiếng Anh. Trả lời ngắn gọn và rõ ràng bằng tiếng Việt cho câu hỏi sau:\n"${questionText}"`;
-  return await callGemini(prompt);
+const askFreeQuestion = async (questionText, conversationId) => {
+  const { data: history } = await getMessagesForGemini(conversationId);
+  const prompt = `Bạn là trợ lý tiếng Anh. Dưới đây là lịch sử hội thoại và câu hỏi mới, trả lời ngắn gọn và rõ ràng bằng tiếng Việt:\nLịch sử:\n${JSON.stringify(history)}\nCâu hỏi mới:\n"${questionText}"`;
+  return await callGemini(history.concat({ role: "user", parts: [{ text: prompt }] }));
 };
 
 // 🧠 Trắc nghiệm
-const askWithLocalAI = async (questionText, options, type = 'Part 5') => {
+const askWithLocalAI = async (questionText, options, type = 'Part 5', conversationId) => {
+  const { data: history } = await getMessagesForGemini(conversationId);
   const intro =
     type === 'Vocabulary'
       ? 'Bạn là trợ lý luyện từ vựng tiếng Anh. Hãy chọn đáp án đúng và giải thích bằng tiếng Việt.'
@@ -105,6 +114,8 @@ const askWithLocalAI = async (questionText, options, type = 'Part 5') => {
 
   const prompt = `${intro}
 
+Lịch sử:
+${JSON.stringify(history)}
 Câu hỏi: ${questionText}
 A. ${options.A}
 B. ${options.B}
@@ -117,7 +128,7 @@ Giải thích: <giải thích ngắn bằng tiếng Việt>
 
 Chỉ in kết quả, không thêm gì khác.`;
 
-  const reply = await callGemini(prompt);
+  const reply = await callGemini(history.concat({ role: "user", parts: [{ text: prompt }] }));
   const answerMatch = reply.match(/Đáp án[:：]?\s*([A-D])/i);
   const explanationMatch = reply.match(/Giải thích[:：]?\s*([\s\S]*)/i);
 
@@ -128,8 +139,9 @@ Chỉ in kết quả, không thêm gì khác.`;
 };
 
 // 📘 Từ vựng
-const askVocabularyAI = async (word) => {
-  const prompt = `Bạn là trợ lý từ vựng tiếng Anh. Với từ "${word}", hãy trả lời với định dạng sau:
+const askVocabularyAI = async (word, conversationId) => {
+  const { data: history } = await getMessagesForGemini(conversationId);
+  const prompt = `Bạn là trợ lý từ vựng tiếng Anh. Dưới đây là lịch sử hội thoại và từ cần phân tích:\nLịch sử:\n${JSON.stringify(history)}\nTừ: "${word}", hãy trả lời với định dạng sau:
 
 Định nghĩa: <giải thích bằng tiếng Anh>
 Ví dụ: <câu tiếng Anh sử dụng từ đó>
@@ -138,7 +150,7 @@ Trái nghĩa: <3 từ cách nhau bởi dấu phẩy>
 
 Chỉ trả lời đúng định dạng trên, không thêm gì khác.`;
 
-  const reply = await callGemini(prompt);
+  const reply = await callGemini(history.concat({ role: "user", parts: [{ text: prompt }] }));
   console.log('🧪 Gemini AI raw reply:', reply);
 
   return {
@@ -150,18 +162,19 @@ Chỉ trả lời đúng định dạng trên, không thêm gì khác.`;
 };
 
 // 🇻🇳 Giải thích nghĩa tiếng Việt
-const askVietnameseExplanation = async (word) => {
-  const prompt = `Bạn là trợ lý tiếng Anh. Hãy giải thích nghĩa của từ "${word}" bằng tiếng Việt một cách đơn giản và dễ hiểu.`;
-  return await callGemini(prompt);
+const askVietnameseExplanation = async (word, conversationId) => {
+  const { data: history } = await getMessagesForGemini(conversationId);
+  const prompt = `Bạn là trợ lý tiếng Anh. Dưới đây là lịch sử hội thoại và từ cần giải thích:\nLịch sử:\n${JSON.stringify(history)}\nTừ: "${word}", hãy giải thích nghĩa bằng tiếng Việt một cách đơn giản và dễ hiểu.`;
+  return await callGemini(history.concat({ role: "user", parts: [{ text: prompt }] }));
 };
 
 // 🔁 Hàm chính gốc
-const getItemWithAI = async ({ type, questionText, options, word }) => {
+const getItemWithAI = async ({ type, questionText, options, word }, conversationId) => {
   if (!type && questionText && !options && !word) {
     return {
       type: 'Free',
       source: 'ai',
-      answer: await askFreeQuestion(questionText),
+      answer: await askFreeQuestion(questionText, conversationId),
     };
   }
 
@@ -171,7 +184,7 @@ const getItemWithAI = async ({ type, questionText, options, word }) => {
 
     if (!vocab) {
       source = 'ai';
-      const aiData = await askVocabularyAI(word);
+      const aiData = await askVocabularyAI(word, conversationId);
       if (!aiData?.definition) throw new Error('Không lấy được dữ liệu từ AI');
 
       vocab = await Vocabulary.create({
@@ -193,26 +206,26 @@ const getItemWithAI = async ({ type, questionText, options, word }) => {
       ],
     });
 
-    const viExplanation = await askVietnameseExplanation(word);
+    const viExplanation = await askVietnameseExplanation(word, conversationId);
     return { source, vocab: full, viExplanation };
   }
 
   if (!type && questionText && options) {
-    type = await detectQuestionType(questionText, options);
+    type = await detectQuestionType(questionText, options, conversationId);
   }
 
   if (type === 'Free') {
     return {
       type: 'Free',
       source: 'ai',
-      answer: await askFreeQuestion(questionText),
+      answer: await askFreeQuestion(questionText, conversationId),
     };
   }
 
   const existing = await Question.findOne({ where: { question: questionText } });
   if (existing) return { source: 'database', question: existing };
 
-  const aiResult = await askWithLocalAI(questionText, options, type);
+  const aiResult = await askWithLocalAI(questionText, options, type, conversationId);
 
   const newQuestion = await Question.create({
     question: questionText,
@@ -230,9 +243,9 @@ const getItemWithAI = async ({ type, questionText, options, word }) => {
 };
 
 // 💡 Hàm mới: xử lý từ chuỗi thô bất kỳ
-const getSmartItem = async (rawText) => {
-  const parsed = await parseUserInput(rawText);
-  return await getItemWithAI(parsed);
+const getSmartItem = async (rawText, conversationId) => {
+  const parsed = await parseUserInput(rawText, conversationId);
+  return await getItemWithAI(parsed, conversationId);
 };
 
 export { getItemWithAI, getSmartItem };
