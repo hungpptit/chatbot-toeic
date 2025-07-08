@@ -26,8 +26,9 @@ const loginController = async (req, res) => {
 
   // ✅ Gửi token vào cookie
   res.cookie('token', token, {
+    path: '/',
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: false,
     sameSite: 'Lax', // hoặc 'None' nếu frontend và backend khác domain và dùng HTTPS
     maxAge: 24 * 60 * 60 * 1000, // 1 ngày
   });

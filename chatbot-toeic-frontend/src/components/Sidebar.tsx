@@ -50,14 +50,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelectConversation }) => {
 
   return (
     <div className="sidebar p-4 w-64 bg-gray-100 h-screen overflow-y-auto border-r">
-      <button
+      <div className='sidebar-button'>
+          <button
         onClick={handleCreateNew}
         className="create-chat-btn"
       >
         + Tạo đoạn chat mới
       </button>
-
-      {loading ? (
+      </div>
+      
+      <div className='sidebar-conversation'>
+          {loading ? (
         <p>Đang tải...</p>
       ) : (
         <ul className="space-y-2">
@@ -76,6 +79,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelectConversation }) => {
           ))}
         </ul>
       )}
+      </div>
+      
     </div>
   );
 };

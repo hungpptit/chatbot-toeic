@@ -5,6 +5,8 @@ import {
   createConversationController,
   getConversationsByUserController,
   getConversationByIdController,
+  deleteConversationController,
+  updateConversationTitleController
 } from '../controllers/conversation_controller.js';
 
 const router = express.Router();
@@ -12,5 +14,7 @@ const router = express.Router();
 router.post('/',authMiddleware, createConversationController);
 router.get('/user',authMiddleware, getConversationsByUserController);
 router.get('/:id',authMiddleware ,getConversationByIdController);
+router.get('/deleteConverssation/:id',authMiddleware ,deleteConversationController);
+router.get('/updateConverssation/:id',authMiddleware ,updateConversationTitleController);
 
 export default router;

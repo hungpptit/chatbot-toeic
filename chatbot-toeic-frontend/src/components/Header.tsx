@@ -1,5 +1,8 @@
 import '../styles/Header.css';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+import { getCurrentUser,logout } from '../services/authService';
+import { useEffect, useState } from 'react';
 
 interface HeaderProps {
   activeTab: 'home' | 'vocab' | 'chat';
@@ -8,14 +11,29 @@ interface HeaderProps {
 
 export default function Header({ activeTab, onChangeTab }: HeaderProps) {
   const navigate = useNavigate();
+  const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const location = useLocation();
 
-  const isLoggedIn = !!localStorage.getItem('token');
-  const rawUser = localStorage.getItem('user');
-  const user = rawUser && rawUser !== 'undefined' ? JSON.parse(rawUser) : {};
-  const username = user?.name || 'Người dùng';
+  const justLoggedIn = (location.state as { justLoggedIn?: boolean })?.justLoggedIn;
 
-  const handleLogout = () => {
-    localStorage.clear();
+  // const isLoggedIn = !!Cookies.get('token');
+  
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      console.log("👀 [Header] Gọi fetchUser");
+      const userData = await getCurrentUser();
+      console.log("🔍 [Header] Kết quả getCurrentUser:", userData);
+      setUser(userData); // null nếu chưa login
+    };
+
+    fetchUser();
+  }, [justLoggedIn]);
+
+  const handleLogout = async () => {
+    
+    await logout();
+    setUser(null);
     navigate('/login');
   };
 
@@ -43,9 +61,9 @@ export default function Header({ activeTab, onChangeTab }: HeaderProps) {
         </button>
 
         {/* Đăng nhập / Đăng xuất */}
-        {isLoggedIn ? (
+        {user ? (
           <>
-            <span className="user-info">👤 {username}</span>
+            <span className="user-info">👤 {user.name}</span>
             <button onClick={handleLogout}>Đăng xuất</button>
           </>
         ) : (

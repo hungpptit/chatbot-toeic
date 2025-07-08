@@ -10,7 +10,9 @@ export default (sequelize, DataTypes) => {
       });
       Conversation.hasMany(models.Message, {
         foreignKey: 'conversationId',
-        as: 'messages'
+        as: 'messages',
+        onDelete: 'CASCADE',
+        hooks: true 
       });
     }
   }

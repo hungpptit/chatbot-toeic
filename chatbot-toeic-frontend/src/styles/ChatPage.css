@@ -25,24 +25,43 @@
   background-color: forestgreen;
   border-right: 1px solid #e0e0e0;
   padding: 10px;
-  overflow-y: auto;
+   display: flex;
   border-radius: 10px;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  flex-direction: column;
+
+  
+}
+.sidebar-button {
+   width: 100%; 
+   display: flex;
+  justify-content: center;
+
+ 
+
+}
+.sidebar-conversation {
+  /* background: red; */
+   flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
 
 }
 .sidebar::-webkit-scrollbar {
   display: none;
 }
-.sidebar ul {
+.sidebar-conversation ul {
   list-style: none;
   padding: 0;
 }
-.sidebar li {
+.sidebar-conversation li {
   padding: 10px;
   cursor: pointer;
 }
-.sidebar li:hover {
+.sidebar-conversation li:hover {
   background-color: #f0f0f0;
 }
 

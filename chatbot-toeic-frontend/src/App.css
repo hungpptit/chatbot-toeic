@@ -13,14 +13,6 @@
   overflow: hidden; /* Ngăn cuộn ở cấp main-layout */
 }
 
-.sidebar {
-  width: 260px;
-  background-color: #f3f3f3;
-  border-right: 1px solid #ccc;
-  padding: 16px;
-  overflow-y: auto; /* Cuộn chỉ trong sidebar nếu cần */
-  height: 100%; /* Đảm bảo chiều cao khớp với main-layout */
-}
 
 .c/* Định nghĩa thêm cho chatBox (nếu có trong content-area) */
 .chatBox {

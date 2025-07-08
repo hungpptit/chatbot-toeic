@@ -59,7 +59,7 @@ const LoginSignup: React.FC = () => {
       const user = res.data.data; // token đã nằm trong cookie, không cần lấy
       localStorage.setItem("user", JSON.stringify(user)); // chỉ lưu user
       alert("✅ Login successful!");
-      navigate(user.role_id === 2 ? "/admin/user" : "/home");
+      navigate(user.role_id === 2 ? "/admin/user" : "/home",{ state: { justLoggedIn: true } });
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
       alert(`❌ ${error.response?.data?.message || "Login failed!"}`);
