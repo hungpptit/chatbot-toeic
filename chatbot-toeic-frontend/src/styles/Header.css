@@ -1,16 +1,13 @@
 .header {
-  position: fixed;              /* cố định trên đầu */
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
+  height: 48px;
   background-color: #2e7d32;
-  color: white;
-  padding: 12px 24px;
+  padding: 4px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  color: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  
 }
 
 .logo {

@@ -21,6 +21,8 @@ export default function ChatPage() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const chatEndRef = useRef<HTMLDivElement>(null);
   const { conversationId } = useParams();
+  const [showSidebar, setShowSidebar] = useState(true);
+
   
 
   const handleSend = async () => {
@@ -136,18 +138,27 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="container">
-      <div className="main-content">
-        <Sidebar onSelectConversation={handleSelectConversation} />
-        <div className="chat-area">
-          <div className="chat-title">Chatbot TOEIC</div>
-          <div className="chatBox">
-            <ChatDisplay messages={messages} />
-            <div ref={chatEndRef} style={{ height: "1px" }} />
-          </div>
-          <InputArea input={input} setInput={setInput} handleSend={handleSend} />
+  
+    <div className="main-home">
+       
+        <Sidebar
+          show={showSidebar}
+          setShow={setShowSidebar}
+          onSelectConversation={handleSelectConversation}
+        />
+    
+
+      <div className={`chat-area ${showSidebar ? "sidebar-open" : "sidebar-minimized"}`}>
+        <div className="chat-title">Chatbot TOEIC</div>
+
+        <div className="chatBox">
+          <ChatDisplay messages={messages} />
+          <div ref={chatEndRef} />
         </div>
+          <InputArea input={input} setInput={setInput} handleSend={handleSend} />
       </div>
     </div>
+
+  
   );
 }

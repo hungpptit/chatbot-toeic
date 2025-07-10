@@ -1,11 +1,13 @@
 /* Main page container */
 .account-page {
-  min-height: 100vh;
+  width: 100%;              /* ✅ chiếm toàn bộ ngang */
+  height: 100%; 
   background: linear-gradient(135deg, #ffffff 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  
 }
 
 /* Main container */
@@ -14,11 +16,12 @@
   border: 2px solid #2e7d32;
   border-radius: 16px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  padding: 40px;
+  padding: 24px;
   width: 500px;
-  max-width: 630px;
+  max-width: 420px;
   position: relative;
-  margin-top: -50px;
+  max-height: 100%;
+  box-sizing: border-box;
 }
 
 .account-container::before {

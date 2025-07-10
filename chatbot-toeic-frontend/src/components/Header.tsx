@@ -39,7 +39,7 @@ export default function Header({ activeTab, onChangeTab }: HeaderProps) {
 
   return (
     <header className="header">
-      <h1 className="logo">📘 Chatbot TOEIC</h1>
+      <h1 className="logo">Chatbot TOEIC</h1>
       <nav className="nav">
         <button
           className={activeTab === 'home' ? 'active' : ''}
