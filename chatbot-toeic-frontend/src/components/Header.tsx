@@ -13,7 +13,7 @@ export default function Header({ activeTab, onChangeTab }: HeaderProps) {
   const navigate = useNavigate();
   const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
   const location = useLocation();
-
+  const [menuOpen, setMenuOpen] = useState(false);
   const justLoggedIn = (location.state as { justLoggedIn?: boolean })?.justLoggedIn;
 
   // const isLoggedIn = !!Cookies.get('token');
@@ -37,39 +37,30 @@ export default function Header({ activeTab, onChangeTab }: HeaderProps) {
     navigate('/login');
   };
 
-  return (
+   return (
     <header className="header">
-      <h1 className="logo">Chatbot TOEIC</h1>
-      <nav className="nav">
-        <button
-          className={activeTab === 'home' ? 'active' : ''}
-          onClick={() => onChangeTab('home')}
-        >
-          Trang chủ
-        </button>
-        <button
-          className={activeTab === 'vocab' ? 'active' : ''}
-          onClick={() => onChangeTab('vocab')}
-        >
-          Tra từ vựng
-        </button>
-        <button
-          className={activeTab === 'chat' ? 'active' : ''}
-          onClick={() => onChangeTab('chat')}
-        >
-          Chat TOEIC
-        </button>
+      <div className="left-section">
+        <div className="logo">Chatbot TOEIC</div>
+        <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>☰</button>
+      </div>
 
-        {/* Đăng nhập / Đăng xuất */}
-        {user ? (
-          <>
-            <span className="user-info">👤 {user.name}</span>
-            <button onClick={handleLogout}>Đăng xuất</button>
-          </>
-        ) : (
-          <button onClick={() => navigate('/login')}>Đăng nhập</button>
-        )}
-      </nav>
+      <div className={`nav-container ${menuOpen ? 'open' : ''}`}>
+        <div className="nav-left">
+          <button className={activeTab === 'home' ? 'active' : ''} onClick={() => onChangeTab('home')}>Trang chủ</button>
+          <button className={activeTab === 'vocab' ? 'active' : ''} onClick={() => onChangeTab('vocab')}>Tra từ vựng</button>
+          <button className={activeTab === 'chat' ? 'active' : ''} onClick={() => onChangeTab('chat')}>Chat TOEIC</button>
+        </div>
+        <div className="nav-right">
+          {user ? (
+            <>
+              <span className="user-info">👤 {user.name}</span>
+              <button onClick={handleLogout}>Đăng xuất</button>
+            </>
+          ) : (
+            <button onClick={() => navigate('/login')}>Đăng nhập</button>
+          )}
+        </div>
+      </div>
     </header>
   );
 }
