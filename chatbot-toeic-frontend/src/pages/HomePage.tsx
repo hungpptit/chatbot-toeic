@@ -1,11 +1,27 @@
 
 import '../styles/Home.css';
-import {courseList} from "../data/cousera";
 import { mockTests } from '../data/mockTests';
 import CardTest from '../components/CardTest';
+import { getAllCoursesAPI, type Course } from '../services/coursesServices';
+import { useEffect, useState } from 'react';
 
 export default function HomePage() {
-  
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const data = await getAllCoursesAPI();
+        setCourses(data);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCourses();
+  }, []);
 
   return (
     <div className="home-page">
@@ -28,15 +44,19 @@ export default function HomePage() {
         </div>
 
         <div className="div3">
-          <div className="course-list">
-            {courseList.map((course, index) => (
-              <button
-                key={index}
-                className={`course-item ${index === 0 ? "active" : ""}`}  // Đánh dấu "Tất cả" là active
-              >
-                {course}
-              </button>
-            ))}
+           <div className="course-list">
+            {loading ? (
+              <p>Đang tải khóa học...</p>
+            ) : (
+              courses.map((course) => (
+                <button
+                  key={course.id}
+                  className={`course-item ${course.id === 1 ? 'active' : ''}`} // Đánh dấu "Tất cả"
+                >
+                  {course.name}
+                </button>
+              ))
+            )}
           </div>
         </div>
         <div className="div4">

@@ -10,9 +10,35 @@ export default (sequelize, DataTypes) => {
   }
 
   UserResult.init({
-    userId: DataTypes.INTEGER,
-    questionId: DataTypes.INTEGER,
-    isCorrect: DataTypes.BOOLEAN,
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Users',
+        key: 'id',
+      },
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE',
+    },
+    questionId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Questions',
+        key: 'id',
+      },
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE',
+    },
+    isCorrect: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
     answeredAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
@@ -20,6 +46,8 @@ export default (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'UserResult',
+    tableName: 'UserResults',
+    timestamps: false,
   });
 
   return UserResult;

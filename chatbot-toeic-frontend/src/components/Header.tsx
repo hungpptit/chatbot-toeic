@@ -40,7 +40,7 @@ export default function Header({ activeTab, onChangeTab }: HeaderProps) {
    return (
     <header className="header">
       <div className="left-section">
-        <div className="logo">Chatbot TOEIC</div>
+        <div className="logo" onClick={() => onChangeTab('home')}>Chatbot TOEIC</div>
         <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>☰</button>
       </div>
 

@@ -52,6 +52,8 @@ const initDb = async () => {
   db.Meaning = (await import('./meaning.js')).default(sequelize, Sequelize.DataTypes);
   db.Conversation = (await import('./conversation.js')).default(sequelize, Sequelize.DataTypes);
   db.Message = (await import('./message.js')).default(sequelize, Sequelize.DataTypes);
+  db.Test = (await import('./Tests.js')).default(sequelize, Sequelize.DataTypes);
+  db.Course = (await import('./Courses.js')).default(sequelize, Sequelize.DataTypes);
 
   // Tạo associations nếu có
   Object.keys(db).forEach(modelName => {
