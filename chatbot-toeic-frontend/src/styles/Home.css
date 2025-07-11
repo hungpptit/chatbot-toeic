@@ -158,9 +158,9 @@
     max-height: 100%;
     overflow-y: auto;
     min-height: 0;   
-  /*    
+     
       border: 2px solid #4caf50;  
-      background-color: #e8f5e9;   */
+      /* background-color: #e8f5e9;   */
     border-radius: 8px;
     padding: 16px;
     font-size: 18px;
@@ -218,19 +218,19 @@
 
 /* ================================================================ */        
 .div2 {
-  /* border: 2px solid #4caf50;   
-  background-color: #e8f5e9;   */
+  border: 2px solid #4caf50;   
+  /* background-color: #e8f5e9;   */
   border-radius: 8px;
   padding: 16px;
   font-size: 18px;
   font-weight: bold;
   display: flex;
- 
+  max-height: 300px;
   align-items: center;
 }
 .div1{
-  /* border: 2px solid #4caf50;   
-  background-color: #e8f5e9;    */
+  border: 2px solid #4caf50;   
+  /* background-color: #e8f5e9;    */
   border-radius: 8px;
   
   font-size: 18px;
@@ -240,19 +240,19 @@
   align-items: center;
 }
 .div4{
-  /* border: 2px solid #4caf50;   
-  background-color: #e8f5e9;   */
+  border: 2px solid #4caf50;   
+  /* background-color: #e8f5e9;   */
   border-radius: 8px;
   font-size: 18px;
   font-weight: bold;
   display: flex;
-  
+  padding: 5px;
   align-items: center;
   padding-left: 20px;
 }
 .div3{
    border: 2px solid #4caf50;  
-  background-color: #e8f5e9;   
+  /* background-color: #e8f5e9;    */
   border-radius: 8px;
   
   font-size: 18px;
@@ -261,4 +261,10 @@
  
   align-items: center;
   padding-left: 20px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  max-height: 300px;
+}
+.div3::-webkit-scrollbar {
+  display: none;
 }

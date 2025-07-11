@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getConversationsByUserAPI,
   createConversationAPI,
   type Conversation,
+  updateConversationTitleAPI,
+  deleteConversationAPI,
 } from '../services/conversation_services';
 
 interface SidebarProps {
@@ -15,6 +17,8 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ onSelectConversation, show, setShow }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
+  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   const fetchConversations = useCallback(async () => {
@@ -46,10 +50,54 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelectConversation, show, setShow }
       alert(`Không thể tạo đoạn chat mới: ${message}`);
     }
   };
+  const handleRename = async (convId: number) => {
+    const newTitle = prompt('Nhập tên mới');
+    if (!newTitle) return;
+
+    try {
+      await updateConversationTitleAPI(convId, newTitle);
+      setConversations(prev =>
+        prev.map(c => (c.id === convId ? { ...c, title: newTitle } : c))
+      );
+      setActiveMenuId(null);
+    } catch (err) {
+      console.error(err);
+      alert('Không thể đổi tên');
+    }
+  };
+
+  const handleDelete = async (convId: number) => {
+    if (!window.confirm('Bạn chắc chắn muốn xóa đoạn chat này?')) return;
+    try {
+      await deleteConversationAPI(convId);
+      setConversations(prev => prev.filter(c => c.id !== convId));
+      setActiveMenuId(null);
+    } catch (err) {
+      console.error(err);
+      alert('Không thể xóa');
+    }
+  };
+
 
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setActiveMenuId(null);
+      }
+    };
+
+    if (activeMenuId !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeMenuId]);
 
   return (
   <div className={`sidebar ${show ? 'show' : 'minimized'}`}>
@@ -65,29 +113,50 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelectConversation, show, setShow }
           </button>
         </div>
 
-        <div className="sidebar-conversation">
-          {loading ? (
-            <p>Đang tải...</p>
-          ) : (
-            <ul className="space-y-2">
-              {conversations.map((conv) => (
-                <li
-                  key={conv.id}
-                  onClick={() => {
-                    onSelectConversation(conv);
-                    navigate(`/chat/${conv.id}`);
-                    setShow(false);
-                  }}
-                  className="conversation-item"
-                >
-                  {conv.title || 'Không tiêu đề'}
-                </li>
-              ))}
-            </ul>
-          )}
+         <div className="sidebar-conversation">
+            {loading ? (
+              <p>Đang tải...</p>
+            ) : (
+              <ul className="space-y-2">
+                {conversations.map((conv) => (
+                  <li
+                    key={conv.id}
+                    className="conversation-item-wrapper"
+                  >
+                    <div
+                      className="conversation-item"
+                      onClick={() => {
+                        onSelectConversation(conv);
+                        navigate(`/chat/${conv.id}`);
+                        setShow(false);
+                      }}
+                    >
+                      {conv.title || 'Không tiêu đề'}
+                    </div>
+
+                    <button
+                      className="menu-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveMenuId(activeMenuId === conv.id ? null : conv.id);
+                      }}
+                    >
+                      ...
+                    </button>
+
+                    {activeMenuId === conv.id && (
+                      <div className="menu-dropdown" ref={menuRef}>
+                        <button onClick={() => handleRename(conv.id)}>Đổi tên</button>
+                        <button onClick={() => handleDelete(conv.id)}>Xóa</button>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-      </div>
-    ) : (
+      ) : (
       <button className="sidebar-toggle-btn" onClick={() => setShow(true)}>
         ☰
       </button>

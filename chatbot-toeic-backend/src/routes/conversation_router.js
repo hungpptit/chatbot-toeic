@@ -14,7 +14,7 @@ const router = express.Router();
 router.post('/',authMiddleware, createConversationController);
 router.get('/user',authMiddleware, getConversationsByUserController);
 router.get('/:id',authMiddleware ,getConversationByIdController);
-router.get('/deleteConverssation/:id',authMiddleware ,deleteConversationController);
-router.get('/updateConverssation/:id',authMiddleware ,updateConversationTitleController);
+router.delete('/deleteConverssation/:id',authMiddleware ,deleteConversationController);
+router.put('/updateConverssation/:id',authMiddleware ,updateConversationTitleController);
 
 export default router;

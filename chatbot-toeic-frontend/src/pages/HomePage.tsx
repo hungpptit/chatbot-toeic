@@ -1,13 +1,33 @@
 
 import '../styles/Home.css';
-import { mockTests } from '../data/mockTests';
 import CardTest from '../components/CardTest';
 import { getAllCoursesAPI, type Course } from '../services/coursesServices';
 import { useEffect, useState } from 'react';
+import { getAllTestsWithCourseAPI, type Test } from '../services/testCourseService';
+import { getCurrentUser, type User } from "../services/authService";
 
 export default function HomePage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tests, setTest] = useState<Test[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+
+  
+  useEffect(() => {
+    getCurrentUser().then(setUser);
+  }, []);
+  useEffect(() =>{
+    const fetchTests = async () =>{
+      try{
+        const data = await getAllTestsWithCourseAPI();
+        setTest(data);
+      }catch (error){
+        console.error("lỗi khi lấy danh sách các tests: ", error);
+      }
+    }
+    fetchTests();
+  }, []);
+  
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -31,8 +51,23 @@ export default function HomePage() {
 
         <div className="div1">Thư viện đề thi</div>
         <div className="div2 user-card">
-          <img src="/avatar-placeholder.png" alt="avatar" className="avatar" />
-          <h3 className="username">google.@gmail.com</h3>
+          {user?.avatar ? (
+            <img src={user.avatar} alt="avatar" className="avatar" />
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              width="64"
+              height="64"
+              className="avatar"
+            >
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4 4-6 8-6s8 2 8 6H4z" />
+            </svg>
+          )}
+
+          <h3 className="username">{user?.email || 'Chưa đăng nhập'}</h3>
           <hr />
           <p className="warning">
             <span className="icon">⚠️</span> Bạn chưa tạo mục tiêu cho quá trình luyện thi của mình. 
@@ -64,7 +99,7 @@ export default function HomePage() {
         </div>
         <div className="div5">
         <div className="test-grid">
-          {mockTests.map((test) => (
+          {tests.map((test) => (
             <CardTest
               key={test.id}
               title={test.title}

@@ -6,6 +6,7 @@ import conversationRouter from './conversation_router.js';
 import messageRouter from './message_routes.js';
 import authRouter from './auth_router.js';
 import coursesRouter from './course_router.js';
+import testcourseRouter from './test_course_router.js';
 // import userRouter from './user.route.js';
 // import questionRouter from './question.route.js';
 
@@ -20,5 +21,6 @@ router.use('/conversations', conversationRouter);
 router.use('/messages', messageRouter);
 router.use('/', authRouter);
 router.use('/courses', coursesRouter);
+router.use('/testcourses', testcourseRouter);
 
 export default router;

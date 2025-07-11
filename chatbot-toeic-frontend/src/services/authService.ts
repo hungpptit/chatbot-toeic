@@ -3,6 +3,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  avatar: string;
 }
 const BACKEND_URL = 'http://localhost:8080';
 
