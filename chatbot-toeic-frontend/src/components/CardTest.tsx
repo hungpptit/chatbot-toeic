@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface CardTestProps {
   title: string;
@@ -13,8 +14,10 @@ interface CardTestProps {
 const CardTest: React.FC<CardTestProps> = ({
   title, duration, participants, comments, questions, parts, tags
 }) => {
+  const navigate = useNavigate();
+
   return (
-    <div className="test-card">
+    <div className="test-card" onClick={() => navigate('/TestExam')}>
       <h3>{title}</h3>
       <p>⏱ {duration} | 👥 {participants.toLocaleString()} | 💬 {comments}</p>
       <p>{parts} phần thi | {questions} câu hỏi</p>
