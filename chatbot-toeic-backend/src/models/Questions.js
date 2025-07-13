@@ -10,6 +10,9 @@ export default (sequelize, DataTypes) => {
         as: 'test',
       });
       Question.hasMany(models.UserResult, { foreignKey: 'questionId', as: 'userResults' });
+      Question.belongsTo(models.QuestionType, { foreignKey: 'typeId', as: 'questionType' });
+      Question.belongsTo(models.Part, { foreignKey: 'partId', as: 'part' });
+    
     }
   }
 
@@ -26,10 +29,25 @@ export default (sequelize, DataTypes) => {
     optionD: DataTypes.STRING,
     correctAnswer: DataTypes.STRING,
     explanation: DataTypes.TEXT,
-    type: DataTypes.STRING,
-    topic: {
-      type: DataTypes.STRING(100),
+    typeId: {
+      type: DataTypes.INTEGER,
       allowNull: false,
+      references: {
+        model: 'QuestionType',
+        key: 'id',
+      },
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE',
+    },
+    partId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Part',
+        key: 'id',
+      },
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE',
     },
     testId: {
       type: DataTypes.INTEGER,

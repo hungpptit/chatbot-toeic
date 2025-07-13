@@ -16,7 +16,7 @@ export default (sequelize, DataTypes) => {
     participants: DataTypes.INTEGER,
     comments: DataTypes.INTEGER,
     questions: DataTypes.INTEGER,
-    parts: DataTypes.INTEGER,
+ 
   }, {
     sequelize,
     modelName: 'Test',

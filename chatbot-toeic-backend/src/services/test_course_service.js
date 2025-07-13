@@ -7,7 +7,7 @@ const getAllTestsWithCourses = async () => {
     try{
         const testList = await Test.findAll({
             order: [['id', 'ASC']],
-            attributes: ['id', 'title', 'duration', 'participants','comments','questions', 'parts'],
+            attributes: ['id', 'title', 'duration', 'participants','comments','questions'],
             include:{
                 model: Course,
                 attributes: ['name'],
@@ -21,13 +21,13 @@ const getAllTestsWithCourses = async () => {
             participants: test.participants,
             comments: test.comments,
             questions: test.questions,
-            parts: test.parts,
+         
             tags: test.Courses.map(course => course.name),
         }));
         return formattedTests;
-    }catch{
-        console.error('Error fetching tests with Courses', err);
-        throw err;
+    }catch (error){
+        console.error('Error fetching tests with Courses', error);
+        throw error;
     }
 
 };

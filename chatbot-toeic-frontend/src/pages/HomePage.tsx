@@ -101,7 +101,7 @@ export default function HomePage() {
         <div className="test-grid">
           {tests.map((test) => (
             <CardTest
-              key={test.id}
+              id={test.id}
               title={test.title}
               duration={test.duration}
               participants={test.participants}

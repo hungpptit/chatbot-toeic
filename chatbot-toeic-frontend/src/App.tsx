@@ -32,6 +32,7 @@ function AppContent() {
           <Route path="/vocab" element={<VocabularyPage />} />
           <Route path="/login" element={<LoginSignup />} />
           <Route path="/TestExam" element={<TestExam />} />
+          <Route path="/TestExam/:id" element={<TestExam />} />
           <Route path="*" element={<HomePage />} />
         </Routes>
       </div>
