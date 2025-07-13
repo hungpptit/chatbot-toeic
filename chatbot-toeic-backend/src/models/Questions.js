@@ -4,14 +4,16 @@ import { Model } from 'sequelize';
 export default (sequelize, DataTypes) => {
   class Question extends Model {
     static associate(models) {
-      // Mối quan hệ với bảng Tests
-      Question.belongsTo(models.Test, {
-        foreignKey: 'testId',
-        as: 'test',
-      });
+    
       Question.hasMany(models.UserResult, { foreignKey: 'questionId', as: 'userResults' });
       Question.belongsTo(models.QuestionType, { foreignKey: 'typeId', as: 'questionType' });
       Question.belongsTo(models.Part, { foreignKey: 'partId', as: 'part' });
+      Question.belongsToMany(models.Test, {
+        through: 'TestQuestions',
+        foreignKey: 'questionId',
+        otherKey: 'testId',
+        as: 'tests',
+      });
     
     }
   }
@@ -49,16 +51,7 @@ export default (sequelize, DataTypes) => {
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
     },
-    testId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Tests',
-        key: 'id',
-      },
-      onDelete: 'CASCADE',
-      onUpdate: 'CASCADE',
-    },
+    
   }, {
     sequelize,
     modelName: 'Question',

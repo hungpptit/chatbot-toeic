@@ -1,5 +1,6 @@
 import "../styles/cardQuestion.css";
 import { useState } from "react";
+import type { Question as QuestionItem } from "../services/question_test_services";
 
 export interface QuestionType {
   id: number;
@@ -12,33 +13,39 @@ export interface Part {
   name: string;
 }
 
-export type QuestionItem = {
-  id: number;
-  question: string;
-  optionA: string;
-  optionB: string;
-  optionC: string;
-  optionD: string;
-  correctAnswer: string;
-  explanation: string;
-  typeId: number;
-  partId: number;
-  testId: number;
-  questionType: QuestionType;
-  part: Part;
-};
+// export type QuestionItem = {
+//   id: number;
+//   question: string;
+//   optionA: string;
+//   optionB: string;
+//   optionC: string;
+//   optionD: string;
+//   correctAnswer: string;
+//   explanation: string;
+//   typeId: number;
+//   partId: number;
+//   questionType: QuestionType;
+//   part: Part;
+// };
 
 type CardQuestionProps = {
   item: QuestionItem;
   index: number;
+  onAnswer: (questionNumber: number, isAnswered: boolean) => void;
 };
 
-export default function CardQuestion({ index, item }: CardQuestionProps) {
+export default function CardQuestion({ index, item , onAnswer}: CardQuestionProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState<string>("");
 
   const handleSelect = (option: string) => {
     setSelected(option);
+    onAnswer(index, true);
+  };
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+    onAnswer(index, value.trim() !== "");
   };
 
   return (
@@ -63,7 +70,7 @@ export default function CardQuestion({ index, item }: CardQuestionProps) {
             type="text"
             placeholder="Your answer..."
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={handleInputChange}
           />
         </div>
       )}

@@ -24,7 +24,7 @@ export interface Question {
   explanation: string;
   typeId: number;
   partId: number;
-  testId: number;
+  
   questionType: QuestionType;
   part: Part;
 }

@@ -1,12 +1,17 @@
 import "../styles/Test_exam.css";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation  } from "react-router-dom";
 import CardQuestion from "../components/Card Question";
 import { useEffect, useState } from "react";
 import { getQuestionsByTestIdAPI, type Question } from "../services/question_test_services";
+import ExamSidebar from "../components/ExamSidebar";
 
 export default function TestExam() {
   const [questionData, setQuestionData] = useState<Question[]>([]);
   const { id } = useParams();
+  const [answeredQuestions, setAnsweredQuestions] = useState<number[]>([]);
+  const location = useLocation();
+  const testTitle = location.state?.title || "New Economy TOEIC Test";
+
 
 
   useEffect(() => {
@@ -22,12 +27,18 @@ export default function TestExam() {
 
     fetchQuestions();
   }, []);
+  const handleJumpToQuestion = (num: number) => {
+    const target = document.getElementById(`question-${num}`);
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <div className="test-page">
       <div className="test-container">
-        <div className="test1">New Economy TOEIC Test 5</div>
-        <div className="test2">2</div>
+        <div className="test1">{testTitle}</div>
+        <div className="test2">
+             <ExamSidebar answeredQuestions={answeredQuestions} onJumpToQuestion={handleJumpToQuestion} />
+        </div>
         <div className="test3">
           <div className="audio-controls">
             <button>▶</button>
@@ -48,7 +59,22 @@ export default function TestExam() {
 
         <div className="test4">
           {questionData.map((item, index) => (
-            <CardQuestion key={item.id} item={item} index={index + 1} />
+            <div id={`question-${index + 1}`} key={item.id}>
+              <CardQuestion
+                key={item.id}
+                item={item}
+                index={index + 1}
+                onAnswer={(questionNumber, isAnswered) => {
+                  if (isAnswered) {
+                    if (!answeredQuestions.includes(questionNumber)) {
+                      setAnsweredQuestions([...answeredQuestions, questionNumber]);
+                    }
+                  } else {
+                    setAnsweredQuestions(answeredQuestions.filter(q => q !== questionNumber));
+                  }
+                }}
+              />
+            </div>
           ))}
         </div>
       </div>

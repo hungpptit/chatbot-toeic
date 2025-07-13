@@ -1,0 +1,67 @@
+.exam-sidebar {
+  background: white;
+  padding: 16px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  font-family: sans-serif;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.exam-time p {
+  margin: 0;
+}
+
+.time-value {
+  font-weight: bold;
+  font-size: 20px;
+  padding-left: 10px;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 8px;
+  margin-top: 8px;
+  border: 1px solid #3452a2;
+  color: #3452a2;
+  background: white;
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+.restore-btn {
+  color: #d32f2f;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.note-text {
+  color: orange;
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.recording-title {
+  margin-top: 12px;
+  font-weight: bold;
+}
+
+.question-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+  border-radius: 10px;
+}
+
+.question-btn {
+  padding: 8px;
+  border: 1px solid black;
+  background: white;
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+.question-btn.answered {
+  background-color: #4caf50;
+  color: white;
+}

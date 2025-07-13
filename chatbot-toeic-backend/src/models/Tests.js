@@ -4,7 +4,12 @@ import { Model } from 'sequelize';
 export default (sequelize, DataTypes) => {
   class Test extends Model {
     static associate(models) {
-      Test.hasMany(models.Question, { foreignKey: 'testId' });
+      Test.belongsToMany(models.Question, {
+        through: 'TestQuestions',
+        foreignKey: 'testId',
+        otherKey: 'questionId',
+        as: 'questions',
+      });
       Test.belongsToMany(models.Course, { through: 'Test_Courses', foreignKey: 'testId' });
     }
   }
@@ -15,7 +20,7 @@ export default (sequelize, DataTypes) => {
     duration: DataTypes.STRING,
     participants: DataTypes.INTEGER,
     comments: DataTypes.INTEGER,
-    questions: DataTypes.INTEGER,
+   
  
   }, {
     sequelize,

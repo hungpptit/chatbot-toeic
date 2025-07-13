@@ -18,7 +18,7 @@ const CardTest: React.FC<CardTestProps> = ({
   const navigate = useNavigate();
 
   return (
-    <div className="test-card" onClick={() => navigate(`/TestExam/${id}`)}>
+    <div className="test-card" onClick={() => navigate(`/TestExam/${id}`, { state: { title } })}>
       <h3>{title}</h3>
       <p>⏱ {duration} | 👥 {participants.toLocaleString()} | 💬 {comments}</p>
       <p>{parts} phần thi | {questions} câu hỏi</p>
