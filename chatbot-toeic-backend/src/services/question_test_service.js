@@ -32,6 +32,64 @@ export const RandomQuestionsByTestId = async (testId, limit = 40) => {
   }
 };
 
+// nộp bài 
+export const SubmitTestResult = async ({ userId, testId, answers }) => {
+  return await db.sequelize.transaction(async (transaction) => {
+    let correctCount = 0;
+    const incorrectAnswers = [];
+
+    const validQuestions = await db.TestQuestion.findAll({
+      where: { testId },
+      attributes: ['questionId'],
+      transaction,
+    });
+
+    const validQuestionIds = validQuestions.map(q => q.questionId);
+    const filteredAnswers = answers.filter(a => validQuestionIds.includes(a.questionId));
+
+    const resultsToSave = [];
+
+    for (const { questionId, selectedAnswer } of filteredAnswers) {
+      const question = await db.Question.findByPk(questionId, { transaction });
+
+      if (!question) continue;
+
+      const isCorrect = question.correctAnswer === selectedAnswer;
+
+      resultsToSave.push({
+        userId,
+        questionId,
+        isCorrect,
+        answeredAt: new Date(),
+      });
+
+      if (isCorrect) {
+        correctCount++;
+      } else {
+        incorrectAnswers.push({
+          questionId,
+          correctAnswer: question.correctAnswer,
+          selectedAnswer,
+          explanation: question.explanation,
+        });
+      }
+    }
+
+    if (resultsToSave.length > 0) {
+      await db.UserResult.bulkCreate(resultsToSave, { transaction });
+    }
+
+    return {
+      correctCount,
+      total: filteredAnswers.length,
+      incorrectAnswers,
+    };
+  });
+};
+
+
+
+
 
 
 // export default {

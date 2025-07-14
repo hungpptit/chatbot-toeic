@@ -59,3 +59,22 @@
   font-weight: 700;
   color: #dc2626;
 }
+
+
+
+.card-option.correct {
+  background-color: #4caf50;
+  color: white;
+}
+
+
+
+.card-option.incorrect {
+  background-color: #f44336;
+  color: white;
+}
+
+.card-option.correct-answer {
+  background-color: #2196f3; /* xanh dương */
+  color: white;
+}

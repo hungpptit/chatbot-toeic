@@ -65,3 +65,17 @@
   background-color: #4caf50;
   color: white;
 }
+.question-btn.correct {
+  background: #4caf50 !important;
+  color: white;
+}
+
+.question-btn.incorrect {
+  background: #f44336 !important;
+  color: white;
+}
+
+.question-btn.correct-answer {
+  background: #2196f3 !important;
+  color: white;
+}

@@ -1,5 +1,4 @@
 import "../styles/cardQuestion.css";
-import { useState } from "react";
 import type { Question as QuestionItem } from "../services/question_test_services";
 
 export interface QuestionType {
@@ -13,72 +12,92 @@ export interface Part {
   name: string;
 }
 
-// export type QuestionItem = {
-//   id: number;
-//   question: string;
-//   optionA: string;
-//   optionB: string;
-//   optionC: string;
-//   optionD: string;
-//   correctAnswer: string;
-//   explanation: string;
-//   typeId: number;
-//   partId: number;
-//   questionType: QuestionType;
-//   part: Part;
-// };
-
 type CardQuestionProps = {
   item: QuestionItem;
   index: number;
+  selectedAnswer: string | null;
   onAnswer: (questionNumber: number, isAnswered: boolean) => void;
+  onSelectAnswer: (questionId: number, selected: string) => void;
+  showResult: boolean;
+  incorrectAnswer: {
+    questionId: number;
+    correctAnswer: string;
+    selectedAnswer: string;
+    explanation: string;
+  } | null;
 };
 
-export default function CardQuestion({ index, item , onAnswer}: CardQuestionProps) {
-  const [selected, setSelected] = useState<string | null>(null);
-  const [inputValue, setInputValue] = useState<string>("");
-
+export default function CardQuestion({
+  index,
+  item,
+  selectedAnswer,
+  onAnswer,
+  onSelectAnswer,
+  showResult,
+  incorrectAnswer
+}: CardQuestionProps) {
   const handleSelect = (option: string) => {
-    setSelected(option);
+    if (showResult) return;
+    onSelectAnswer(item.id, option);
     onAnswer(index, true);
   };
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setInputValue(value);
-    onAnswer(index, value.trim() !== "");
-  };
+
+  const isCorrect = selectedAnswer === item.correctAnswer;
 
   return (
     <div className="card-container">
-      <h2 className="card-question">{index}. {item.question}</h2>
+      <h2 className="card-question">
+        {index}. {item.question}
+      </h2>
 
       {item.questionType.name === "Multiple Choice" ? (
         <div className="card-options">
-          {["A", "B", "C", "D"].map((opt) => (
-            <button
-              key={opt}
-              className={`card-option ${selected === opt ? "selected" : ""}`}
-              onClick={() => handleSelect(opt)}
-            >
-              {opt}. {item[`option${opt}` as "optionA" | "optionB" | "optionC" | "optionD"]}
-            </button>
-          ))}
+          {["A", "B", "C", "D"].map((opt) => {
+          let className = "card-option";
+
+          if (showResult) {
+            if (opt === item.correctAnswer) {
+              if (opt === selectedAnswer) {
+                className += " correct"; // Bạn chọn đúng → xanh lá
+              } else {
+                className += " correct-answer"; // Không chọn nhưng là đáp án đúng → xanh dương
+              }
+            } else if (opt === selectedAnswer) {
+              className += " incorrect"; // Bạn chọn sai → đỏ
+            }
+          } else {
+            if (opt === selectedAnswer) {
+              className += " selected"; // Khi chưa submit
+            }
+          }
+
+
+            return (
+              <button
+                key={opt}
+                className={className}
+                onClick={() => handleSelect(opt)}
+                disabled={showResult}
+              >
+                {opt}. {item[`option${opt}` as "optionA" | "optionB" | "optionC" | "optionD"]}
+              </button>
+            );
+          })}
         </div>
       ) : (
         <div className="card-input">
-          <input
-            type="text"
-            placeholder="Your answer..."
-            value={inputValue}
-            onChange={handleInputChange}
-          />
+          <input type="text" placeholder="Your answer..." disabled />
         </div>
       )}
 
-      {/* <div className="card-explanation">
-        <p>Correct Answer: <span className="card-correct">{item.correctAnswer}</span></p>
-        <p>Explanation: {item.explanation}</p>
-      </div> */}
+      {showResult && incorrectAnswer && (
+        <div className="card-explanation">
+          <p>
+            Correct Answer: <span className="card-correct">{incorrectAnswer.correctAnswer}</span>
+          </p>
+          <p>Explanation: {incorrectAnswer.explanation}</p>
+        </div>
+      )}
     </div>
   );
 }
