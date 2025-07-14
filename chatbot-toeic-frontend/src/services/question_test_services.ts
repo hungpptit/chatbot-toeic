@@ -59,8 +59,10 @@ export const submitTestAPI = async (
 ): Promise<SubmitResult> => {
   const response = await axios.post<SubmitResult>(
     `${API_BASE_URL}/Submit/${testId}`,
+
     { answers },
     { withCredentials: true }
   );
+  console.log("check data gửi lên: ", response.data);
   return response.data;
 };

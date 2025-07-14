@@ -7,6 +7,8 @@ export default (sequelize, DataTypes) => {
       User.hasMany(models.UserVocabulary, { foreignKey: 'userId' });
       User.hasMany(models.UserResult, { foreignKey: 'userId' });
       User.hasMany(models.Log, { foreignKey: 'userId' });
+      User.hasMany(models.UserTest, { foreignKey: 'userId' });
+
     }
   }
 

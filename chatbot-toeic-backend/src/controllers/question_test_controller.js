@@ -1,5 +1,5 @@
 
-import { RandomQuestionsByTestId, SubmitTestResult}  from '../services/question_test_service.js';
+import { RandomQuestionsByTestId, SubmitTestResult, CheckUserHasDoneTestDetailed, GetUserTestDetailById}  from '../services/question_test_service.js';
 
 // Controller: Lấy danh sách câu hỏi ngẫu nhiên theo testId
 const getQuestionsByTest = async (req, res) => {
@@ -39,7 +39,47 @@ const submitTest = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+const checkUserTestDetailed = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { testId } = req.params;
+
+    const result = await CheckUserHasDoneTestDetailed({ userId, testId });
+
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Error checking user test:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const getUserTestDetailId = async (req, res) => {
+  try {
+    // const userId = req.user.id;
+    const { userTestId } = req.params;
+    console.log("test userTestId: ", userTestId);
+    if (!userTestId) {
+      return res.status(400).json({ message: 'Missing userTestId' });
+    }
+
+    const result = await GetUserTestDetailById( userTestId );
+
+    return res.status(200).json({
+      message: 'Fetched test details successfully',
+      data: result
+    });
+  } catch (err) {
+    console.error('Error fetching user test detail:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
 export {
   getQuestionsByTest,
-  submitTest
+  submitTest,
+  checkUserTestDetailed,
+  getUserTestDetailId
 };

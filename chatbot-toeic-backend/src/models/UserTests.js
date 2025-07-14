@@ -2,15 +2,15 @@
 import { Model } from 'sequelize';
 
 export default (sequelize, DataTypes) => {
-  class UserResult extends Model {
+  class UserTest extends Model {
     static associate(models) {
-      UserResult.belongsTo(models.UserTest, { foreignKey: 'userTestId' });
-      UserResult.belongsTo(models.User, { foreignKey: 'userId' });
-      UserResult.belongsTo(models.Question, { foreignKey: 'questionId' });
+      UserTest.belongsTo(models.User, { foreignKey: 'userId' });
+      UserTest.belongsTo(models.Test, { foreignKey: 'testId' });
+       UserTest.hasMany(models.UserResult, { foreignKey: 'userTestId' });
     }
   }
 
-  UserResult.init({
+  UserTest.init({
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -26,44 +26,38 @@ export default (sequelize, DataTypes) => {
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
     },
-    userTestId: {
+    testId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'UserTests',
+        model: 'Tests',
         key: 'id',
       },
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
     },
-    questionId: {
+    score: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Questions',
-        key: 'id',
-      },
-      onDelete: 'CASCADE',
-      onUpdate: 'CASCADE',
+      allowNull: true,
     },
-    isCorrect: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-    answeredAt: {
+    startedAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
-    selectedOption: {
-      type: DataTypes.STRING(10),
+    completedAt: {
+      type: DataTypes.DATE,
       allowNull: true,
     },
+    status: {
+    type: DataTypes.ENUM('unfinished', 'completed'),
+    defaultValue: 'unfinished',
+    }
   }, {
     sequelize,
-    modelName: 'UserResult',
-    tableName: 'UserResults',
+    modelName: 'UserTest',
+    tableName: 'UserTests',
     timestamps: false,
   });
 
-  return UserResult;
+  return UserTest;
 };
