@@ -17,6 +17,8 @@ const CardTest: React.FC<CardTestProps> = ({
 }) => {
   const navigate = useNavigate();
 
+
+
   return (
     <div className="test-card" onClick={() => navigate(`/TestExam/${id}`, { state: { title } })}>
       <h3>{title}</h3>
@@ -27,7 +29,11 @@ const CardTest: React.FC<CardTestProps> = ({
           <span className="tag" key={index}>#{tag}</span>
         ))}
       </div>
-      <button className="result-button">Xem kết quả</button>
+      <button className="result-button" onClick={(e) =>{ e.stopPropagation();
+         navigate(`/TestReview/${id}`, { state: { title } })
+         }}
+         >
+          Xem kết quả</button>
     </div>
   );
 };

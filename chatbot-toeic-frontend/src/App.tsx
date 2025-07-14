@@ -6,6 +6,7 @@ import ChatPage from './container/ChatPage';
 import VocabularyPage from './container/VocabularyPage';
 import LoginSignup from './container/login_signup';
 import TestExam from './container/test_exam';
+import TestReview from './container/test_review';
 
 const GOOGLE_CLIENT_ID = '1029337181318-1skvm4fd9cg3ehpvqu8t6m6q5lkbfk5o.apps.googleusercontent.com'; // ← Thay bằng client ID thực tế
 
@@ -33,6 +34,8 @@ function AppContent() {
           <Route path="/login" element={<LoginSignup />} />
           <Route path="/TestExam" element={<TestExam />} />
           <Route path="/TestExam/:id" element={<TestExam />} />
+          <Route path="/TestReview" element={<TestReview />} />
+          <Route path="/TestReview/:id" element={<TestReview />} />
           <Route path="*" element={<HomePage />} />
         </Routes>
       </div>

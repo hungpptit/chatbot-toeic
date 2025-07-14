@@ -1,102 +1,32 @@
 export const mockTests = [
-  {
-    id: 1,
-    title: "IELTS Simulation Listening test 1",
-    duration: "40 phút",
-    participants: 1097730,
-    comments: 3038,
-    questions: 40,
-    parts: 4,
-    tags: ["IELTS Academic", "Listening"]
+   {
+    date: '10/01/2025',
+    tags: ['Luyện tập', 'Recording 4'],
+    score: '1/10',
+    time: '0:01:26'
   },
   {
-    id: 2,
-    title: "IELTS Simulation Listening test 2",
-    duration: "40 phút",
-    participants: 453180,
-    comments: 879,
-    questions: 40,
-    parts: 4,
-    tags: ["IELTS Academic", "Listening"]
+    date: '10/01/2025',
+    tags: ['Luyện tập', 'Recording 3'],
+    score: '4/10',
+    time: '1:27:14'
   },
   {
-    id: 3,
-    title: "IELTS Simulation Listening test 3",
-    duration: "40 phút",
-    participants: 297759,
-    comments: 498,
-    questions: 40,
-    parts: 4,
-    tags: ["IELTS Academic", "Listening"]
+    date: '09/01/2025',
+    tags: ['Luyện tập', 'Recording 2'],
+    score: '5/10',
+    time: '0:44:35'
   },
   {
-    id: 4,
-    title: "IELTS Simulation Listening test 4",
-    duration: "40 phút",
-    participants: 230670,
-    comments: 435,
-    questions: 40,
-    parts: 4,
-    tags: ["IELTS Academic", "Listening"]
+    date: '09/01/2025',
+    tags: ['Luyện tập', 'Recording 1'],
+    score: '9/10',
+    time: '0:16:09'
   },
   {
-    id: 5,
-    title: "IELTS Simulation Listening test 5",
-    duration: "40 phút",
-    participants: 201996,
-    comments: 337,
-    questions: 40,
-    parts: 4,
-    tags: ["IELTS Academic", "Listening"]
-  },
-  {
-    id: 6,
-    title: "IELTS Simulation Listening test 6",
-    duration: "40 phút",
-    participants: 180066,
-    comments: 317,
-    questions: 40,
-    parts: 4,
-    tags: ["IELTS Academic", "Listening"]
-  },
-  {
-    id: 7,
-    title: "IELTS Simulation Listening test 7",
-    duration: "40 phút",
-    participants: 129879,
-    comments: 238,
-    questions: 40,
-    parts: 4,
-    tags: ["IELTS Academic", "Listening"]
-  },
-  {
-    id: 8,
-    title: "IELTS Simulation Listening test 8",
-    duration: "40 phút",
-    participants: 102003,
-    comments: 192,
-    questions: 40,
-    parts: 4,
-    tags: ["IELTS Academic", "Listening"]
-  },
-  {
-    id: 9,
-    title: "IELTS Simulation Listening test 9",
-    duration: "40 phút",
-    participants: 85621,
-    comments: 134,
-    questions: 40,
-    parts: 4,
-    tags: ["IELTS Academic", "Listening"]
-  },
-  {
-    id: 10,
-    title: "IELTS Simulation Listening test 10",
-    duration: "40 phút",
-    participants: 364275,
-    comments: 902,
-    questions: 40,
-    parts: 4,
-    tags: ["IELTS Academic", "Listening"]
+    date: '06/01/2025',
+    tags: ['Luyện tập', 'Recording 1'],
+    score: '4/10',
+    time: '0:13:42'
   }
 ];
