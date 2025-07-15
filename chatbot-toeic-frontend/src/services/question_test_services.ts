@@ -64,6 +64,30 @@ export interface UserTestHistory {
   userTestId: number;
 }
 
+export interface UserTestDetailItem {
+  questionId: number;
+  question: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  typeId: number;
+  partId:number;
+  selectedOption: string | null;
+  isCorrect: boolean;
+  correctAnswer: string;
+  explanation: string;
+  answeredAt: string; // ISO Date string
+}
+
+export interface UserTestDetailResult {
+  totalQuestions: number;
+  correctCount: number;
+  incorrectCount: number;
+  skippedCount: number;
+  details: UserTestDetailItem[];
+}
+
 // ======================== APIS ========================
 
 // Lấy danh sách câu hỏi theo testId
@@ -111,6 +135,21 @@ export const getUserTestHistoryByTestIdAPI = async (testId: number) => {
     return res.data.data;
   } catch (error: any) {
     console.error("Error fetching test history:", error);
+    throw error.response?.data || { message: "Unknown error" };
+  }
+};
+
+
+export const getUserTestDetailByIdAPI = async (userTestId: number): Promise<UserTestDetailResult> => {
+  try {
+    const response = await axios.get<{ message: string; data: UserTestDetailResult }>(
+      `${API_BASE_URL}/DetailResult/${userTestId}`,
+      { withCredentials: true }
+    );
+    console.log("test data nhận từ api: " ,response.data.data);
+    return response.data.data;
+  } catch (error: any) {
+    console.error("Error fetching user test details:", error);
     throw error.response?.data || { message: "Unknown error" };
   }
 };

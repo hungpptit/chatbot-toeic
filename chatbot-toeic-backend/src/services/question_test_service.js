@@ -179,7 +179,7 @@ export const GetUserTestDetailById = async (userTestId) => {
       attributes: ['questionId', 'selectedOption', 'isCorrect', 'answeredAt'],
       include: [{
         model: db.Question,
-        attributes: ['correctAnswer', 'explanation']
+        attributes: ['question','optionA','optionB','optionC', 'optionD','correctAnswer', 'explanation','typeId','partId']
       }]
     });
 
@@ -200,6 +200,13 @@ export const GetUserTestDetailById = async (userTestId) => {
 
       details.push({
         questionId: result.questionId,
+        question: result.Question.question,
+        optionA: result.Question.optionA,
+        optionB: result.Question.optionB,
+        optionC: result.Question.optionC,
+        optionD: result.Question.optionD,
+        typeId : result.Question.typeId,
+        partId : result.Question.partId,
         selectedOption: result.selectedOption,
         isCorrect: result.isCorrect,
         correctAnswer: result.Question.correctAnswer,

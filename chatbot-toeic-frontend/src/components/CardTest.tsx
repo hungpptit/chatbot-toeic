@@ -20,7 +20,7 @@ const CardTest: React.FC<CardTestProps> = ({
 
 
   return (
-    <div className="test-card" onClick={() => navigate(`/TestExam/${id}`, { state: { title } })}>
+    <div className="test-card" onClick={() => navigate(`/TestExam/${id}`, { state: { title, mode: "exam" } })}>
       <h3>{title}</h3>
       <p>⏱ {duration} | 👥 {participants.toLocaleString()} | 💬 {comments}</p>
       <p>{parts} phần thi | {questions} câu hỏi</p>

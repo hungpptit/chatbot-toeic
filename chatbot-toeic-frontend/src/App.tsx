@@ -32,8 +32,10 @@ function AppContent() {
           <Route path="/chat/:conversationId" element={<ChatPage />} />
           <Route path="/vocab" element={<VocabularyPage />} />
           <Route path="/login" element={<LoginSignup />} />
-          <Route path="/TestExam" element={<TestExam />} />
-          <Route path="/TestExam/:id" element={<TestExam />} />
+          <Route path="/TestExam" element={<TestExam mode="exam" />} />
+          <Route path="/TestExam/:id" element={<TestExam mode="exam" />} />
+          <Route path="/test-review-detail/:userTestId" element={<TestExam mode="review" />} />
+
           <Route path="/TestReview" element={<TestReview />} />
           <Route path="/TestReview/:testId" element={<TestReview />} />
           <Route path="*" element={<HomePage />} />

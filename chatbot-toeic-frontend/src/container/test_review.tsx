@@ -1,5 +1,5 @@
 import "../styles/testReview.css";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getUserTestHistoryByTestIdAPI } from "../services/question_test_services";
 
@@ -67,7 +67,9 @@ export default function TestReview() {
                     <td>{item.score}</td>
                     <td>{item.duration}</td>
                     <td>
-                      <a href="#">Xem chi tiết</a>
+                      <Link to={`/test-review-detail/${item.userTestId}`} state={{ mode: "review" }}>
+                        Xem chi tiết
+                      </Link>
                     </td>
                   </tr>
                 ))

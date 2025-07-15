@@ -42,7 +42,7 @@ export default function CardQuestion({
     onAnswer(index, true);
   };
 
-  const isCorrect = selectedAnswer === item.correctAnswer;
+  // const isCorrect = selectedAnswer === item.correctAnswer;
 
   return (
     <div className="card-container">
@@ -50,7 +50,7 @@ export default function CardQuestion({
         {index}. {item.question}
       </h2>
 
-      {item.questionType.name === "Multiple Choice" ? (
+      {item.typeId === 1 ? (
         <div className="card-options">
           {["A", "B", "C", "D"].map((opt) => {
           let className = "card-option";
