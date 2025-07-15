@@ -1,5 +1,7 @@
 import db from '../models/index.js';
-
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
 
 export const RandomQuestionsByTestId = async (testId, limit = 40) => {
   try {
@@ -38,15 +40,23 @@ export const SubmitTestResult = async ({ userId, testId, answers }) => {
     let correctCount = 0;
     const incorrectAnswers = [];
 
-    // 1. Tạo UserTest
-    const userTest = await db.UserTest.create({
-      userId,
-      testId,
-      status: 'completed',
-      startedAt: new Date(),
-      completedAt: new Date(),
-      score: 0
-    }, { transaction });
+    // 1. Lấy UserTest đã được tạo khi bắt đầu làm bài
+    let userTest = await db.UserTest.findOne({
+      where: { userId, testId, status: 'in_progress' },
+      order: [['startedAt', 'DESC']], // lấy lần làm mới nhất
+      transaction
+    });
+
+    // Nếu chưa có (trường hợp cũ), thì tạo mới
+    if (!userTest) {
+      userTest = await db.UserTest.create({
+        userId,
+        testId,
+        status: 'in_progress',
+        startedAt: new Date(), // fallback
+        score: 0
+      }, { transaction });
+    }
 
     // 2. Lấy danh sách questionId hợp lệ
     const validQuestions = await db.TestQuestion.findAll({
@@ -93,18 +103,16 @@ export const SubmitTestResult = async ({ userId, testId, answers }) => {
     }
 
     // 5. Tính score thang điểm 10
-    const totalQuestions = filteredAnswers.length || 1; // tránh chia 0
-    const score = Math.round((correctCount / totalQuestions) * 10 * 10) / 10; // làm tròn 1 chữ số
+    const totalQuestions = filteredAnswers.length || 1;
+    const score = Math.round((correctCount / totalQuestions) * 10 * 10) / 10;
 
+    console.log("DEBUG:", { correctCount, totalQuestions, score });
 
-    console.log("DEBUG:", {
-      correctCount,
-      totalQuestions,
-      score
-    });
-    // 6. Update UserTest
+    // 6. Update UserTest: chỉ cập nhật completedAt + score + status
     await userTest.update({
-      score
+      score,
+      completedAt: new Date(),
+      status: 'completed'
     }, { transaction });
 
     return {
@@ -117,6 +125,20 @@ export const SubmitTestResult = async ({ userId, testId, answers }) => {
   });
 };
 
+export const StartUserTest = async ({ userId, testId }) => {
+  const userTest = await db.UserTest.create({
+    userId,
+    testId,
+    status: 'in_progress',
+    startedAt: new Date(),
+    score: 0
+  });
+
+  return {
+    userTestId: userTest.id,
+    message: 'Test started successfully'
+  };
+};
 
 export const CheckUserHasDoneTestDetailed = async ({ userId, testId }) => {
   try {
@@ -199,6 +221,75 @@ export const GetUserTestDetailById = async (userTestId) => {
   }
 };
 
+
+
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+//convert về giờ VN (UTC+7)
+const VN_TIMEZONE = 'Asia/Ho_Chi_Minh';
+export const GetUserTestHistoryByTestId = async ({ userId, testId }) => {
+  try {
+    const userTests = await db.UserTest.findAll({
+      where: { userId, testId },
+      attributes: ['id', 'startedAt', 'completedAt'],
+      order: [['startedAt', 'DESC']]
+    });
+
+    if (!userTests || userTests.length === 0) {
+      return { message: 'No history found', data: [] };
+    }
+
+    //  Lấy tất cả kết quả UserResult một lần
+    const userTestIds = userTests.map(t => t.id);
+    const allResults = await db.UserResult.findAll({
+      where: { userTestId: userTestIds },
+      attributes: ['userTestId', 'isCorrect']
+    });
+
+    //  Gom kết quả theo userTestId
+    const resultMap = {};
+    for (const r of allResults) {
+      if (!resultMap[r.userTestId]) {
+        resultMap[r.userTestId] = { total: 0, correct: 0 };
+      }
+      resultMap[r.userTestId].total++;
+      if (r.isCorrect) resultMap[r.userTestId].correct++;
+    }
+
+    const data = [];
+    for (const test of userTests) {
+      const started = dayjs(test.startedAt).tz(VN_TIMEZONE);
+      const completed = test.completedAt
+        ? dayjs(test.completedAt).tz(VN_TIMEZONE)
+        : started; // Nếu chưa có completedAt thì để bằng started để tránh sai lệch
+
+      const durationInSec = completed.diff(started, 'second');
+      const formattedDuration = new Date(durationInSec * 1000)
+        .toISOString()
+        .substr(11, 8); // HH:mm:ss
+
+      const totalQuestions = resultMap[test.id]?.total || 0;
+      const correctCount = resultMap[test.id]?.correct || 0;
+
+      data.push({
+        date: started.format('DD/MM/YYYY'),
+        score: `${correctCount}/${totalQuestions}`,
+        duration: formattedDuration,
+        userTestId: test.id
+      });
+    }
+
+    return {
+      message: 'Success',
+      data
+    };
+  } catch (error) {
+    console.error('Error fetching user test history:', error);
+    throw error;
+  }
+};
 
 
 

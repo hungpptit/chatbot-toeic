@@ -7,6 +7,7 @@ interface ExamSidebarProps {
   onSubmit: () => void;
   showResult: boolean;
   correctCount: number;
+  startTime: Date | null;
 }
 
 const ExamSidebar: React.FC<ExamSidebarProps> = ({
@@ -15,27 +16,40 @@ const ExamSidebar: React.FC<ExamSidebarProps> = ({
   onSubmit,
   showResult,
   correctCount,
+  startTime,
 }) => {
   const totalQuestions = 40;
-  const examDuration = 45 * 60;
+  const examDuration = 45 * 60; // 45 phút
   const questionNumbers = Array.from({ length: totalQuestions }, (_, i) => i + 1);
+
   const [timeLeft, setTimeLeft] = useState(examDuration);
   const [finalTime, setFinalTime] = useState<number | null>(null);
 
-
+  // ✅ Cập nhật ngay khi có startTime (hỗ trợ F5 không mất đồng bộ)
   useEffect(() => {
-    if (showResult) return; 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [showResult]);
+    if (!startTime) return;
+    const updateTimeLeft = () => {
+      const now = new Date();
+      const elapsed = Math.floor((now.getTime() - new Date(startTime).getTime()) / 1000);
+      return Math.max(examDuration - elapsed, 0);
+    };
+
+    setTimeLeft(updateTimeLeft());
+
+    if (!showResult) {
+      const timer = setInterval(() => {
+        setTimeLeft(updateTimeLeft());
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [startTime, showResult]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, "0");
     const s = (seconds % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
+
   const handleSubmit = () => {
     const totalTimeSpent = examDuration - timeLeft;
     setFinalTime(totalTimeSpent);
@@ -47,12 +61,17 @@ const ExamSidebar: React.FC<ExamSidebarProps> = ({
       <div className="exam-time">
         <p>Thời gian làm bài:</p>
         <p className="time-value">
-          {showResult && finalTime !== null ? formatTime(finalTime) : formatTime(timeLeft)}
+          {showResult && finalTime !== null
+            ? formatTime(finalTime)
+            : formatTime(timeLeft)}
         </p>
       </div>
 
-      {!showResult && <button className="submit-btn" onClick={handleSubmit}>NỘP BÀI</button>}
-
+      {!showResult && (
+        <button className="submit-btn" onClick={handleSubmit}>
+          NỘP BÀI
+        </button>
+      )}
 
       {showResult && (
         <div className="exam-result">
@@ -63,14 +82,17 @@ const ExamSidebar: React.FC<ExamSidebarProps> = ({
 
       <p className="restore-btn">Khôi phục/lưu bài làm ➤</p>
       <p className="note-text">
-        <strong>Chú ý:</strong> bạn có thể click vào số thứ tự câu hỏi trong bài để đánh dấu review
+        <strong>Chú ý:</strong> bạn có thể click vào số thứ tự câu hỏi trong bài để
+        đánh dấu review
       </p>
       <div className="recording-title">Recording 4</div>
       <div className="question-grid">
         {questionNumbers.map((num) => (
           <button
             key={num}
-            className={`question-btn ${answeredQuestions.includes(num) ? "answered" : ""}`}
+            className={`question-btn ${
+              answeredQuestions.includes(num) ? "answered" : ""
+            }`}
             onClick={() => onJumpToQuestion(num)}
           >
             {num}

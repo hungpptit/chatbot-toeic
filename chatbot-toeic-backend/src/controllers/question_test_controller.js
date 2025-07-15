@@ -1,5 +1,5 @@
 
-import { RandomQuestionsByTestId, SubmitTestResult, CheckUserHasDoneTestDetailed, GetUserTestDetailById}  from '../services/question_test_service.js';
+import { RandomQuestionsByTestId, SubmitTestResult, CheckUserHasDoneTestDetailed, GetUserTestDetailById, GetUserTestHistoryByTestId,StartUserTest}  from '../services/question_test_service.js';
 
 // Controller: Lấy danh sách câu hỏi ngẫu nhiên theo testId
 const getQuestionsByTest = async (req, res) => {
@@ -30,15 +30,32 @@ const submitTest = async (req, res) => {
 
     res.status(200).json({
       message: 'Submit successful',
+      userTestId: result.userTestId,  
       correctCount: result.correctCount,
       total: result.total,
-      incorrectAnswers: result.incorrectAnswers, // Danh sách câu sai
+      score: result.score,            
+      incorrectAnswers: result.incorrectAnswers 
     });
   } catch (err) {
     console.error('Error submitting test result:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+const startTest = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { testId } = req.params;
+
+    const result = await StartUserTest({ userId, testId });
+
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Error starting test:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 
 const checkUserTestDetailed = async (req, res) => {
   try {
@@ -75,11 +92,30 @@ const getUserTestDetailId = async (req, res) => {
   }
 };
 
+const checkHistoryUserTestDetailed = async (req, res) => {
+  try {
+    const userId = req.user.id; // lấy từ token
+    const { testId } = req.params;
+
+    if (!testId) {
+      return res.status(400).json({ message: 'Missing testId' });
+    }
+
+    const result = await GetUserTestHistoryByTestId({ userId, testId });
+
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error('Error checking user test:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
 
 
 export {
   getQuestionsByTest,
   submitTest,
   checkUserTestDetailed,
-  getUserTestDetailId
+  getUserTestDetailId,
+  checkHistoryUserTestDetailed,
+  startTest
 };
