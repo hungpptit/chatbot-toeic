@@ -1,0 +1,144 @@
+.admin-page {
+    display: flex;
+    justify-content: center;      
+    align-items: flex-start;     
+    height: 100%;          
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 100%;     
+    max-height: 100%;  
+}
+
+.admin-container {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 2fr 8fr;
+    grid-template-rows: repeat(8, 1fr);
+    gap: 8px; 
+    transition: grid-template-columns 0.3s ease;
+  
+}
+.admin-container.collapsed {
+  grid-template-columns: 60px 1fr; /* ✅ Khi thu gọn */
+}
+
+/* ========================================================= */
+
+.admin-sidebar{
+  /* grid-column: span 2 / span 2; */
+  grid-row: span 8 / span 8;
+  border: 2px solid #4caf50;
+  border-radius: 8px;  
+  box-sizing: border-box;
+  background-color: #ace6a0;
+  color: #000;
+  padding: 50px 10px 10px 10px;
+  position: relative;
+  transition: width 0.5s ease, padding 0.5s ease;
+}
+.sidebar-toggle {
+  position: absolute;         
+  top: 10px;
+  right: 10px;
+  background: #1f2937;       
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  color: #fff;
+  transition: background 0.3s;
+}
+.sidebar-toggle:hover {
+  background: #475569;       
+}
+
+.admin-sidebar.collapsed .sidebar-toggle {
+  right: auto;        /* ✅ Sát viền phải */
+  left: 50%;
+  transform: translateX(-50%); /* ✅ Đẩy toggle ra ngoài một nửa */
+  /* background-color: transparent;
+  color: #000; */
+}
+
+.admin-sidebar.collapsed {
+  width: 60px; 
+  overflow: hidden;
+  padding: 50px 5px 10px 5px;
+  /* overflow: visible; */
+}
+
+
+.sidebar-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #38bdf8;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+/* Menu chính */
+.sidebar-item {
+  margin-bottom: 10px;
+}
+
+.sidebar-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  background: #01932f;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.admin-sidebar.collapsed .sidebar-main {
+  justify-content: center; 
+}
+
+.sidebar-main:hover {
+  background: #475569;
+}
+
+.sidebar-main span,
+.sidebar-main a {
+  margin-left: 8px;
+  color: #fff;
+  text-decoration: none;
+}
+
+/* Menu con */
+.sidebar-sub {
+  margin-top: 5px;
+  margin-left: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sidebar-sub a {
+  font-size: 14px;
+  color: #000;
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  transition: 0.2s;
+}
+
+.sidebar-sub a:hover {
+  background: #475569;
+  color: #fff;
+}
+
+
+/* =========================================================== */
+
+.admin-content {
+  /* grid-column: span 8 / span 8; */
+  grid-row: span 8 / span 8;
+  /* grid-column-start: 3; */
+  border: 2px solid #4caf50;  
+  border-radius:  8px;
+  box-sizing: border-box;
+  height: 100%;
+}
