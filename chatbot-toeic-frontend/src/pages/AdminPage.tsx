@@ -55,7 +55,7 @@ export default function AdminPage() {
             {!collapsed && openMenu === "users" && (
               <div className="sidebar-sub">
                 <Link to="/admin/users">Danh sách</Link>
-                <Link to="/admin/users/roles">Phân quyền</Link>
+                <Link to="/admin/users/edit">Chỉnh sửa</Link>
               </div>
             )}
           </div>

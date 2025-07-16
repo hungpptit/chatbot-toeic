@@ -1,0 +1,98 @@
+.admin-user-container {
+  max-width: 1000px;
+  margin: 20px auto;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.user-table th,
+.user-table td {
+  padding: 10px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+
+.user-table th {
+  background: #f4f4f4;
+}
+
+.admin-user-actions button {
+  padding: 5px 10px;
+  margin: 0 3px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.admin-user-actions button:hover {
+  opacity: 0.9;
+}
+
+.admin-user-actions .update-role {
+  background: #3498db;
+  color: white;
+}
+
+.admin-user-actions .lock-user {
+  background: #27ae60;
+  color: white;
+}
+
+.admin-user-actions .delete-user {
+  background: #e74c3c;
+  color: white;
+}
+
+.error {
+  color: red;
+  margin: 10px 0;
+}
+
+
+
+.btn-confirm-role {
+  background-color: #3498db !important;
+  color: white !important;
+  border: none;
+}
+
+.btn-confirm-role:hover {
+  background-color: #2980b9 !important;
+}
+
+
+.btn-confirm-delete {
+  background-color: #e74c3c !important;
+  color: white !important;
+  border: none;
+}
+
+.btn-confirm-delete:hover {
+  background-color: #c0392b !important;
+}
+
+
+.btn-confirm-lock {
+  background-color: #f39c12 !important;
+  color: white !important;
+  border: none;
+}
+
+.btn-confirm-lock:hover {
+  background-color: #d35400 !important;
+}
+
+
+.swal-cancel-custom {
+  background-color: #6c757d !important;
+  color: white !important;
+  border: none;
+}
+
+.swal-cancel-custom:hover {
+  background-color: #5a6268 !important;
+}

@@ -1,56 +1,55 @@
 // src/services/adminService.ts
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:8080/api/admin';
 
 export interface User {
   id: number;
   username: string;
   email: string;
-  password: string;
+  password: string; // hoặc có thể bỏ nếu backend không trả
   role_id: number;
   avatar: string | null;
+  status?: boolean; // thêm nếu dùng khoá tài khoản
 }
 
+// Lấy danh sách user
 export const getAllUsersAPI = async (): Promise<User[]> => {
-  // Fake data mô phỏng bảng [ChatbotToeic].[dbo].[Users]
-  return Promise.resolve([
-    {
-      id: 1,
-      username: "admin",
-      email: "admin@gmail.com",
-      password: "hashed_password_1",
-      role_id: 2,
-      avatar: "https://i.pravatar.cc/100?img=1",
-    },
-    {
-      id: 2,
-      username: "nguyenvana",
-      email: "nguyenvana@gmail.com",
-      password: "hashed_password_2",
-      role_id: 1,
-      avatar: "https://i.pravatar.cc/100?img=2",
-    },
-    {
-      id: 3,
-      username: "tranthib",
-      email: "tranthib@gmail.com",
-      password: "hashed_password_3",
-      role_id: 1,
-      avatar: "https://i.pravatar.cc/100?img=3",
-    },
-    {
-      id: 4,
-      username: "lequangc",
-      email: "lequangc@gmail.com",
-      password: "hashed_password_4",
-      role_id: 1,
-      avatar: "https://i.pravatar.cc/100?img=4",
-    },
-    {
-      id: 5,
-      username: "phamthid",
-      email: "phamthid@gmail.com",
-      password: "hashed_password_5",
-      role_id: 1,
-      avatar: "https://i.pravatar.cc/100?img=5",
-    },
-  ]);
+  const response = await axios.get<User[]>(`${API_BASE_URL}/all`, {
+    withCredentials: true
+  });
+  return response.data;
+};
+
+// Cập nhật role
+export const updateUserRoleAPI = async (userId: number, newRoleId: number) => {
+  const response = await axios.put(`${API_BASE_URL}/role`, {
+    userId,
+    newRoleId
+  }, {
+    withCredentials: true
+  });
+  return response.data;
+};
+
+// Xoá user
+export const deleteUserAPI = async (userId: number) => {
+  const response = await axios.request({
+    url: `${API_BASE_URL}`,
+    method: 'DELETE',
+    data: { userId },
+    withCredentials: true
+  });
+  return response.data;
+};
+
+// Khoá / mở user
+export const lockUserAPI = async (userId: number, newStatus: number) => {
+  const response = await axios.put(`${API_BASE_URL}/lock`, {
+    userId,
+    newStatus
+  }, {
+    withCredentials: true
+  });
+  return response.data;
 };

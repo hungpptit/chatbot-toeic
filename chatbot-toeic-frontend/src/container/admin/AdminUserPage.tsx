@@ -1,9 +1,23 @@
+import { useEffect, useState } from "react";
+import{getAllUsersAPI, type User} from '../../services/adminService';
+
+
 export default function AdminUserPage() {
-  const fakeUsers = [
-    { id: 1, username: "admin", email: "admin@gmail.com", role: "Admin" },
-    { id: 2, username: "user1", email: "user1@gmail.com", role: "User" },
-    { id: 3, username: "user2", email: "user2@gmail.com", role: "User" },
-  ];
+    const [users, setUsers] = useState<User[]>([]);
+    useEffect(() => {
+      const fetchUsers = async () => {
+        try {
+          const data = await getAllUsersAPI();
+          setUsers(data);
+        } catch (error) {
+          console.error("Không thể tải danh sách", error);
+        }
+      };
+
+      fetchUsers();
+    }, []);
+
+  // console.log("test data nhận user: ", users);
 
   return (
     <div>
@@ -18,12 +32,13 @@ export default function AdminUserPage() {
           </tr>
         </thead>
         <tbody>
-          {fakeUsers.map((u) => (
+          
+          {users.map((u) => (
             <tr key={u.id}>
               <td>{u.id}</td>
               <td>{u.username}</td>
               <td>{u.email}</td>
-              <td>{u.role}</td>
+              <td>{u.role_id}</td>
             </tr>
           ))}
         </tbody>

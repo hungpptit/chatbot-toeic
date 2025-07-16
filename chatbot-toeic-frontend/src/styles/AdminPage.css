@@ -141,4 +141,6 @@
   border-radius:  8px;
   box-sizing: border-box;
   height: 100%;
+  padding: 10px;
+  overflow-y: auto;
 }

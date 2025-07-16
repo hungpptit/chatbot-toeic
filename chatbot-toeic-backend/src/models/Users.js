@@ -4,10 +4,10 @@ import { Model } from 'sequelize';
 export default (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
-      User.hasMany(models.UserVocabulary, { foreignKey: 'userId' });
-      User.hasMany(models.UserResult, { foreignKey: 'userId' });
-      User.hasMany(models.Log, { foreignKey: 'userId' });
-      User.hasMany(models.UserTest, { foreignKey: 'userId' });
+      User.hasMany(models.UserVocabulary, { foreignKey: 'userId', onDelete: 'CASCADE' });
+      User.hasMany(models.UserResult, { foreignKey: 'userId', onDelete: 'CASCADE' });
+      User.hasMany(models.Log, { foreignKey: 'userId', onDelete: 'CASCADE' });
+      User.hasMany(models.UserTest, { foreignKey: 'userId', onDelete: 'CASCADE' });
 
     }
   }
@@ -33,7 +33,13 @@ export default (sequelize, DataTypes) => {
   role_id: {
     type: DataTypes.INTEGER,
     allowNull: true
-  }
+  },
+  status: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+      
+    }
 }, {
   sequelize,
   modelName: 'User',
