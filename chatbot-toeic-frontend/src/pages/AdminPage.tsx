@@ -78,7 +78,10 @@ export default function AdminPage() {
             {!collapsed && openMenu === "tests" && (
               <div className="sidebar-sub">
                 <Link to="/admin/tests">Danh sách đề</Link>
-                <Link to="/admin/tests/add">Thêm đề mới</Link>
+                <Link
+                  to="/admin/tests/add"
+                  state={{ mode: "add" }}
+                >Thêm đề mới</Link>
               </div>
             )}
           </div>

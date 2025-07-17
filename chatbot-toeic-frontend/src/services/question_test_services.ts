@@ -99,6 +99,21 @@ export const getQuestionsByTestIdAPI = async (testId: number): Promise<Question[
   return response.data;
 };
 
+export const updateQuestionAPI = async (
+  id: number,
+  updatedData: Partial<Question>
+): Promise<Question> => {
+  const response = await axios.put<Question>(
+    `${API_BASE_URL}/update-question`,
+    {
+      id, 
+      ...updatedData
+    },
+    { withCredentials: true }
+  );
+  return response.data;
+};
+
 // Bắt đầu làm bài (gọi khi user nhấn "Bắt đầu")
 export const startTestAPI = async (testId: number): Promise<StartTestResult> => {
   const response = await axios.post<StartTestResult>(

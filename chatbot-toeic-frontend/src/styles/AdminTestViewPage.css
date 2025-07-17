@@ -1,0 +1,234 @@
+/* ======= Phần khung tổng thể ======= */
+.admin-test-view {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.admin-test-view h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 20px;
+  color: #333;
+}
+
+/* ======= Card câu hỏi ======= */
+.card-container {
+  margin-bottom: 20px;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fafafa;
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.card-container:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Card ở chế độ chỉnh sửa */
+.card-container.editing {
+  background: #f9f9f9;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* ======= Tiêu đề câu hỏi ======= */
+.card-question {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #222;
+}
+
+.card-question input {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box; 
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 15px;
+  background: #f9f9f9;
+}
+
+/* ======= Option (lựa chọn đáp án) ======= */
+.card-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.card-option {
+  flex: 1 1 calc(50% - 8px);
+  text-align: left;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 14px;
+  cursor: not-allowed;
+}
+
+/* Khi chỉnh sửa (edit mode) */
+.card-option.edit-mode {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; 
+  gap: 10px;
+  background: #fff;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  flex-wrap: nowrap; 
+}
+
+.card-option.edit-mode input[type="radio"] {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+
+
+.card-option.edit-mode .correct-label {
+  white-space: nowrap; 
+  font-size: 14px;
+  color: #555;
+}
+
+/* Tô màu đáp án đúng */
+.correct-answer {
+  background: #e6f4ea;
+  border-color: #4caf50;
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+/* ======= Input và Textarea ======= */
+.card-container input,
+.card-container textarea {
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  box-sizing: border-box;
+}
+
+.card-container input:focus,
+.card-container textarea:focus {
+  border-color: #4caf50;
+  box-shadow: 0 0 4px rgba(76, 175, 80, 0.5);
+  outline: none;
+}
+
+.card-container textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* ======= Phần giải thích ======= */
+.card-explanation {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #555;
+}
+
+.card-correct {
+  font-weight: bold;
+  color: #4caf50;
+}
+
+/* ======= Nút chỉnh sửa ======= */
+.card-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.edit-btn {
+  background-color: #ffc107;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.edit-btn:hover {
+  background-color: #e0a800;
+}
+
+/* ======= Nút lưu / hủy ======= */
+.save-btn,
+.cancel-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  font-size: 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.save-btn {
+  background: #4caf50;
+  color: white;
+}
+
+.cancel-btn {
+  background: #f44336;
+  color: white;
+}
+
+.save-btn:hover {
+  background: #45a049;
+}
+
+.cancel-btn:hover {
+  background: #e53935;
+}
+
+
+.add-test-header {
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.add-test-header h2 {
+  font-size: 22px;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.add-test-title-input {
+  padding: 8px;
+  width: 100%;
+  max-width: 400px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  outline: none;
+  transition: border-color 0.2s ease-in-out;
+  margin: 0 auto; 
+  display: block; 
+}
+
+.add-test-title-input:focus {
+  border-color: #007bff;
+}

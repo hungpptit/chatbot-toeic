@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from "react";
+// chatbot-toeic-frontend\src\container\admin\AdminTestPage.tsx
+import { useEffect, useState } from "react";
 import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
 import "../../styles/AdminTestPage.css";
 import {getAllTestsAPI, type Test} from '../../services/adminTestService';
+import { useNavigate } from "react-router-dom";
 
 
 export default function AdminTestPage() {
     const [tests, setTests] = useState<Test[]>([]);
+    const navigate = useNavigate();
 
     useEffect(() => {
       const fetchTests = async () => {
@@ -22,12 +25,18 @@ export default function AdminTestPage() {
 
 
 
-  const handleView = (id: number) => {
-    console.log("Xem chi tiết đề", id);
+  const handleView = (id: number, title: string) => {
+    console.log("Xem chi tiết đề", id, title);
+    navigate(`/admin/tests/${id}/view`, {
+      state: { title , mode: "view"}, 
+    });
   };
 
-  const handleEdit = (id: number) => {
-    console.log("Chỉnh sửa đề", id);
+  const handleEdit = (id: number, title: string) => {
+    console.log("Chỉnh sửa đề", id, title);
+    navigate(`/admin/tests/${id}/view`, {
+      state: { title , mode: "edit"}, 
+    });
   };
 
   const handleDelete = (id: number) => {
@@ -52,7 +61,7 @@ export default function AdminTestPage() {
           </tr>
         </thead>
         <tbody>
-            {tests.map((test, index) => (
+            {tests.map((test) => (
             <tr key={test.id}>
               <td>{test.id}</td>
               <td>{test.title}</td>
@@ -61,10 +70,10 @@ export default function AdminTestPage() {
               <td>{test.questions}</td>
               <td>{test.participants}</td>
               <td className="actions">
-                <button className="view-btn" onClick={() => handleView(test.id)} title="Xem">
+                <button className="view-btn" onClick={() => handleView(test.id, test.title)} title="Xem">
                   <FaEye />
                 </button>
-                <button className="edit-btn" onClick={() => handleEdit(test.id)} title="Chỉnh sửa">
+                <button className="edit-btn-page" onClick={() => handleEdit(test.id, test.title)} title="Chỉnh sửa">
                   <FaEdit />
                 </button>
                 <button className="delete-btn" onClick={() => handleDelete(test.id)} title="Xóa">
