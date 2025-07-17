@@ -232,3 +232,69 @@
 .add-test-title-input:focus {
   border-color: #007bff;
 }
+
+
+.box-items {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 128, 0, 0.1);
+   overflow: visible !important;
+}
+
+.dropdown-wrapper {
+  margin-top: 15px;
+}
+
+.dropdown-wrapper label {
+  font-weight: bold;
+  margin-bottom: 8px;
+  display: inline-block;
+}
+
+/* Giao diện dropdown menu */
+.custom-react-select__menu {
+  /* max-height: 150px !important; */
+  /* overflow-y: auto !important; */
+  z-index: 9999;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Option khi hover hoặc được chọn */
+.custom-react-select__option {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.custom-react-select__option--is-focused {
+  background-color: #e6f7ff;
+}
+
+.custom-react-select__option--is-selected {
+  background-color: #1890ff;
+  color: white;
+}
+
+/* Input và control */
+.custom-react-select__control {
+  background-color: #d4edda !important;
+  border: 1px solid #28a745 !important;
+  border-radius: 4px;
+  padding: 4px 8px;
+  min-height: 38px;
+  box-shadow: none;
+}
+
+/* Khi được focus (click vào) */
+.custom-react-select__control--is-focused {
+  border-color: #28a745;
+  box-shadow: 0 0 0 1px #28a745;
+}
+
+/* Placeholder */
+.custom-react-select__placeholder {
+  color: #666;
+}

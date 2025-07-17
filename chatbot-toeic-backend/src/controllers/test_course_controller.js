@@ -1,4 +1,4 @@
-import { getAllTestsWithCourses } from "../services/test_course_service.js";
+import { getAllTestsWithCourses, getAllCourseNames } from "../services/test_course_service.js";
 
 const getAllTestsWithCoursesController = async (req, res) =>{
     try{
@@ -10,6 +10,17 @@ const getAllTestsWithCoursesController = async (req, res) =>{
     }
 };
 
+const getAllCourseNamesController = async (req, res) => {
+    try {
+        const courses = await getAllCourseNames();
+        res.status(200).json(courses);
+    } catch (error) {
+        console.error("Error in getAllCourseNamesController: ", error);
+        res.status(500).json({ message: "Error fetching course names" });
+    }
+}  
+
 export {
-    getAllTestsWithCoursesController
+    getAllTestsWithCoursesController,
+    getAllCourseNamesController
 };

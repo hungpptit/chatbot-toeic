@@ -13,7 +13,17 @@ export interface Test {
     tags: string[];
 }
 
+export interface Course {
+    id: number;
+    name: string;
+}
+
 export const getAllTestsWithCourseAPI = async (): Promise<Test[]> =>{
     const response = await axios.get<Test[]>(`${API_BASE_URL}/all`);
+    return response.data;
+};
+
+export const getAllCourseNamesAPI = async (): Promise<Course[]> => {
+    const response = await axios.get<Course[]>(`${API_BASE_URL}/courses`,{withCredentials: true});
     return response.data;
 };

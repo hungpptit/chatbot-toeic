@@ -17,6 +17,7 @@
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.6.3",
+    "react-select": "^5.10.2",
     "sweetalert2": "^11.22.2"
   },
   "devDependencies": {

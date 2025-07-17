@@ -11,6 +11,14 @@ export interface Test {
     questions: number;
 
 }
+export interface QuestionType {
+    id: number;
+    name: string;
+}
+export interface Part {
+    id: number;
+    name: string;
+}
 
 // Lấy danh sách tất cả bài test
 export const getAllTestsAPI = async (): Promise<Test[]> => {
@@ -19,3 +27,19 @@ export const getAllTestsAPI = async (): Promise<Test[]> => {
   });
   return response.data;
 };
+
+// Lấy danh sách tất cả loại câu hỏi
+export const getAllQuestionTypesAPI = async (): Promise<QuestionType[]> => {
+  const response = await axios.get<QuestionType[]>(`${API_BASE_URL}/question-types`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// Lấy danh sách tất cả các phần
+export const getAllPartsAPI = async (): Promise<Part[]> => {
+  const response = await axios.get<Part[]>(`${API_BASE_URL}/parts`, {
+    withCredentials: true,
+  });
+  return response.data;
+}

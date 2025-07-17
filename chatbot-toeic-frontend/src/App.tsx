@@ -16,6 +16,7 @@ import AdminCoursePage from "./container/admin/AdminCoursePage";
 import AdminStatsPage from "./container/admin/AdminStatsPage";
 import AdminUserEdit from "./container/admin/AdminUserEdit";
 import AdminTestViewPage from "./container/admin/AdminTestViewPage";
+import AdminTestAddPage from "./container/admin/AddTestForm";
 
 const GOOGLE_CLIENT_ID =
   "882409050775-mq8rrausj32gudb5fmni8gn28qg23nk4.apps.googleusercontent.com";
@@ -44,7 +45,7 @@ function AppContent() {
             <Route path="users/edit" element={<AdminUserEdit />} />
             <Route path="tests" element={<AdminTestPage />} />
             <Route path="tests/:id/view" element={<AdminTestViewPage />} />
-            <Route path="tests/add" element={<AdminTestViewPage />} />
+            <Route path="tests/add" element={<AdminTestAddPage />} />
             <Route path="courses" element={<AdminCoursePage />} />
             <Route path="stats" element={<AdminStatsPage />} />
           </Route>

@@ -3,6 +3,8 @@ import db from "../models/index.js";
 const Test = db.Test;
 const Course = db.Course;
 const Question = db.Question;
+const Part = db.Part;
+const QuestionType = db.QuestionType;
 
 const getAllTestsWithCourses = async () => {
   try {
@@ -41,4 +43,34 @@ const getAllTestsWithCourses = async () => {
   }
 };
 
-export { getAllTestsWithCourses };
+const getAllQuestionTypes = async () => {
+  try {
+    const questionTypes = await QuestionType.findAll({
+      attributes: ['id', 'name', 'description'],
+      order: [['id', 'ASC']],
+    });
+    return questionTypes;
+  } catch (error) {
+    console.error("❌ Error fetching Question Types:", error);
+    throw error;
+  }
+};
+
+
+
+
+const getAllParts = async () => {
+  try {
+    const parts = await Part.findAll({
+      attributes: ['id', 'name'],
+      order: [['id', 'ASC']],
+    });
+    return parts;
+  } catch (error) {
+    console.error("❌ Error fetching Parts:", error);
+    throw error;
+  }
+};
+
+
+export { getAllTestsWithCourses, getAllQuestionTypes, getAllParts };
