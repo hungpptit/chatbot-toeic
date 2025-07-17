@@ -35,6 +35,35 @@ export const RandomQuestionsByTestId = async (testId, limit = 40) => {
   }
 };
 
+// update câu hỏi
+export const updateQuestion = async (id, updatedData) => {
+  try {
+    // Tìm câu hỏi theo ID
+    const question = await db.Question.findByPk(id);
+    if (!question) {
+      throw new Error("Question not found");
+    }
+
+    // Cập nhật các trường
+    await question.update({
+      question: updatedData.question,
+      optionA: updatedData.optionA,
+      optionB: updatedData.optionB,
+      optionC: updatedData.optionC,
+      optionD: updatedData.optionD,
+      correctAnswer: updatedData.correctAnswer,
+      explanation: updatedData.explanation,
+      typeId: updatedData.typeId,
+      partId: updatedData.partId,
+    });
+
+    return question; // Trả về câu hỏi đã update
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 // nộp bài 
 export const SubmitTestResult = async ({ userId, testId, answers }) => {
   return await db.sequelize.transaction(async (transaction) => {

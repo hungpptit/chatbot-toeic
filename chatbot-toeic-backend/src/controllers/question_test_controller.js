@@ -1,5 +1,5 @@
 
-import { RandomQuestionsByTestId, SubmitTestResult, CheckUserHasDoneTestDetailed, GetUserTestDetailById, GetUserTestHistoryByTestId,StartUserTest}  from '../services/question_test_service.js';
+import { RandomQuestionsByTestId,updateQuestion, SubmitTestResult, CheckUserHasDoneTestDetailed, GetUserTestDetailById, GetUserTestHistoryByTestId,StartUserTest}  from '../services/question_test_service.js';
 
 // Controller: Lấy danh sách câu hỏi ngẫu nhiên theo testId
 const getQuestionsByTest = async (req, res) => {
@@ -15,6 +15,27 @@ const getQuestionsByTest = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+const updateQuestionController = async (req, res) => {
+  try {
+    const { id, ...updatedData } = req.body;
+
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({ message: "Invalid or missing question id" });
+    }
+
+    const updatedQuestion = await updateQuestion(id, updatedData);
+
+    res.status(200).json({
+      message: "Question updated successfully",
+      data: updatedQuestion,
+    });
+  } catch (err) {
+    console.error("Error updating question:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 const submitTest = async (req, res) => {
   try {
@@ -113,6 +134,7 @@ const checkHistoryUserTestDetailed = async (req, res) => {
 
 export {
   getQuestionsByTest,
+  updateQuestionController,
   submitTest,
   checkUserTestDetailed,
   getUserTestDetailId,

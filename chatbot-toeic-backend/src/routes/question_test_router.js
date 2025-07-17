@@ -2,11 +2,13 @@
 import express from 'express';
 import { authMiddleware } from '../Middleware/authMiddleware.js';
   checkUserTestDetailed
-import { getQuestionsByTest, submitTest, startTest, checkUserTestDetailed, getUserTestDetailId,checkHistoryUserTestDetailed } from '../controllers/question_test_controller.js';
+import { getQuestionsByTest, updateQuestionController,submitTest, startTest, checkUserTestDetailed, getUserTestDetailId,checkHistoryUserTestDetailed } from '../controllers/question_test_controller.js';
 
 const router = express.Router();
 
 router.get('/Detail/:testId', authMiddleware, getQuestionsByTest);
+
+router.put('/update-question', authMiddleware, updateQuestionController);
 
 router.post('/Submit/:testId', authMiddleware, submitTest);
 
