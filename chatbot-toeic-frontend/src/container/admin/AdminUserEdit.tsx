@@ -6,7 +6,7 @@ import {
   deleteUserAPI,
   lockUserAPI,
   type User
-} from '../../services/adminService';
+} from '../../services/adminUserService';
 import '../../styles/AdminUserEdit.css';
 import Swal from 'sweetalert2';
 

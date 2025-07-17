@@ -1,0 +1,50 @@
+.admin-test-page {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.admin-test-page h2 {
+  margin-bottom: 20px;
+}
+
+.test-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.test-table th,
+.test-table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.test-table th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+}
+
+.actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin: 0 5px;
+  font-size: 16px;
+  transition: transform 0.1s ease;
+}
+
+.actions button:hover {
+  transform: scale(1.2);
+}
+
+.view-btn {
+  color: #3498db;
+}
+
+.edit-btn {
+  color: #f39c12;
+}
+
+.delete-btn {
+  color: #e74c3c;
+}

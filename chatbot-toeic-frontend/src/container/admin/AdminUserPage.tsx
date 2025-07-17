@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import{getAllUsersAPI, type User} from '../../services/adminService';
+import{getAllUsersAPI, type User} from '../../services/adminUserService';
 
 
 export default function AdminUserPage() {

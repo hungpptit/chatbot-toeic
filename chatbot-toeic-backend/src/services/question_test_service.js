@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
 
+
 export const RandomQuestionsByTestId = async (testId, limit = 40) => {
   try {
     // Bước 1: Lấy tất cả questionId từ bảng TestQuestions
@@ -126,18 +127,29 @@ export const SubmitTestResult = async ({ userId, testId, answers }) => {
 };
 
 export const StartUserTest = async ({ userId, testId }) => {
-  const userTest = await db.UserTest.create({
-    userId,
-    testId,
-    status: 'in_progress',
-    startedAt: new Date(),
-    score: 0
-  });
+  return await db.sequelize.transaction(async (t) => {
+    // 1. Tạo bản ghi user làm bài
+    const userTest = await db.UserTest.create({
+      userId,
+      testId,
+      status: 'in_progress',
+      startedAt: new Date(),
+      score: 0,
+    }, { transaction: t });
 
-  return {
-    userTestId: userTest.id,
-    message: 'Test started successfully'
-  };
+    // 2. Tăng số lượng participants của bài test
+    await db.Test.increment('participants', {
+      by: 1,
+      where: { id: testId },
+      transaction: t,
+    });
+
+    // 3. Trả kết quả
+    return {
+      userTestId: userTest.id,
+      message: 'Test started successfully',
+    };
+  });
 };
 
 export const CheckUserHasDoneTestDetailed = async ({ userId, testId }) => {

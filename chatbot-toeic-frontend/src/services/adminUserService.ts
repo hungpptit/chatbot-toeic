@@ -1,7 +1,7 @@
 // src/services/adminService.ts
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api/admin';
+const API_BASE_URL = 'http://localhost:8080/api/adminUser';
 
 export interface User {
   id: number;

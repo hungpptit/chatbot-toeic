@@ -1,19 +1,80 @@
+import React, { useEffect, useState } from "react";
+import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
+import "../../styles/AdminTestPage.css";
+import {getAllTestsAPI, type Test} from '../../services/adminTestService';
+
+
 export default function AdminTestPage() {
-  const fakeTests = [
-    { id: 1, title: "TOEIC 500", participants: 120 },
-    { id: 2, title: "TOEIC 700", participants: 98 },
-  ];
+    const [tests, setTests] = useState<Test[]>([]);
+
+    useEffect(() => {
+      const fetchTests = async () => {
+        try {
+          const data = await getAllTestsAPI();
+          setTests(data);
+        } catch (error) {
+          console.error("Lỗi khi lấy danh sách đề thi:", error);
+        }
+      };
+
+      fetchTests();
+    }, []);
+
+
+
+  const handleView = (id: number) => {
+    console.log("Xem chi tiết đề", id);
+  };
+
+  const handleEdit = (id: number) => {
+    console.log("Chỉnh sửa đề", id);
+  };
+
+  const handleDelete = (id: number) => {
+    if (window.confirm("Bạn có chắc muốn xóa đề thi này không?")) {
+      console.log("Xóa đề", id);
+    }
+  };
 
   return (
-    <div>
+    <div className="admin-test-page">
       <h2>📑 Danh sách đề thi</h2>
-      <ul>
-        {fakeTests.map((t) => (
-          <li key={t.id}>
-            {t.title} - {t.participants} người làm
-          </li>
-        ))}
-      </ul>
+      <table className="test-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tên đề</th>
+            <th>Khóa học</th>
+            <th>Thời lượng</th>
+            <th>Số câu</th>
+            <th>Số người làm</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+            {tests.map((test, index) => (
+            <tr key={test.id}>
+              <td>{test.id}</td>
+              <td>{test.title}</td>
+              <td>{test.courses.join(", ")}</td>
+              <td>{test.duration} phút</td>
+              <td>{test.questions}</td>
+              <td>{test.participants}</td>
+              <td className="actions">
+                <button className="view-btn" onClick={() => handleView(test.id)} title="Xem">
+                  <FaEye />
+                </button>
+                <button className="edit-btn" onClick={() => handleEdit(test.id)} title="Chỉnh sửa">
+                  <FaEdit />
+                </button>
+                <button className="delete-btn" onClick={() => handleDelete(test.id)} title="Xóa">
+                  <FaTrash />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
