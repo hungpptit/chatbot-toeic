@@ -15,13 +15,17 @@ export interface Test {
 
 export interface Course {
     id: number;
-    title: string;
+    name: string;
 }
 
 export interface CourseWithTests {
   id: number;
   name: string;
-  tests: Course[];
+  tests: {
+    id: number;
+    title: string;
+    // add other properties if needed
+  }[];
 }
 
 export const getAllTestsWithCourseAPI = async (): Promise<Test[]> =>{
@@ -42,4 +46,33 @@ export const getCoursesWithTestsAPI = async (): Promise<CourseWithTests[]> => {
     { withCredentials: true }
   );
   return response.data;
+};
+
+// Cập nhật tên khóa học
+export const updateCourseNameAPI = async (
+  courseId: number,
+  newName: string
+): Promise<Course> => {
+  try {
+    const response = await axios.put<Course>(
+      `${API_BASE_URL}/update/${courseId}`,
+      { name: newName },
+      { withCredentials: true }
+    );
+    console.log("🟢 Response:", response.data);
+    return response.data; 
+  } catch (error) {
+    console.error("❌ Error updating course name:", error);
+    throw error;
+  }
+};
+
+export const deleteCourseByIdAPI = async (courseId: number): Promise<Course> => {
+  try {
+    const response = await axios.delete<Course>(`${API_BASE_URL}/delete/${courseId}`, { withCredentials: true });
+    return response.data;
+  } catch (error) {
+    console.error("❌ Error deleting course:", error);
+    throw error;
+  }
 };

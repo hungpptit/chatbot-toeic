@@ -51,6 +51,46 @@ const getAllCourseNames = async () => {
   }
 };
 
+const updateCourseName = async (courseId, newName) => {
+  try {
+    const course = await Course.findByPk(courseId);
+
+    if (!course) {
+      throw new Error(`Course with ID ${courseId} not found`);
+    }
+
+    course.name = newName;
+    await course.save();
+
+    console.log(`✅ Course ID ${courseId} updated to "${newName}"`);
+    return {
+      id: course.id,
+      name: course.name,
+    };
+  } catch (error) {
+    console.error("❌ Error updating course name:", error);
+    throw error;
+  }
+};
+  
+const deleteCourseById = async (courseId) => {
+  try {
+    const course = await Course.findByPk(courseId);
+
+    if (!course) {
+      throw new Error(`Course with ID ${courseId} not found`);
+    }
+
+    await course.destroy();
+
+    console.log(`🗑️ Course ID ${courseId} has been deleted`);
+    return { success: true, message: `Course ID ${courseId} deleted` };
+  } catch (error) {
+    console.error("❌ Error deleting course:", error);
+    throw error;
+  }
+};
+
 
 const getAllCoursesWithTests = async () => {
   try {
@@ -84,5 +124,7 @@ const getAllCoursesWithTests = async () => {
 export{
     getAllTestsWithCourses,
     getAllCourseNames,
-    getAllCoursesWithTests
+    getAllCoursesWithTests,
+    updateCourseName,
+    deleteCourseById
 };

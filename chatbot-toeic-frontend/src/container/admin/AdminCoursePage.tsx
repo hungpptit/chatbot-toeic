@@ -1,19 +1,27 @@
 import { useEffect, useState } from "react";
-import { getCoursesWithTestsAPI, type CourseWithTests } from "../../services/testCourseService";
+import {
+  getCoursesWithTestsAPI,
+  updateCourseNameAPI,
+  deleteCourseByIdAPI,
+  type CourseWithTests,
+} from "../../services/testCourseService";
 import "../../styles/adminCoursePage.css";
 import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
-
-
 
 export default function AdminCoursePage() {
   const [courses, setCourses] = useState<CourseWithTests[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
+  const [newCourseName, setNewCourseName] = useState("");
+
   useEffect(() => {
     async function fetchCourses() {
       try {
         const res = await getCoursesWithTestsAPI();
-        setCourses(res); 
+        setCourses(res);
       } catch (error) {
         console.error("Lỗi khi load khóa học:", error);
       } finally {
@@ -23,19 +31,53 @@ export default function AdminCoursePage() {
 
     fetchCourses();
   }, []);
+  
 
   const handleView = (courseId: number) => {
     alert(`Xem chi tiết khóa học ID: ${courseId}`);
   };
 
-  const handleEdit = (courseId: number) => {
-    alert(`Chỉnh sửa khóa học ID: ${courseId}`);
+  const handleDelete = async (courseId: number) => {
+    const confirmDelete = window.confirm("Bạn có chắc muốn xóa khóa học này?");
+    if (!confirmDelete) return;
+
+    try {
+      await deleteCourseByIdAPI(courseId); // <-- Gọi API xóa
+      setCourses((prev) => prev.filter((c) => c.id !== courseId)); // Cập nhật UI
+      alert("✅ Xóa khóa học thành công.");
+    } catch (error) {
+      console.error("❌ Lỗi khi xóa khóa học:", error);
+      alert("Lỗi khi xóa khóa học.");
+    }
   };
 
-  const handleDelete = (courseId: number) => {
-    const confirmDelete = window.confirm("Bạn có chắc muốn xóa khóa học này?");
-    if (confirmDelete) {
-      setCourses((prev) => prev.filter((c) => c.id !== courseId));
+  const openEditModal = (courseId: number, currentName: string) => {
+    setSelectedCourseId(courseId);
+    setNewCourseName(currentName);
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedCourseId(null);
+    setNewCourseName("");
+  };
+
+  const handleSaveCourseName = async () => {
+    if (!selectedCourseId) return;
+
+    try {
+      const updated = await updateCourseNameAPI(selectedCourseId, newCourseName);
+      setCourses((prev) =>
+        prev.map((course) =>
+          course.id === selectedCourseId ? { ...course, name: updated.name } : course
+        )
+      );
+      
+      closeEditModal();
+    } catch (error) {
+      console.error("❌ Lỗi khi cập nhật tên khóa học:", error);
+      alert("Lỗi khi cập nhật tên khóa học.");
     }
   };
 
@@ -69,13 +111,22 @@ export default function AdminCoursePage() {
               </td>
               <td>
                 <div className="action-buttons">
-                  <button className="icon-btn view" onClick={() => handleView(course.id)}>
+                  <button
+                    className="icon-btn view"
+                    onClick={() => handleView(course.id)}
+                  >
                     <FaEye />
                   </button>
-                  <button className="icon-btn edit" onClick={() => handleEdit(course.id)}>
+                  <button
+                    className="icon-btn edit"
+                    onClick={() => openEditModal(course.id, course.name)}
+                  >
                     <FaEdit />
                   </button>
-                  <button className="icon-btn delete" onClick={() => handleDelete(course.id)}>
+                  <button
+                    className="icon-btn delete"
+                    onClick={() => handleDelete(course.id)}
+                  >
                     <FaTrash />
                   </button>
                 </div>
@@ -84,6 +135,25 @@ export default function AdminCoursePage() {
           ))}
         </tbody>
       </table>
+
+      {/* Popup Modal */}
+      {isEditModalOpen && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2 className="modal-title">Sửa tên khóa học</h2>
+            <input
+              type="text"
+              className="modal-input"
+              value={newCourseName}
+              onChange={(e) => setNewCourseName(e.target.value)}
+            />
+            <div className="modal-buttons">
+              <button className="btn-save" onClick={handleSaveCourseName}> Lưu</button>
+              <button className="btn-cancel" onClick={closeEditModal}> Hủy</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
