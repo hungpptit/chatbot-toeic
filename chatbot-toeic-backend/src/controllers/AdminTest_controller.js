@@ -104,7 +104,7 @@ const deleteQuestionTypeController = async (req, res) => {
 const createNewTestController = async (req, res) => {
   try {
     const { title, courseId, questions } = req.body;
-    console.log("✅ Payload nhận được từ client:");
+    // console.log("✅ Payload nhận được từ client:");
     console.log({ title, courseId, questions });
 
     // Validate input

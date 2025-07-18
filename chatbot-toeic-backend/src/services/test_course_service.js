@@ -52,7 +52,37 @@ const getAllCourseNames = async () => {
 };
 
 
+const getAllCoursesWithTests = async () => {
+  try {
+    const courses = await Course.findAll({
+      attributes: ['id', 'name'],
+      include: [
+        {
+          model: Test,
+          attributes: ['id', 'title'],
+        },
+      ],
+      order: [['name', 'ASC']],
+    });
+
+    // Trả về mảng gồm mỗi course có id, name, và mảng tests
+    return courses.map(course => ({
+      id: course.id,
+      name: course.name,
+      tests: course.Tests.map(test => ({
+        id: test.id,
+        title: test.title,
+      })),
+    }));
+  } catch (error) {
+    console.error("❌ Error fetching courses with tests:", error);
+    throw error;
+  }
+};
+
+
 export{
     getAllTestsWithCourses,
     getAllCourseNames,
+    getAllCoursesWithTests
 };

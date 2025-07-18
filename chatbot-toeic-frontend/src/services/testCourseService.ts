@@ -15,7 +15,13 @@ export interface Test {
 
 export interface Course {
     id: number;
-    name: string;
+    title: string;
+}
+
+export interface CourseWithTests {
+  id: number;
+  name: string;
+  tests: Course[];
 }
 
 export const getAllTestsWithCourseAPI = async (): Promise<Test[]> =>{
@@ -26,4 +32,14 @@ export const getAllTestsWithCourseAPI = async (): Promise<Test[]> =>{
 export const getAllCourseNamesAPI = async (): Promise<Course[]> => {
     const response = await axios.get<Course[]>(`${API_BASE_URL}/courses`,{withCredentials: true});
     return response.data;
+};
+
+
+// Lấy danh sách course + các bài test tương ứng
+export const getCoursesWithTestsAPI = async (): Promise<CourseWithTests[]> => {
+  const response = await axios.get<CourseWithTests[]>(
+    `${API_BASE_URL}/with-tests`,
+    { withCredentials: true }
+  );
+  return response.data;
 };

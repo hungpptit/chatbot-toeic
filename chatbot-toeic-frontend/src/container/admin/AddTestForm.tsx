@@ -80,11 +80,67 @@ export default function AdminTestAddPage() {
     if (file) setUploadFile(file);
   };
 
+  // const handleSubmitFile = () => {
+  //   if (!uploadFile) return alert("❌ Vui lòng chọn file trước!");
+  //   console.log("📤 File upload:", uploadFile);
+  //   alert("✅ Đã chọn file, chi tiết xem ở console");
+  // };
+
   const handleSubmitFile = () => {
     if (!uploadFile) return alert("❌ Vui lòng chọn file trước!");
-    console.log("📤 File upload:", uploadFile);
-    alert("✅ Đã chọn file, chi tiết xem ở console");
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const json = JSON.parse(text);
+
+        // Validate format
+        if (
+          !json.title ||
+          !json.courseId ||
+          !Array.isArray(json.questions) ||
+          json.questions.length === 0
+        ) {
+          alert("❌ File JSON không đúng định dạng hoặc thiếu dữ liệu!");
+          return;
+        }
+
+        // Lấy typeId và partId từ câu hỏi đầu tiên (giả định giống nhau)
+        const firstQuestion = json.questions[0];
+        const typeId = firstQuestion.typeId || null;
+        const partId = firstQuestion.partId || null;
+
+        // Fill vào form
+        setTestTitle(json.title);
+        setSelectedCourseId(json.courseId);
+        setSelectedTypeId(typeId);
+        setSelectedPartId(partId);
+
+        // Loại bỏ các field không cần thiết khỏi mỗi question (nếu muốn)
+        const cleanedQuestions = json.questions.map((q: any) => ({
+          question: q.question,
+          optionA: q.optionA,
+          optionB: q.optionB,
+          optionC: q.optionC,
+          optionD: q.optionD,
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation,
+        }));
+
+        setQuestions(cleanedQuestions);
+
+        alert("✅ Đã load dữ liệu đề thi thành công!");
+      } catch (err) {
+        console.error("❌ Lỗi khi đọc JSON:", err);
+        alert("❌ Không thể đọc file JSON!");
+      }
+    };
+
+    reader.readAsText(uploadFile);
   };
+
 
   return (
     <div className="admin-test-view">
@@ -99,16 +155,16 @@ export default function AdminTestAddPage() {
       </div>
 
       <div className="box-items">
-        <Dropdown label="Chọn Course" options={courses} onChange={setSelectedCourseId} />
-        <Dropdown label="Chọn Part" options={parts} onChange={setSelectedPartId} />
-        <Dropdown label="Chọn Type" options={questionTypes} onChange={setSelectedTypeId} />
+        <Dropdown label="Chọn Course" options={courses} onChange={setSelectedCourseId}  value={selectedCourseId}/>
+        <Dropdown label="Chọn Part" options={parts} onChange={setSelectedPartId}  value={selectedPartId}/>
+        <Dropdown label="Chọn Type" options={questionTypes} onChange={setSelectedTypeId} value={selectedTypeId}/>
       </div>
 
       <div className="upload-section" style={{ marginBottom: "20px" }}>
         <h3>Hoặc tải lên file JSON/CSV</h3>
         <input type="file" accept=".json,.csv" onChange={handleUploadFile} />
         <button className="save-btn" style={{ marginTop: "10px" }} onClick={handleSubmitFile}>
-          <FaUpload /> Gửi file lên BE
+          <FaUpload /> Load File lên form
         </button>
       </div>
 
@@ -196,15 +252,48 @@ function createEmptyQuestion(): Question {
 }
 
 // Dropdown Component
+// function Dropdown({
+//   label,
+//   options,
+//   onChange,
+// }: {
+//   label: string;
+//   options: { id: number; name: string }[];
+//   onChange: (id: number | null) => void;
+// }) {
+//   return (
+//     <div className="dropdown-wrapper">
+//       <label>
+//         <strong>{label}:</strong>
+//       </label>
+//       <Select
+//         classNamePrefix="custom-react-select"
+//         options={options.map((item) => ({
+//           value: item.id,
+//           label: item.name,
+//         }))}
+//         onChange={(selected) => onChange(selected ? selected.value : null)}
+//         placeholder={`-- ${label} --`}
+//         menuPortalTarget={document.body}
+//       />
+//     </div>
+//   );
+// }
+
+
 function Dropdown({
   label,
   options,
   onChange,
+  value, // <-- Thêm prop này
 }: {
   label: string;
   options: { id: number; name: string }[];
   onChange: (id: number | null) => void;
+  value: number | null; // <-- Thêm type cho prop mới
 }) {
+  const selectedOption = options.find((item) => item.id === value) || null;
+
   return (
     <div className="dropdown-wrapper">
       <label>
@@ -216,6 +305,11 @@ function Dropdown({
           value: item.id,
           label: item.name,
         }))}
+        value={
+          selectedOption
+            ? { value: selectedOption.id, label: selectedOption.name }
+            : null
+        }
         onChange={(selected) => onChange(selected ? selected.value : null)}
         placeholder={`-- ${label} --`}
         menuPortalTarget={document.body}

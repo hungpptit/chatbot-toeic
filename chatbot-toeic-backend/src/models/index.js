@@ -71,7 +71,7 @@ const initDb = async () => {
 };
 
 const db = await initDb();
-console.log("✅ Các models đã được load:", Object.keys(db));
+// console.log("✅ Các models đã được load:", Object.keys(db));
 
 export default db;
 

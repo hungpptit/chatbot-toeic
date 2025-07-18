@@ -76,7 +76,7 @@ export default function AdminTestPage() {
                 <button className="edit-btn-page" onClick={() => handleEdit(test.id, test.title)} title="Chỉnh sửa">
                   <FaEdit />
                 </button>
-                <button className="delete-btn" onClick={() => handleDelete(test.id)} title="Xóa">
+                <button className="delete-btn-page" onClick={() => handleDelete(test.id)} title="Xóa">
                   <FaTrash />
                 </button>
               </td>
