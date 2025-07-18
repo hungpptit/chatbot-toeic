@@ -16,7 +16,7 @@ export interface Part {
 }
 
 export interface Question {
-  id: number;
+  id: number ; // Use null if the question is new and doesn't have an ID yet
   question: string;
   optionA: string;
   optionB: string;
@@ -27,8 +27,8 @@ export interface Question {
   typeId: number;
   partId: number;
 
-  questionType: QuestionType;
-  part: Part;
+  // questionType: QuestionType;
+  // part: Part;
 }
 
 export interface Answer {

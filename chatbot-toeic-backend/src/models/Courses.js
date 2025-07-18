@@ -3,7 +3,12 @@ import { Model } from 'sequelize';
 export default (sequelize, DataTypes) => {
   class Course extends Model {
     static associate(models) {
-      Course.belongsToMany(models.Test, { through: 'Test_Courses', foreignKey: 'courseId' });
+      Course.belongsToMany(models.Test, {
+        through: 'Test_Courses',
+        foreignKey: 'courseId',   
+        otherKey: 'testId',
+        timestamps: false        
+      });
     }
   }
   Course.init({

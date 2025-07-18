@@ -1,5 +1,7 @@
 
-import { RandomQuestionsByTestId,updateQuestion, SubmitTestResult, CheckUserHasDoneTestDetailed, GetUserTestDetailById, GetUserTestHistoryByTestId,StartUserTest}  from '../services/question_test_service.js';
+import { RandomQuestionsByTestId,updateQuestion, SubmitTestResult, CheckUserHasDoneTestDetailed, GetUserTestDetailById, GetUserTestHistoryByTestId,StartUserTest,
+  createQuestion
+}  from '../services/question_test_service.js';
 
 // Controller: Lấy danh sách câu hỏi ngẫu nhiên theo testId
 const getQuestionsByTest = async (req, res) => {
@@ -32,6 +34,31 @@ const updateQuestionController = async (req, res) => {
     });
   } catch (err) {
     console.error("Error updating question:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const createQuestionController = async (req, res) => {
+  try {
+    const questionData = req.body;
+
+    // Kiểm tra dữ liệu cơ bản
+    const requiredFields = ["question", "optionA", "optionB", "optionC", "optionD", "correctAnswer", "typeId", "partId"];
+    for (const field of requiredFields) {
+      if (!questionData[field]) {
+        return res.status(400).json({ message: `Missing required field: ${field}` });
+      }
+    }
+
+    // Tạo câu hỏi mới, thêm vào bài test nếu có testId
+    const newQuestion = await createQuestion(questionData, questionData.testId, questionData.sortOrder);
+
+    res.status(201).json({
+      message: "Question created successfully",
+      data: newQuestion,
+    });
+  } catch (error) {
+    console.error("❌ Error creating question:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -139,5 +166,6 @@ export {
   checkUserTestDetailed,
   getUserTestDetailId,
   checkHistoryUserTestDetailed,
-  startTest
+  startTest,
+  createQuestionController
 };

@@ -1,17 +1,34 @@
-// chatbot-toeic-backend\src\routes\AdminTest_router.js
 import express from 'express';
-import { getTestList,
+import {
+  getTestList,
   getQuestionTypes,
-  getParts } from '../controllers/AdminTest_controller.js';
+  getParts,
+  createPartController,
+  deletePartController,
+  createQuestionTypeController,
+  deleteQuestionTypeController,
+  createNewTestController
+} from '../controllers/AdminTest_controller.js';
+
 import { authMiddleware } from '../Middleware/authMiddleware.js';
 
 const router = express.Router();
 
 // Lấy tất cả bài test kèm thông tin khóa học
-router.get('/',authMiddleware, getTestList);
+router.get('/', authMiddleware, getTestList);
 
+// Lấy danh sách question types và parts
 router.get('/question-types', authMiddleware, getQuestionTypes);
-// Lấy tất cả các phần
 router.get('/parts', authMiddleware, getParts);
+
+// Tạo / Xóa Part
+router.post('/parts', authMiddleware, createPartController);
+router.delete('/parts/:id', authMiddleware, deletePartController);
+
+// Tạo / Xóa QuestionType
+router.post('/question-types', authMiddleware, createQuestionTypeController);
+router.delete('/question-types/:id', authMiddleware, deleteQuestionTypeController);
+// Tạo bài test mới
+router.post('/createTestNew', authMiddleware, createNewTestController);
 
 export default router;

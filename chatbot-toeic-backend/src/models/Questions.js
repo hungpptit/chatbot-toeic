@@ -5,11 +5,11 @@ export default (sequelize, DataTypes) => {
   class Question extends Model {
     static associate(models) {
     
-      Question.hasMany(models.UserResult, { foreignKey: 'questionId', as: 'userResults' });
-      Question.belongsTo(models.QuestionType, { foreignKey: 'typeId', as: 'questionType' });
+      Question.hasMany(models.UserResult, { foreignKey: 'questionId', as: 'userResults', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+      Question.belongsTo(models.QuestionType, { foreignKey: 'typeId', as: 'questionType', onDelete: 'RESTRICT', onUpdate: 'CASCADE' });
       Question.belongsTo(models.Part, { foreignKey: 'partId', as: 'part' });
       Question.belongsToMany(models.Test, {
-        through: 'TestQuestions',
+        through: 'TestQuestion',
         foreignKey: 'questionId',
         otherKey: 'testId',
         as: 'tests',

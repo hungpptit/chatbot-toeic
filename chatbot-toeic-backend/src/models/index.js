@@ -58,6 +58,7 @@ const initDb = async () => {
   db.Part = (await import('./Part.js')).default(sequelize, Sequelize.DataTypes);
   db.TestQuestion = (await import('./TestQuestion.js')).default(sequelize, Sequelize.DataTypes);
   db.UserTest = (await import ('./UserTests.js')).default(sequelize, Sequelize.DataTypes);
+  db.Test_Courses = (await import('./TestCourse.js')).default(sequelize, Sequelize.DataTypes);
 
   // Tạo associations nếu có
   Object.keys(db).forEach(modelName => {
@@ -70,6 +71,8 @@ const initDb = async () => {
 };
 
 const db = await initDb();
+console.log("✅ Các models đã được load:", Object.keys(db));
+
 export default db;
 
 // ✅ THÊM DÒNG NÀY

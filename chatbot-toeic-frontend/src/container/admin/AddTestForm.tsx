@@ -12,6 +12,7 @@ import {
   getAllPartsAPI,
   type QuestionType,
   type Part,
+  createNewTestAPI,
 } from "../../services/adminTestService";
 
 export default function AdminTestAddPage() {
@@ -43,27 +44,35 @@ export default function AdminTestAddPage() {
     setQuestions((prev) => [...prev, createEmptyQuestion()]);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!testTitle || !selectedCourseId || !selectedTypeId || !selectedPartId) {
       alert("❌ Vui lòng điền đầy đủ thông tin đề thi và chọn đủ các mục.");
       return;
     }
 
     const fullTestData = {
-      testTitle,
+      title: testTitle,
       courseId: selectedCourseId,
       // typeId: selectedTypeId,
       // partId: selectedPartId,
       questions: questions.map((q) => ({
         ...q,
-        courseId: selectedCourseId,
+        // courseId: selectedCourseId,
         typeId: selectedTypeId,
         partId: selectedPartId,
       })),
     };
+    try {
+      // console.log("🔍 Payload gửi lên:", fullTestData);
+      const result = await createNewTestAPI(fullTestData);
+      console.log("✅ Tạo đề thi thành công:", result);
+      alert("✅ Đề thi đã được tạo!");
+    } catch (error) {
+       console.error("❌ Lỗi khi tạo đề thi:", error);
+      alert("❌ Tạo đề thi thất bại");
+    }
 
-    console.log("📦 Full test data:", fullTestData);
-    alert("✅ Đã in ra console (chưa gửi API)");
+
   };
 
   const handleUploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {

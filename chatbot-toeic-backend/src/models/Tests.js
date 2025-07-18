@@ -10,7 +10,12 @@ export default (sequelize, DataTypes) => {
         otherKey: 'questionId',
         as: 'questions',
       });
-      Test.belongsToMany(models.Course, { through: 'Test_Courses', foreignKey: 'testId' });
+      Test.belongsToMany(models.Course, {
+        through: 'Test_Courses',
+        foreignKey: 'testId',    
+        otherKey: 'courseId',
+        timestamps: false      
+      });
       Test.hasMany(models.UserTest, { foreignKey: 'testId' });
 
     }

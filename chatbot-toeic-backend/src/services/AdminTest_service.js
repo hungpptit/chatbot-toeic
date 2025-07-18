@@ -1,10 +1,13 @@
 import db from "../models/index.js";
 
+
 const Test = db.Test;
 const Course = db.Course;
 const Question = db.Question;
 const Part = db.Part;
 const QuestionType = db.QuestionType;
+const TestQuestion = db.TestQuestion;
+const Test_Courses = db.TestCourse;
 
 const getAllTestsWithCourses = async () => {
   try {
@@ -57,8 +60,6 @@ const getAllQuestionTypes = async () => {
 };
 
 
-
-
 const getAllParts = async () => {
   try {
     const parts = await Part.findAll({
@@ -72,5 +73,115 @@ const getAllParts = async () => {
   }
 };
 
+// Create Part
+const createPart = async (name) => {
+  try {
+    const newPart = await Part.create({ name });
+    return newPart;
+  } catch (error) {
+    console.error("❌ Error creating Part:", error);
+    throw error;
+  }
+};
 
-export { getAllTestsWithCourses, getAllQuestionTypes, getAllParts };
+// Create QuestionType
+const createQuestionType = async (name, description) => {
+  try {
+    const newType = await QuestionType.create({ name, description });
+    return newType;
+  } catch (error) {
+    console.error("❌ Error creating QuestionType:", error);
+    throw error;
+  }
+};
+
+// Delete Part by ID
+const deletePart = async (id) => {
+  try {
+    const deleted = await Part.destroy({ where: { id } });
+    return deleted > 0; // true if deleted
+  } catch (error) {
+    console.error("❌ Error deleting Part:", error);
+    throw error;
+  }
+};
+
+// Delete QuestionType by ID
+const deleteQuestionType = async (id) => {
+  try {
+    const deleted = await QuestionType.destroy({ where: { id } });
+    return deleted > 0;
+  } catch (error) {
+    console.error("❌ Error deleting QuestionType:", error);
+    throw error;
+  }
+};
+
+
+
+
+
+
+const createNewTest = async (testData) => {
+  try {
+    const { title, courseId, questions } = testData;
+
+    // Create test
+    const test = await db.Test.create({
+      title,
+      duration: "45 minutes", // Default value, can be updated later
+      participants: 0, // Default value, can be updated later
+      comments: null, // Default value, can be updated later
+      questions: questions.length,
+    });
+
+    // Create test-course relationship
+    await db.sequelize.models.Test_Courses.create({
+      courseId,
+      testId: test.id,
+    });
+
+    // Create questions
+    const questionRecords = await Promise.all(questions.map(async (q) => {
+      const question = await Question.create({
+        question: q.question || null,
+        optionA: q.optionA || null,
+        optionB: q.optionB || null,
+        optionC: q.optionC || null,
+        optionD: q.optionD || null,
+        correctAnswer: q.correctAnswer || null,
+        explanation: q.explanation || null,
+        typeId: q.typeId || 1,
+        partId: q.partId || null,
+      });
+      return question;
+    }));
+
+    // Create test-question relationships
+    const testQuestionRecords = questionRecords.map((q, index) => ({
+      testId: test.id,
+      questionId: q.id,
+      sortOrder: index + 1,
+    }));
+    await TestQuestion.bulkCreate(testQuestionRecords);
+
+    return {
+      testId: test.id,
+      questionIds: questionRecords.map(q => q.id),
+    };
+  } catch (err) {
+    console.error('❌ Error creating test:', err);
+    throw err;
+  }
+};
+
+
+
+
+export { getAllTestsWithCourses,
+  getAllQuestionTypes,
+  getAllParts,createPart,
+  createQuestionType,
+  deletePart,
+  deleteQuestionType, 
+  createNewTest };

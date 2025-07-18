@@ -6,34 +6,42 @@ import timezone from 'dayjs/plugin/timezone.js';
 
 export const RandomQuestionsByTestId = async (testId, limit = 40) => {
   try {
-    // Bước 1: Lấy tất cả questionId từ bảng TestQuestions
+    // Bước 1: Lấy tất cả questionId và sortOrder từ TestQuestion
     const testQuestionRows = await db.TestQuestion.findAll({
       where: { testId },
-      attributes: ['questionId'],
+      attributes: ['questionId', 'sortOrder'],
     });
 
-    const allQuestionIds = testQuestionRows.map(row => row.questionId);
-
-    // Bước 2: Shuffle và lấy limit
-    const shuffledIds = allQuestionIds
+    // Bước 2: Shuffle toàn bộ danh sách
+    const shuffled = testQuestionRows
       .sort(() => Math.random() - 0.5)
       .slice(0, limit);
 
-    // Bước 3: Truy vấn lại câu hỏi theo id đã shuffle
-    // console.log("test trong console backend: ",db.Question.rawAttributes)
+    // Bước 3: Lấy danh sách questionId được chọn và ánh xạ sortOrder
+    const selectedIds = shuffled.map(row => row.questionId);
+    const sortOrderMap = new Map(shuffled.map(row => [row.questionId, row.sortOrder]));
+
+    // Bước 4: Truy vấn các câu hỏi
     const questions = await db.Question.findAll({
-      where: { id: shuffledIds },
+      where: { id: selectedIds },
       include: [
         { model: db.QuestionType, as: 'questionType' },
         { model: db.Part, as: 'part' }
       ],
     });
 
-    return questions;
+    // Bước 5: Sắp xếp lại theo sortOrder đã ánh xạ
+    const orderedQuestions = questions.sort((a, b) => {
+      return sortOrderMap.get(a.id) - sortOrderMap.get(b.id);
+    });
+
+    return orderedQuestions;
   } catch (error) {
+    console.error("❌ Error in RandomQuestionsByTestId:", error);
     throw error;
   }
 };
+
 
 // update câu hỏi
 export const updateQuestion = async (id, updatedData) => {
@@ -63,7 +71,36 @@ export const updateQuestion = async (id, updatedData) => {
   }
 };
 
+export const createQuestion = async (questionData, testId = null, sortOrder = null) => {
+  try {
+    // 1. Tạo câu hỏi mới
+    const newQuestion = await db.Question.create({
+      question: questionData.question,
+      optionA: questionData.optionA,
+      optionB: questionData.optionB,
+      optionC: questionData.optionC,
+      optionD: questionData.optionD,
+      correctAnswer: questionData.correctAnswer,
+      explanation: questionData.explanation,
+      typeId: questionData.typeId,
+      partId: questionData.partId,
+    });
 
+    // 2. Nếu có testId => thêm vào TestQuestion
+    if (testId) {
+      await db.TestQuestion.create({
+        testId: testId,
+        questionId: newQuestion.id,
+        sortOrder: sortOrder, // có thể để null nếu không cần sắp thứ tự
+      });
+    }
+
+    return newQuestion;
+  } catch (error) {
+    console.error("❌ Error creating question:", error);
+    throw error;
+  }
+};
 // nộp bài 
 export const SubmitTestResult = async ({ userId, testId, answers }) => {
   return await db.sequelize.transaction(async (transaction) => {
