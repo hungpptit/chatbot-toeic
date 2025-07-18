@@ -10,12 +10,14 @@ const authRouter = express.Router();
 authRouter.get('/me', authMiddleware, (req, res) => {
 
   const user = req.user;
+  // console.log("User info:", user);
 
   res.json({
     id: user.id || user.userId || null,
     name: user.name || 'Người dùng',
     email: user.email || '',
     avatar: user.avatar || '',
+    role_id: user.role_id || null,
   });
 });
 // routes/auth_router.js

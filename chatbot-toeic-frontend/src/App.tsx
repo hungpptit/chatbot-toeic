@@ -18,6 +18,11 @@ import AdminUserEdit from "./container/admin/AdminUserEdit";
 import AdminTestViewPage from "./container/admin/AdminTestViewPage";
 import AdminTestAddPage from "./container/admin/AddTestForm";
 
+import RequireAdmin from "./components/RequireAdmin";
+import RequireAuth from "./components/RequireAuth";
+
+
+
 const GOOGLE_CLIENT_ID =
   "882409050775-mq8rrausj32gudb5fmni8gn28qg23nk4.apps.googleusercontent.com";
 
@@ -39,8 +44,15 @@ function AppContent() {
 
       <div className="main-content">
         <Routes>
-          {/* ✅ ADMIN */}
-          <Route path="/admin" element={<AdminPage />}>
+          {/* ADMIN */}
+          <Route
+            path="/admin"
+            element={
+              <RequireAdmin>
+                <AdminPage />
+              </RequireAdmin>
+            }
+          >
             <Route path="users" element={<AdminUserPage />} />
             <Route path="users/edit" element={<AdminUserEdit />} />
             <Route path="tests" element={<AdminTestPage />} />
@@ -50,20 +62,52 @@ function AppContent() {
             <Route path="stats" element={<AdminStatsPage />} />
           </Route>
 
-          {/* ✅ USER */}
+          {/* USER */}
           <Route path="/home" element={<HomePage />} />
-          <Route path="/chat" element={<ChatPage />} />
-          <Route path="/chat/:conversationId" element={<ChatPage />} />
           <Route path="/vocab" element={<VocabularyPage />} />
           <Route path="/login" element={<LoginSignup />} />
-          <Route path="/TestExam" element={<TestExam mode="exam" />} />
-          <Route path="/TestExam/:id" element={<TestExam mode="exam" />} />
-          <Route
-            path="/test-review-detail/:userTestId"
-            element={<TestExam mode="review" />}
-          />
-          <Route path="/TestReview" element={<TestReview />} />
-          <Route path="/TestReview/:testId" element={<TestReview />} />
+          {/* cần kiểm tra người dùng mới vô dc trang */}
+          <Route path="/chat" element={
+            <RequireAuth>
+              <ChatPage />
+            </RequireAuth>
+          } />
+
+          <Route path="/chat/:conversationId" element={
+            <RequireAuth>
+              <ChatPage />
+            </RequireAuth>
+          } />
+
+          <Route path="/TestExam" element={
+            <RequireAuth>
+              <TestExam mode="exam" />
+            </RequireAuth>
+          } />
+
+          <Route path="/TestExam/:id" element={
+            <RequireAuth>
+              <TestExam mode="exam" />
+            </RequireAuth>
+          } />
+
+          <Route path="/test-review-detail/:userTestId" element={
+            <RequireAuth>
+              <TestExam mode="review" />
+            </RequireAuth>
+          } />
+
+          <Route path="/TestReview" element={
+            <RequireAuth>
+              <TestReview />
+            </RequireAuth>
+          } />
+
+          <Route path="/TestReview/:testId" element={
+            <RequireAuth>
+              <TestReview />
+            </RequireAuth>
+          } />
           <Route path="*" element={<HomePage />} />
         </Routes>
       </div>

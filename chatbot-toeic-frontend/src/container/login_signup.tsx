@@ -10,6 +10,11 @@ interface LoginResponse {
 }
 
 const API_URL = "http://localhost:8080";
+const Role = {
+  USER: 1,
+  ADMIN: 2,
+  MODERATOR: 3,
+} as const;
 
 const LoginSignup: React.FC = () => {
   const [action, setAction] = useState<"Login" | "Sign Up" | "ForgotPassword" | "ResetPassword" | "VerifyEmail">("Login");
@@ -58,7 +63,9 @@ const LoginSignup: React.FC = () => {
 
       const user = res.data.data; // token đã nằm trong cookie, không cần lấy
       alert("✅ Login successful!");
-      navigate(user.role_id === 2 ? "/admin/users " : "/home",{ state: { justLoggedIn: true } });
+      navigate(user.role_id === Role.ADMIN ? "/admin/users" : "/home", {
+        state: { justLoggedIn: true },
+      });
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
       alert(`❌ ${error.response?.data?.message || "Login failed!"}`);
