@@ -7,7 +7,9 @@ import {
   deletePartController,
   createQuestionTypeController,
   deleteQuestionTypeController,
-  createNewTestController
+  createNewTestController,
+  updatePartNameController,
+  updateQuestionTypeController
 } from '../controllers/AdminTest_controller.js';
 
 import { authMiddleware } from '../Middleware/authMiddleware.js';
@@ -20,6 +22,9 @@ router.get('/', authMiddleware, getTestList);
 // Lấy danh sách question types và parts
 router.get('/question-types', authMiddleware, getQuestionTypes);
 router.get('/parts', authMiddleware, getParts);
+// Cập nhật tên Part và Question Type
+router.put('/parts/update', authMiddleware, updatePartNameController);
+router.put('/question-types/update', authMiddleware, updateQuestionTypeController);
 
 // Tạo / Xóa Part
 router.post('/parts', authMiddleware, createPartController);

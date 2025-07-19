@@ -18,6 +18,7 @@ export interface Course {
     name: string;
 }
 
+
 export interface CourseWithTests {
   id: number;
   name: string;
@@ -76,3 +77,18 @@ export const deleteCourseByIdAPI = async (courseId: number): Promise<Course> => 
     throw error;
   }
 };
+
+export const insertCourseAPI = async (courseName: string): Promise<Course> => {
+  try {
+    const response = await axios.post<Course>(
+      `${API_BASE_URL}/insert`,
+      { name: courseName },
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("❌ Error inserting course:", error);
+    throw error;
+  }
+};
+

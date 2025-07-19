@@ -117,6 +117,38 @@ const deleteQuestionType = async (id) => {
   }
 };
 
+// update part name
+const updatePartName = async (PartId, newName) => { 
+  try {
+    const part = await Part.findByPk(PartId);
+    if (!part) {
+      throw new Error(`Part with ID ${PartId} not found`);
+    }
+    part.name = newName;
+    await part.save();
+    return part;
+  } catch (error) {
+    console.error("❌ Error updating course name:", error);
+    throw error;
+  }
+};
+
+// update course questionType
+const updateQuestionType = async (typeId, newName, newDescription = null) => {
+  try {
+    const questionType = await QuestionType.findByPk(typeId);
+    if (!questionType) {      
+      throw new Error(`QuestionType with ID ${typeId} not found`);
+    }
+    questionType.name = newName;
+    questionType.description = newDescription;
+    await questionType.save();
+    return questionType;
+  } catch (error) {
+    console.error("❌ Error updating question type:", error);
+    throw error;  
+  }
+};
 
 
 
@@ -184,4 +216,7 @@ export { getAllTestsWithCourses,
   createQuestionType,
   deletePart,
   deleteQuestionType, 
-  createNewTest };
+  createNewTest,
+  updatePartName,
+  updateQuestionType
+ };

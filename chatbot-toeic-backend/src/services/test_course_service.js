@@ -91,6 +91,25 @@ const deleteCourseById = async (courseId) => {
   }
 };
 
+const insertCourse = async (courseName) => {
+  try {
+    if (!courseName || !courseName.trim()) {
+      throw new Error("Tên khóa học không được để trống.");
+    }
+
+    const newCourse = await Course.create({ name: courseName.trim() });
+
+    console.log(`✅ Course "${newCourse.name}" created with ID ${newCourse.id}`);
+    return {
+      id: newCourse.id,
+      name: newCourse.name,
+    };
+  } catch (error) {
+    console.error("❌ Error inserting new course:", error);
+    throw error;
+  }
+};
+
 
 const getAllCoursesWithTests = async () => {
   try {
@@ -126,5 +145,6 @@ export{
     getAllCourseNames,
     getAllCoursesWithTests,
     updateCourseName,
-    deleteCourseById
+    deleteCourseById,
+    insertCourse
 };

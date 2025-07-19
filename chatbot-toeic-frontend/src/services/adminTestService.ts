@@ -117,3 +117,46 @@ export const createNewTestAPI = async (testData: TestCreate): Promise<TestCreate
   );
   return response.data;
 };
+
+
+// update Part
+export const updatePartNameAPI = async (partId: number, newName: string): Promise<Part> => {
+  try {
+    const response = await axios.put<{ part: Part }>(
+      `${API_BASE_URL}/parts/update`,
+      { partId, name: newName },
+      { withCredentials: true }
+    );
+    console.log("✅ Part updated successfully:", response.data);
+    return response.data.part; // ✅ đổi từ .Part sang .part
+  } catch (error) {
+    console.error("❌ Error updating part name:", error);
+    throw error;
+  }
+};
+
+// update Question Type
+export const updateQuestionTypeAPI = async (
+  questionTypeId: number,
+  newName: string,
+  newDescription: string | null = null
+): Promise<QuestionType> => {
+  try {
+    const response = await axios.put<{ questionType: QuestionType }>(
+      `${API_BASE_URL}/question-types/update`,
+      {
+        typeId: questionTypeId,
+        name: newName,
+        description: newDescription,
+      },
+      {
+        withCredentials: true,
+      }
+    );
+
+    return response.data.questionType;
+  } catch (error) {
+    console.error("❌ Error updating question type:", error);
+    throw error;
+  }
+};

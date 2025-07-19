@@ -17,6 +17,7 @@ import AdminStatsPage from "./container/admin/AdminStatsPage";
 import AdminUserEdit from "./container/admin/AdminUserEdit";
 import AdminTestViewPage from "./container/admin/AdminTestViewPage";
 import AdminTestAddPage from "./container/admin/AddTestForm";
+import AdminAddCourse from "./container/admin/AdminAddCourse";
 
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
@@ -60,6 +61,7 @@ function AppContent() {
             <Route path="tests/add" element={<AdminTestAddPage />} />
             <Route path="courses" element={<AdminCoursePage />} />
             <Route path="stats" element={<AdminStatsPage />} />
+            <Route path="courses/manage" element={<AdminAddCourse />} />
           </Route>
 
           {/* USER */}

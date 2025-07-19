@@ -1,5 +1,6 @@
 import { getAllTestsWithCourses, getAllCourseNames, getAllCoursesWithTests ,updateCourseName,
-    deleteCourseById
+    deleteCourseById,
+    insertCourse
 } from "../services/test_course_service.js";
 
 const getAllTestsWithCoursesController = async (req, res) =>{
@@ -56,11 +57,27 @@ const deleteCourseByIdController = async (req, res) => {
     }
 };
 
+const insertCourseController = async (req, res) => {
+    try {
+        const { name } = req.body; 
+
+        if (typeof name !== "string") {
+        return res.status(400).json({ message: "Invalid course name" });
+        }
+        const newCourse = await insertCourse(name);
+        res.status(201).json(newCourse);
+    } catch (error) {
+        console.error("Error in insertCourseController:", error);
+        res.status(500).json({ message: "Error inserting new course" });
+    }
+};
+
 
 export {
     getAllTestsWithCoursesController,
     getAllCourseNamesController,
     getCoursesNameWithTests,
     updateCourseNameController,
-    deleteCourseByIdController
+    deleteCourseByIdController,
+    insertCourseController
 };

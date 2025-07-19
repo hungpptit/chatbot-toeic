@@ -1,5 +1,6 @@
 // chatbot-toeic-backend\src\controllers\AdminTest_xontroller.js
 
+import Part from '../models/Part.js';
 import {getAllTestsWithCourses,
   getAllQuestionTypes,
   getAllParts,
@@ -7,7 +8,10 @@ import {getAllTestsWithCourses,
   createQuestionType,
   deletePart,
   deleteQuestionType,
-  createNewTest } from '../services/AdminTest_service.js';
+  createNewTest,
+  updatePartName,
+  updateQuestionType
+ } from '../services/AdminTest_service.js';
 
 const getTestList = async (req, res) => {
   try {
@@ -126,6 +130,52 @@ const createNewTestController = async (req, res) => {
   }
 };
 
+const updatePartNameController = async (req, res) => {
+  try {
+    const { partId, name } = req.body;
+
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({ message: "Tên khóa học không hợp lệ." });
+    }
+
+    const updatedPart = await updatePartName(partId, name.trim());
+
+    res.status(200).json({
+      message: "Cập nhật tên khóa học thành công.",
+      part: {
+        id: updatedPart.id,
+        name: updatedPart.name,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error in updateCourseNameController:", error);
+    res.status(500).json({ message: "Cập nhật khóa học thất bại." });
+  }
+};
+const updateQuestionTypeController = async (req, res) => {
+  try {
+    const { typeId, name, description } = req.body;
+
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({ message: "Tên loại câu hỏi không hợp lệ." });
+    }
+
+    const updatedType = await updateQuestionType(typeId, name.trim(), description ?? null);
+
+    res.status(200).json({
+      message: "Cập nhật question type thành công.",
+      questionType: {
+        id: updatedType.id,
+        name: updatedType.name,
+        description: updatedType.description,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error in updateQuestionTypeController:", error);
+    res.status(500).json({ message: "Cập nhật question type thất bại." });
+  }
+};
+
 export {
   getTestList,
   getQuestionTypes,
@@ -134,5 +184,7 @@ export {
   deletePartController,
   createQuestionTypeController,
   deleteQuestionTypeController,
-  createNewTestController
+  createNewTestController,
+  updatePartNameController,
+  updateQuestionTypeController
 };
