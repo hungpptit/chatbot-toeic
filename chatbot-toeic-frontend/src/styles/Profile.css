@@ -1,0 +1,215 @@
+/* Profile input in edit mode */
+.profile-input {
+  width: 80%;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 2px solid #43ea4a;
+  border-radius: 6px;
+  background: #eafff3;
+  color: #1a237e;
+  margin-bottom: 8px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.profile-input:focus {
+  border-color: #00c853;
+  box-shadow: 0 0 0 2px #b9ffc9;
+}
+.profile-page {
+  max-width: 500px;
+  margin: 40px auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  padding: 32px;
+  position: relative;
+  z-index: 0;
+}
+
+
+
+
+
+/* .profile-page::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 1;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+
+
+
+  box-shadow: 0 0 8px #43ea4a, 0 0 16px #43ea4a;
+  
+} */
+
+.profile-page::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 1;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+
+  animation: glow-wave-green 3s ease-in-out infinite;
+}
+
+.profile-page::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 0;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+
+  animation: glow-wave-mint 5s ease-in-out infinite;
+}
+
+@keyframes glow-wave-green {
+  0% {
+    box-shadow:
+      0 -2px 6px #43ea4a,
+      2px 0 12px #43ea4a,
+      0 2px 8px #43ea4a,
+      -2px 0 4px #43ea4a;
+  }
+  25% {
+    box-shadow:
+      0 -2px 4px #43ea4a,
+      2px 0 6px #43ea4a,
+      0 2px 16px #43ea4a,
+      -2px 0 8px #43ea4a;
+  }
+  50% {
+    box-shadow:
+      0 -2px 10px #43ea4a,
+      2px 0 4px #43ea4a,
+      0 2px 6px #43ea4a,
+      -2px 0 14px #43ea4a;
+  }
+  75% {
+    box-shadow:
+      0 -2px 6px #43ea4a,
+      2px 0 14px #43ea4a,
+      0 2px 4px #43ea4a,
+      -2px 0 8px #43ea4a;
+  }
+  100% {
+    box-shadow:
+      0 -2px 6px #43ea4a,
+      2px 0 12px #43ea4a,
+      0 2px 8px #43ea4a,
+      -2px 0 4px #43ea4a;
+  }
+}
+
+@keyframes glow-wave-mint {
+  0% {
+    box-shadow:
+      0 -2px 4px #00ff99,
+      2px 0 8px #00ff99,
+      0 2px 6px #00ff99,
+      -2px 0 4px #00ff99;
+  }
+  20% {
+    box-shadow:
+      0 -2px 10px #00ff99,
+      2px 0 4px #00ff99,
+      0 2px 12px #00ff99,
+      -2px 0 6px #00ff99;
+  }
+  50% {
+    box-shadow:
+      0 -2px 6px #00ff99,
+      2px 0 12px #00ff99,
+      0 2px 4px #00ff99,
+      -2px 0 10px #00ff99;
+  }
+  80% {
+    box-shadow:
+      0 -2px 8px #00ff99,
+      2px 0 6px #00ff99,
+      0 2px 10px #00ff99,
+      -2px 0 4px #00ff99;
+  }
+  100% {
+    box-shadow:
+      0 -2px 4px #00ff99,
+      2px 0 8px #00ff99,
+      0 2px 6px #00ff99,
+      -2px 0 4px #00ff99;
+  }
+}
+
+.profile-page h2 {
+  color: #1a237e;
+  margin-bottom: 24px;
+}
+.profile-info p {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+.profile-info strong {
+  color: #3949ab;
+}
+
+/* Center the button group */
+.profile-page .profile-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.profile-page button {
+  padding: 8px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  background: #e3e6fd;
+  color: #1a237e;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: background 0.2s;
+}
+
+.profile-page .edit-btn {
+  background: #ede7f6;
+  color: #7c4dff;
+  border: 2px solid #512da8;
+}
+.profile-page .edit-btn:hover {
+  background: #d1c4e9;
+  color: #512da8;
+}
+
+.profile-page .logout-btn {
+  background: #ffebee;
+  color: #e53935;
+  border: 2px solid #b71c1c;
+}
+.profile-page .logout-btn:hover {
+  background: #ffcdd2;
+  color: #b71c1c;
+}
+.profile-page button:hover {
+  background: #c5cae9;
+}
+.profile-page button:last-child {
+  margin-right: 0;
+}
+.profile-page button[style*='background: #e53935'] {
+  background: #e53935 !important;
+  color: #fff !important;
+}
+.profile-page button[style*='background: #e53935']:hover {
+  background: #b71c1c !important;
+}

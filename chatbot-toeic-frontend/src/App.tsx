@@ -9,6 +9,7 @@ import LoginSignup from "./container/login_signup";
 import TestExam from "./container/test_exam";
 import TestReview from "./container/test_review";
 import AdminPage from "./pages/AdminPage";
+import ProfilePage from "./container/ProfilePage";
 
 import AdminUserPage from "./container/admin/AdminUserPage";
 import AdminTestPage from "./container/admin/AdminTestPage";
@@ -68,6 +69,11 @@ function AppContent() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/vocab" element={<VocabularyPage />} />
           <Route path="/login" element={<LoginSignup />} />
+          <Route path="/profile" element={
+            <RequireAuth>
+              <ProfilePage />
+            </RequireAuth>
+          } />
           {/* cần kiểm tra người dùng mới vô dc trang */}
           <Route path="/chat" element={
             <RequireAuth>

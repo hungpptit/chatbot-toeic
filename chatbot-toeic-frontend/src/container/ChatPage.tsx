@@ -27,25 +27,21 @@ export default function ChatPage() {
 
   const handleSend = async () => {
   if (!input.trim()) return; // Nếu không có input, không gửi
-
+  if (!selectedConversation || !selectedConversation.id) {
+    setMessages((prev) => [...prev, { sender: "bot", text: "❌ Bạn chưa chọn đoạn chat!" }]);
+    return;
+  }
   const userMessage: Message = { sender: "user", text: input };
-
-  // Thêm tin nhắn người dùng vào UI ngay lập tức
   setMessages((prev) => [...prev, userMessage]);
-  setInput(""); // Xoá input sau khi gửi
-
+  setInput("");
   try {
-    // Gọi API để lưu tin nhắn người dùng vào DB
     await createMessageAPI({
-      conversationId: selectedConversation?.id || 0, // Giả sử bạn đang chọn conversation
+      conversationId: selectedConversation.id,
       role: "user",
       content: input,
     });
-
-    // Gửi câu hỏi đến AI và nhận phản hồi
-    const res = await getQuestionFromRawText(input,conversationId);
+    const res = await getQuestionFromRawText(input, conversationId);
     let reply = "";
-
     if (res.type === "Vocabulary-Lookup") {
       reply += `🔤 Từ: ${res.word}\n`;
       reply += `• Định nghĩa: ${res.definition}\n`;
@@ -63,15 +59,11 @@ export default function ChatPage() {
       reply += `✅ Đáp án: ${res.answer}\n`;
       reply += `🧠 Giải thích: ${res.explanation}`;
     }
-
-    // Tin nhắn phản hồi từ AI
     const botMessage: Message = { sender: "bot", text: reply };
     setMessages((prev) => [...prev, botMessage]);
-
-    // Lưu tin nhắn AI vào DB
     await createMessageAPI({
-      conversationId: selectedConversation?.id || 0,
-      role: "model", // AI trả lời
+      conversationId: selectedConversation.id,
+      role: "model",
       content: reply,
     });
   } catch (err) {
@@ -90,34 +82,62 @@ export default function ChatPage() {
   }, [messages]);
 
   useEffect(() => {
-  if (conversationId) {
+    if (!conversationId || isNaN(Number(conversationId))) {
+      setMessages([]);
+      setSelectedConversation(null);
+      return;
+    }
     (async () => {
       try {
         const convId = Number(conversationId);
-        console.log("🔗 Loading conversation from URL with id =", convId);
-        
         const rawMsgs = await getMessagesByConversationId(convId);
-        const displayMsgs = rawMsgs.map((msg) => ({
-          sender: msg.role === "user" ? "user" : "bot",
-          text: msg.content,
-        })) as Message[];
-
-        setMessages(displayMsgs);
-
-        setSelectedConversation({
-          id: convId,
-          title: `Conversation ${convId}`,
-          userId: 0,
-          createdAt: "",
-          updatedAt: "",
+        if (!rawMsgs || rawMsgs.length === 0) {
+          setMessages([]);
+        } else {
+          const displayMsgs = rawMsgs.map((msg) => ({
+            sender: msg.role === "user" ? "user" : "bot",
+            text: msg.content,
+          })) as Message[];
+          setMessages(displayMsgs);
+        }
+        // Luôn chọn đoạn chat mới khi URL thay đổi
+        setSelectedConversation(prev => {
+          if (prev && prev.id === convId) return prev;
+          return {
+            id: convId,
+            title: `Conversation ${convId}`,
+            userId: 0,
+            createdAt: "",
+            updatedAt: "",
+          };
         });
-
       } catch (err) {
         console.error("❌ Lỗi khi load tin nhắn từ URL:", err);
       }
     })();
-  }
-}, [conversationId]);
+  }, [conversationId]);
+
+  // Tự động load tin nhắn khi selectedConversation thay đổi
+  useEffect(() => {
+    if (selectedConversation) {
+      (async () => {
+        try {
+          const rawMsgs = await getMessagesByConversationId(selectedConversation.id);
+          if (!rawMsgs || rawMsgs.length === 0) {
+            setMessages([]);
+          } else {
+            const displayMsgs = rawMsgs.map((msg) => ({
+              sender: msg.role === "user" ? "user" : "bot",
+              text: msg.content,
+            })) as Message[];
+            setMessages(displayMsgs);
+          }
+        } catch (err) {
+          console.error("❌ Lỗi khi load tin nhắn:", err);
+        }
+      })();
+    }
+  }, [selectedConversation]);
 
 
  

@@ -170,6 +170,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: #1f2937;
+  min-width: 130px;
 }
 
 .conversation-item:hover {

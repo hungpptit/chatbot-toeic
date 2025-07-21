@@ -40,9 +40,15 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelectConversation, show, setShow }
     const newTitle = prompt('Nhập tên đoạn chat mới') || 'Đoạn chat mới';
     try {
       const newConv = await createConversationAPI(newTitle);
-      setConversations((prev) => [newConv, ...prev]);
-      onSelectConversation(newConv);
-      navigate(`/chat/${newConv.id}`);
+      // Đảm bảo title đúng
+      const convWithTitle = { ...newConv, title: newTitle };
+      setConversations((prev) => [convWithTitle, ...prev]);
+      onSelectConversation(convWithTitle);
+      if (convWithTitle.id) {
+        navigate(`/chat/${convWithTitle.id}`);
+      } else {
+        alert('Không lấy được id đoạn chat mới, vui lòng thử lại!');
+      }
       setShow(false); // Ẩn sau khi tạo
     } catch (error: unknown) {
       const err = error as any;
@@ -130,8 +136,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelectConversation, show, setShow }
                         navigate(`/chat/${conv.id}`);
                         setShow(false);
                       }}
+                      title={conv.title}
                     >
-                      {conv.title || 'Không tiêu đề'}
+                      {(conv.title && conv.title.length > 25)
+                        ? conv.title.slice(0, 25) + '...'
+                        : (conv.title || 'Không tiêu đề')}
                     </div>
 
                     <button

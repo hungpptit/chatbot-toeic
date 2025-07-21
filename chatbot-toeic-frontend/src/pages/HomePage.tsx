@@ -7,10 +7,20 @@ import { getAllTestsWithCourseAPI, type Test } from '../services/testCourseServi
 import { getCurrentUser, type User } from "../services/authService";
 
 export default function HomePage() {
+  // Loại bỏ dấu tiếng Việt
+  function removeVietnameseTones(str: string) {
+    return str
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D');
+  }
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [tests, setTest] = useState<Test[]>([]);
   const [user, setUser] = useState<User | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<string>('Tất cả');
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   
   useEffect(() => {
@@ -79,40 +89,67 @@ export default function HomePage() {
         </div>
 
         <div className="div3">
-           <div className="course-list">
+          <div className="course-list">
             {loading ? (
               <p>Đang tải khóa học...</p>
             ) : (
-              courses.map((course) => (
+              <>
                 <button
-                  key={course.id}
-                  className={`course-item ${course.id === 1 ? 'active' : ''}`} // Đánh dấu "Tất cả"
+                  className={`course-item ${selectedCourse === 'Tất cả' ? 'active' : ''}`}
+                  onClick={() => setSelectedCourse('Tất cả')}
                 >
-                  {course.name}
+                  Tất cả
                 </button>
-              ))
+                {courses.map((course) => (
+                  <button
+                    key={course.id}
+                    className={`course-item ${selectedCourse === course.name ? 'active' : ''}`}
+                    onClick={() => setSelectedCourse(course.name)}
+                  >
+                    {course.name}
+                  </button>
+                ))}
+              </>
             )}
           </div>
         </div>
         <div className="div4">
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Nhập từ khóa đề thi..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            style={{ width: '400px', marginRight: '8px', padding: '6px 12px', borderRadius: '4px', border: '1px solid #ccc' }}
+          />
           <button className='btn-search'>Tìm kiếm</button>
         </div>
         <div className="div5">
-        <div className="test-grid">
-          {tests.map((test) => (
-            <CardTest
-              id={test.id}
-              title={test.title}
-              duration={test.duration}
-              participants={test.participants}
-              comments={test.comments}
-              questions={test.questions}
-              parts={test.parts}
-              tags={test.tags}
-            />
-          ))}
+          <div className="test-grid">
+            {tests
+              .filter(test => {
+                const filterCourse = selectedCourse === 'Tất cả' || (test.tags && test.tags.includes(selectedCourse));
+                const search = searchTerm.trim();
+                if (!search) return filterCourse;
+                const titleNoDiacritic = removeVietnameseTones(test.title.toLowerCase());
+                const searchNoDiacritic = removeVietnameseTones(search.toLowerCase());
+                return filterCourse && titleNoDiacritic.includes(searchNoDiacritic);
+              })
+              .map((test) => (
+                <CardTest
+                  key={test.id}
+                  id={test.id}
+                  title={test.title}
+                  duration={test.duration}
+                  participants={test.participants}
+                  comments={test.comments}
+                  questions={test.questions}
+                  parts={test.parts}
+                  tags={test.tags}
+                />
+              ))}
+          </div>
         </div>
-      </div>
 
     
      

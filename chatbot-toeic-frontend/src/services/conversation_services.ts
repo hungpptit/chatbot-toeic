@@ -41,14 +41,15 @@ export const getConversationByIdAPI = async (id: number): Promise<Conversation> 
 
 //  Tạo conversation mới
 export const createConversationAPI = async (title: string): Promise<Conversation> => {
-  const response = await axios.post<Conversation>(
+  const response = await axios.post<{ code: number; message: string; data: Conversation }>(
     `${API_BASE_URL}`,
     { title },
     {
       withCredentials: true,
     }
   );
-  return response.data;
+  console.log('API createConversation response:', response.data);
+  return response.data.data;
 };
 
 // Xoá conversation theo ID
