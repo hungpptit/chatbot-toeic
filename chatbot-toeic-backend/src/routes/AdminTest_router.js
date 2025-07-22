@@ -9,7 +9,8 @@ import {
   deleteQuestionTypeController,
   createNewTestController,
   updatePartNameController,
-  updateQuestionTypeController
+  updateQuestionTypeController,
+  deleteTestByIdController
 } from '../controllers/AdminTest_controller.js';
 
 import { authMiddleware } from '../Middleware/authMiddleware.js';
@@ -35,5 +36,7 @@ router.post('/question-types', authMiddleware, createQuestionTypeController);
 router.delete('/question-types/:id', authMiddleware, deleteQuestionTypeController);
 // Tạo bài test mới
 router.post('/createTestNew', authMiddleware, createNewTestController);
+// Xóa bài test theo ID
+router.delete('/deleteTest/:testId', authMiddleware, deleteTestByIdController);
 
 export default router;

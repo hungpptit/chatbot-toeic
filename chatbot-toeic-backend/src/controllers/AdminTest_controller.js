@@ -10,7 +10,8 @@ import {getAllTestsWithCourses,
   deleteQuestionType,
   createNewTest,
   updatePartName,
-  updateQuestionType
+  updateQuestionType,
+  deleteTestById
  } from '../services/AdminTest_service.js';
 
 const getTestList = async (req, res) => {
@@ -130,6 +131,22 @@ const createNewTestController = async (req, res) => {
   }
 };
 
+
+const deleteTestByIdController = async (req, res) => {
+  const {testId} = req.params;
+  console.log(`🗑️ [deleteTestByIdController] Deleting test with ID: `, testId);
+
+  try {
+    const result = await deleteTestById(testId);
+
+    console.log(`✅ [deleteTestByIdController] Deleted test ID ${testId}`);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(`❌ [deleteTestByIdController] Failed to delete test ID ${testId}:`, error.message);
+    res.status(404).json({ message: error.message });
+  }
+};
+
 const updatePartNameController = async (req, res) => {
   try {
     const { partId, name } = req.body;
@@ -186,5 +203,6 @@ export {
   deleteQuestionTypeController,
   createNewTestController,
   updatePartNameController,
-  updateQuestionTypeController
+  updateQuestionTypeController,
+  deleteTestByIdController
 };

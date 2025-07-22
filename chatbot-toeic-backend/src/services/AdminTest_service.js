@@ -152,8 +152,6 @@ const updateQuestionType = async (typeId, newName, newDescription = null) => {
 
 
 
-
-
 const createNewTest = async (testData) => {
   try {
     const { title, courseId, questions } = testData;
@@ -208,6 +206,32 @@ const createNewTest = async (testData) => {
 };
 
 
+const deleteTestById = async (testIdRaw) => {
+  try {
+    // 1. Tìm test
+    const testId = +testIdRaw;
+    console.log('[deleteTestById] testId:', testId, typeof testId);
+    console.log('[DEBUG] db.Test:', db.Test);
+    const test = await db.Test.findByPk(testId);
+    if (!test) {
+      throw new Error(`Test with ID ${testId} not found`);
+    }
+
+    // 2. Xóa liên kết trong bảng trung gian (nếu bạn muốn xóa tường minh)
+    await db.Test_Courses.destroy({ where: { testId } });
+    await db.UserTest.destroy({ where: { testId } });
+    await db.TestQuestion.destroy({ where: { testId } });
+    // 3. Xóa test chính
+    await test.destroy();
+
+    console.log(`🗑️ Test ID ${testId} has been deleted`);
+    return { success: true, message: `Test ID ${testId} deleted` };
+  } catch (error) {
+    console.error('❌ Error deleting test:', error);
+    throw error;
+  }
+};
+
 
 
 export { getAllTestsWithCourses,
@@ -218,5 +242,6 @@ export { getAllTestsWithCourses,
   deleteQuestionType, 
   createNewTest,
   updatePartName,
-  updateQuestionType
+  updateQuestionType,
+  deleteTestById
  };

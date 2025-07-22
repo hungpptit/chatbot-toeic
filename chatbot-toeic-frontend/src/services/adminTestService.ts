@@ -44,6 +44,11 @@ export interface Part {
     name: string;
 }
 
+interface DeleteTestResponse {
+  success: boolean;
+  message: string;
+}
+
 // Lấy danh sách tất cả bài test
 export const getAllTestsAPI = async (): Promise<Test[]> => {
   const response = await axios.get<Test[]>(`${API_BASE_URL}`, {
@@ -118,6 +123,11 @@ export const createNewTestAPI = async (testData: TestCreate): Promise<TestCreate
   return response.data;
 };
 
+export const deleteTestByIdAPI = async (testId: number): Promise<void> => {
+  await axios.delete(`${API_BASE_URL}/deleteTest/${testId}`, {
+    withCredentials: true,
+  });
+};
 
 // update Part
 export const updatePartNameAPI = async (partId: number, newName: string): Promise<Part> => {
@@ -160,3 +170,4 @@ export const updateQuestionTypeAPI = async (
     throw error;
   }
 };
+

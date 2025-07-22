@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
 import "../../styles/AdminTestPage.css";
-import {getAllTestsAPI, type Test} from '../../services/adminTestService';
+import {getAllTestsAPI, type Test, deleteTestByIdAPI} from '../../services/adminTestService';
+import {deleteCourseByIdAPI} from '../../services/testCourseService'
 import { useNavigate } from "react-router-dom";
 
 
@@ -39,9 +40,16 @@ export default function AdminTestPage() {
     });
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm("Bạn có chắc muốn xóa đề thi này không?")) {
-      console.log("Xóa đề", id);
+      try {
+        await deleteTestByIdAPI(id);
+        setTests((prev) => prev.filter((test) => test.id !== id));
+        alert("Đã xóa đề thành công!");
+      } catch (error) {
+        console.error("Lỗi khi xóa đề:", error);
+        alert("Xóa đề thất bại!");
+      }
     }
   };
 
