@@ -1,0 +1,218 @@
+.test-list-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 32px 36px 32px;
+  margin-top: 36px;
+  min-width: 320px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.test-list-title {
+  font-size: 22px;
+  color: #1a237e;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+.test-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+}
+.test-list-table th, .test-list-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+.test-list-table th {
+  background: #f8faff;
+  color: #1a237e;
+  font-weight: 600;
+}
+.test-list-table tr:nth-child(even) {
+  background: #f5f7fa;
+}
+.test-tag {
+  background: #ffb366;
+  color: #fff;
+  border-radius: 8px;
+  padding: 2px 10px;
+  font-size: 13px;
+  margin-left: 6px;
+  font-weight: 500;
+  display: inline-block;
+}
+.test-detail-link {
+  color: #2d3eaf;
+  font-weight: 500;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Make the analytics page scrollable if content overflows */
+.analytics-scroll-page {
+  width: 100vw;
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #f5f7fa;
+  padding: 0;
+}
+
+.user-analytics-page {
+  max-width: 1100px;
+  margin: 40px auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  padding: 32px 32px 40px;
+  box-sizing: border-box;
+}
+.chart-card {
+  background: #f8faff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 28px 36px 32px;
+  margin-top: 36px;
+  min-width: 320px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.chart-title {
+  font-size: 20px;
+  color: #2d3eaf;
+  font-weight: 500;
+  margin-bottom: 18px;
+}
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.filter-select {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid #b3b3b3;
+  font-size: 16px;
+}
+.btn-search, .btn-clear {
+  padding: 6px 18px;
+  border-radius: 6px;
+  border: none;
+  background: #2d3eaf;
+  color: #fff;
+  font-weight: 500;
+  margin-left: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-clear {
+  background: #f5f7fa;
+  color: #2d3eaf;
+  border: 1px solid #dbeafe;
+}
+.btn-search:hover {
+  background: #1a237e;
+}
+.summary-row {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 32px;
+  justify-content: center;
+}
+.summary-card {
+  background: #f8faff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 24px 32px;
+  min-width: 220px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.summary-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+.summary-title {
+  font-size: 18px;
+  color: #2d3eaf;
+  margin-bottom: 4px;
+}
+.summary-value {
+  font-size: 32px;
+  font-weight: bold;
+  color: #1a237e;
+}
+.summary-link {
+  color: #2d3eaf;
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.summary-desc {
+  font-size: 15px;
+  color: #888;
+}
+.section-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  justify-content: center;
+}
+.tab {
+  padding: 8px 24px;
+  border-radius: 20px;
+  border: none;
+  background: #f5f7fa;
+  color: #2d3eaf;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.2s, color 0.2s;
+}
+.tab.active {
+  background: #2d3eaf;
+  color: #fff;
+}
+.section-stats-row {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.section-card {
+  background: #f8faff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 20px 28px;
+  min-width: 170px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.section-title {
+  font-size: 16px;
+  color: #2d3eaf;
+  margin-bottom: 4px;
+}
+.section-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #1a237e;
+}
+.section-desc {
+  font-size: 14px;
+  color: #888;
+}

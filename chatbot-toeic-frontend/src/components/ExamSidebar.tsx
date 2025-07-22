@@ -7,6 +7,8 @@ interface ExamSidebarProps {
   onSubmit: () => void;
   showResult: boolean;
   correctCount: number;
+  totalQuestions: number;
+  score: number;
   startTime: Date | null;
 }
 
@@ -16,11 +18,15 @@ const ExamSidebar: React.FC<ExamSidebarProps> = ({
   onSubmit,
   showResult,
   correctCount,
+  totalQuestions,
+  score,
   startTime,
 }) => {
-  const totalQuestions = 40;
   const examDuration = 45 * 60; // 45 phút
-  const questionNumbers = Array.from({ length: totalQuestions }, (_, i) => i + 1);
+  console.log("Total questions truyền sang sidebar:", totalQuestions);
+  // Nếu totalQuestions = 0 (chưa submit), lấy số câu từ answeredQuestions hoặc mặc định 40
+  const numQuestions = totalQuestions > 0 ? totalQuestions : (answeredQuestions.length > 0 ? Math.max(...answeredQuestions) : 40);
+  const questionNumbers = Array.from({ length: numQuestions }, (_, i) => i + 1);
 
   const [timeLeft, setTimeLeft] = useState(examDuration);
   const [finalTime, setFinalTime] = useState<number | null>(null);
@@ -75,8 +81,8 @@ const ExamSidebar: React.FC<ExamSidebarProps> = ({
 
       {showResult && (
         <div className="exam-result">
-          <p>Kết quả: {correctCount} / 40 câu đúng</p>
-          <p>Điểm: {((correctCount / 40) * 10).toFixed(2)} / 10</p>
+          <p>Kết quả: {correctCount} / {totalQuestions} câu đúng</p>
+          <p>Điểm: {score} / 10</p>
         </div>
       )}
 

@@ -42,6 +42,11 @@ export default function CardQuestion({
     onAnswer(index, true);
   };
 
+  // Determine cursor style for card-option
+  const getCursorStyle = () => {
+    return showResult ? 'not-allowed' : 'pointer';
+  };
+
   // const isCorrect = selectedAnswer === item.correctAnswer;
 
   return (
@@ -71,17 +76,17 @@ export default function CardQuestion({
             }
           }
 
-
-            return (
-              <button
-                key={opt}
-                className={className}
-                onClick={() => handleSelect(opt)}
-                disabled={showResult}
-              >
-                {opt}. {item[`option${opt}` as "optionA" | "optionB" | "optionC" | "optionD"]}
-              </button>
-            );
+          return (
+            <button
+              key={opt}
+              className={className}
+              onClick={() => handleSelect(opt)}
+              disabled={showResult}
+              style={{ cursor: getCursorStyle() }}
+            >
+              {opt}. {item[`option${opt}` as "optionA" | "optionB" | "optionC" | "optionD"]}
+            </button>
+          );
           })}
         </div>
       ) : (

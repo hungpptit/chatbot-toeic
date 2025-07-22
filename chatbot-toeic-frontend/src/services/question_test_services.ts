@@ -135,7 +135,8 @@ export const submitTestAPI = async (
     { answers },
     { withCredentials: true }
   );
-  console.log("Submit test result: ", response.data);
+  console.log("Submit test response:", response);
+  console.log("Submit test result (data):", response.data);
   return response.data;
 };
 

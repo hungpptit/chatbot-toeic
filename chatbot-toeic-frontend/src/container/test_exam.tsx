@@ -26,6 +26,8 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
   const [answeredQuestions, setAnsweredQuestions] = useState<number[]>([]);
   const [showStartPopup, setShowStartPopup] = useState(mode === "exam");
   const [startTime, setStartTime] = useState<Date | null>(null);
+  const [score, setScore] = useState<number>(0);
+  const [totalQuestions, setTotalQuestions] = useState<number>(0);
 
   const { userTestId, id } = useParams();
   const userTestIdNum = Number(userTestId);
@@ -87,6 +89,7 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
         } else if (mode === "exam" && id) {
           const data = await getQuestionsByTestIdAPI(Number(id));
           setQuestionData(data);
+          setTotalQuestions(data.length);
         }
       } catch (err) {
         console.error("Fetch data error:", err);
@@ -136,6 +139,8 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
       const result = await submitTestAPI(Number(id), answersArray);
       setCorrectCount(result.correctCount);
       setIncorrectAnswers(result.incorrectAnswers);
+      setScore(result.score);
+      setTotalQuestions(result.total);
       setShowResult(true);
     } catch (error) {
       console.error("Lỗi submit bài:", error);
@@ -171,6 +176,8 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
               onSubmit={mode === "exam" ? handleSubmitTest : () => {}}
               showResult={showResult}
               correctCount={correctCount}
+              totalQuestions={totalQuestions > 0 ? totalQuestions : questionData.length}
+              score={score}
               startTime={startTime}
             />
           </div>

@@ -5,8 +5,10 @@ import { getAllCoursesAPI, type Course } from '../services/coursesServices';
 import { useEffect, useState } from 'react';
 import { getAllTestsWithCourseAPI, type Test } from '../services/testCourseService';
 import { getCurrentUser, type User } from "../services/authService";
+import { useNavigate } from 'react-router-dom';
 
 export default function HomePage() {
+  const navigate = useNavigate();
   // Loại bỏ dấu tiếng Việt
   function removeVietnameseTones(str: string) {
     return str
@@ -83,7 +85,7 @@ export default function HomePage() {
             <span className="icon">⚠️</span> Bạn chưa tạo mục tiêu cho quá trình luyện thi của mình. 
             <a href="#" className="link"> Tạo ngay.</a>
           </p>
-          <button className="result-button">
+          <button className="result-button" onClick={() => navigate('/test-analytics')}>
             📊 Thống kê kết quả
           </button>
         </div>

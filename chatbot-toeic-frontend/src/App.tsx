@@ -19,6 +19,7 @@ import AdminUserEdit from "./container/admin/AdminUserEdit";
 import AdminTestViewPage from "./container/admin/AdminTestViewPage";
 import AdminTestAddPage from "./container/admin/AddTestForm";
 import AdminAddCourse from "./container/admin/AdminAddCourse";
+import AdminTestAnalyticsPage from "./container/admin/AdminTestAnalyticsPage";
 
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
@@ -72,6 +73,11 @@ function AppContent() {
           <Route path="/profile" element={
             <RequireAuth>
               <ProfilePage />
+            </RequireAuth>
+          } />
+          <Route path="/test-analytics" element={
+            <RequireAuth>
+              <AdminTestAnalyticsPage />
             </RequireAuth>
           } />
           {/* cần kiểm tra người dùng mới vô dc trang */}

@@ -37,7 +37,7 @@ export default (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
     },
     score: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.FLOAT,
       allowNull: true,
     },
     startedAt: {
