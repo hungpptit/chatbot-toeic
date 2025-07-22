@@ -1,3 +1,19 @@
+
+.admin-manage-btn {
+  padding: 4px 12px;
+  background: #e6f7ff;
+  color: #0050b3;
+  border: 1px solid #1890ff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.admin-manage-btn:hover {
+  background: #bae7ff;
+  color: #003a8c;
+  border-color: #40a9ff;
+}
 /* Profile input in edit mode */
 .profile-input {
   width: 90%;
@@ -17,6 +33,7 @@
 }
 .profile-page {
   max-width: 500px;
+  min-width: 400px;
   margin: 40px auto;
   background: #fff;
   border-radius: 12px;

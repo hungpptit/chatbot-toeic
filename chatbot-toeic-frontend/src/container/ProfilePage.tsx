@@ -208,7 +208,17 @@ const handleSave = async () => {
         <p><strong>Email:</strong> {editMode ? (
           <input className="profile-input" value={email} type="email" onChange={e => setEmail(e.target.value)} />
         ) : user.email}</p>
-        <p><strong>Vai trò:</strong> {user.role_id === 1 ? 'User' : user.role_id === 2 ? 'Admin' : 'Không xác định'}</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span><strong>Vai trò:</strong> {user.role_id === 1 ? 'User' : user.role_id === 2 ? 'Admin' : 'Không xác định'}</span>
+          {user.role_id === 2 && !editMode && !otpMode &&(
+            <button
+              className="admin-manage-btn"
+              onClick={() => navigate('/admin')}
+            >
+              Quản lý Admin
+            </button>
+          )}
+        </div>
         <p><strong>Trạng thái:</strong> {user.status ? 'Actived' : 'Locked'}</p>
         {editMode ? (
           <div className="profile-row">
@@ -225,7 +235,7 @@ const handleSave = async () => {
         )}
         {editMode && (
           <div className="profile-row">
-            <p><strong>Xác nhận mật khẩu hiện tại*:</strong></p>
+            <p><strong>Xác nhận mật khẩu hiện tại <span style={{color: 'red'}}>*</span>:</strong></p>
             <input
               className="profile-input"
               type="password"
@@ -238,10 +248,10 @@ const handleSave = async () => {
 
       <div className="profile-actions">
         {editMode ? (
-          <>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={handleSave}>Lưu</button>
             <button onClick={() => setEditMode(false)}>Hủy</button>
-          </>
+          </div>
         ) : (
           <button className="edit-btn" onClick={handleEdit}>Chỉnh sửa</button>
         )}

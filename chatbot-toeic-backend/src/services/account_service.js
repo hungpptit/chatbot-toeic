@@ -14,7 +14,7 @@ import { generateOTP, sendOTP, otpStore  } from './login_signup_service.js'; // 
 const isRegularUser = async (id) => {
   try {
     const user = await db.User.findOne({ where: { id } });
-    const isValid = !!user && user.role_id === 1;
+    const isValid = !!user && (user.role_id === 1 || user.role_id === 2);
 
     if (!isValid) {
       console.warn(`[isRegularUser] User with ID ${id} is invalid or not a regular user.`);
