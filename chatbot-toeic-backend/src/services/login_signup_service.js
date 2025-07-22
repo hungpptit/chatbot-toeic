@@ -5,13 +5,13 @@ import nodemailer from 'nodemailer';
 
 const User = db.User;
 const SECRET_KEY = process.env.JWT_SECRET_KEY;
-const otpStore = new Map(); // Có thể thay bằng Redis
+export const otpStore = new Map(); // Có thể thay bằng Redis
 
-function generateOTP() {
+export function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-async function sendOTP(email, subject, message) {
+export async function sendOTP(email, subject, message) {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -142,7 +142,7 @@ const login = async ({ email, password }) => {
   return { code: 200, message: "📩 OTP đã được gửi đến email" };
 };
 
- const verifyRegisterOtp = async ({ email, otp, name, password }) => {
+const verifyRegisterOtp = async ({ email, otp, name, password }) => {
   const entry = otpStore.get(email);
   if (!entry || entry.otp !== otp) return { code: 400, message: "OTP không hợp lệ" };
   if (Date.now() > entry.expiresAt) {
