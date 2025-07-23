@@ -26,7 +26,6 @@ export default function Header({ activeTab, onChangeTab }: HeaderProps) {
     const fetchUser = async () => {
       console.log("👀 [Header] Gọi fetchUser");
       const userData = await getCurrentUser();
-      console.log("🔍 [Header] Kết quả getCurrentUser:", userData);
       setUser(userData); // null nếu chưa login
     };
 

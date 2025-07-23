@@ -23,7 +23,7 @@ const ExamSidebar: React.FC<ExamSidebarProps> = ({
   startTime,
 }) => {
   const examDuration = 45 * 60; // 45 phút
-  console.log("Total questions truyền sang sidebar:", totalQuestions);
+
   // Nếu totalQuestions = 0 (chưa submit), lấy số câu từ answeredQuestions hoặc mặc định 40
   const numQuestions = totalQuestions > 0 ? totalQuestions : (answeredQuestions.length > 0 ? Math.max(...answeredQuestions) : 40);
   const questionNumbers = Array.from({ length: numQuestions }, (_, i) => i + 1);

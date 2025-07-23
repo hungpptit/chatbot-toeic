@@ -145,6 +145,7 @@ export const SubmitTestResult = async ({ userId, testId, answers }) => {
       const isCorrect = question.correctAnswer === selectedAnswer;
 
       resultsToSave.push({
+        userId,
         userTestId: userTest.id,
         questionId,
         selectedOption: selectedAnswer || null,

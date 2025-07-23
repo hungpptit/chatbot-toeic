@@ -1,4 +1,5 @@
 import './AdminTestAnalyticsPage.css';
+import { useEffect } from 'react';
 import { useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
@@ -11,28 +12,14 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import {getUserTestStatsAPI, getPartStatisticsByUserAPI, type PartStat, getAccuracyOverTimeAPI, type AccuracyPoint, getUserTestHistoryAPI, type UserTestHistoryItem} from '../../services/statisticalService';
+import { getCurrentUser } from '../../services/authService';
+// import {getAllPartsAPI, type Part, } from '../../services/adminTestService';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 // Demo dữ liệu biểu đồ
-const chartData = {
-  labels: [
-    '2025-03-10', '2025-03-19', '2025-03-20', '2025-03-21', '2025-03-22', '2025-03-25', '2025-03-27'
-  ],
-  datasets: [
-    {
-      label: '%Correct (30D)',
-      data: [56.52, 62.5, 58.06, 41.94, 50, 10, 14.29],
-      fill: false,
-      borderColor: '#ff6699',
-      backgroundColor: '#ff6699',
-      tension: 0.3,
-      pointBackgroundColor: '#ff6699',
-      pointBorderColor: '#ff6699',
-      pointRadius: 5,
-      pointHoverRadius: 7,
-    },
-  ],
-};
+
+
 
 const chartOptions = {
   responsive: true,
@@ -62,29 +49,108 @@ const chartOptions = {
   },
 };
 
-const demoStats = {
-  totalTests: 15,
-  totalMinutes: 836,
-  targetScore: null,
-  sections: [
-    {
-      name: 'Listening',
-      done: 8,
-      accuracy: 47.8,
-      avgTime: 0,
-      avgScore: 0,
-      maxScore: 0,
-      maxScoreTotal: 9,
-    },
-    // ... các section khác
-  ],
-};
 
-const sectionNames = ['Listening', 'Reading', 'Writing', 'Speaking'];
+
+
 
 export default function AdminTestAnalyticsPage() {
   const [activeSection, setActiveSection] = useState(0);
-  const stats = demoStats;
+  const [stats, setStats] = useState({
+    totalTests: 0,
+    totalMinutes: 0,
+    targetScore: null,
+    sections: [] as PartStat[],
+  });
+  const [, setUser] = useState<{ id: string } | null>(null);
+  const [sectionNames, setSectionNames] = useState<string[]>([]);
+  const [chartPoints, setChartPoints] = useState<AccuracyPoint[]>([]);
+  const [testHistory, setTestHistory] = useState<UserTestHistoryItem[]>([]);
+
+
+
+  useEffect(() => {
+    const fetchUserAndStats = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        setUser(currentUser);
+
+        if (currentUser?.id) {
+          const [general, partStats] = await Promise.all([
+            getUserTestStatsAPI(), // không cần truyền userId nếu backend lấy từ token
+            getPartStatisticsByUserAPI(),
+          ]);
+
+          setStats({
+            totalTests: general.totalAttempts,
+            totalMinutes: Math.floor(general.totalTimeSeconds / 60),
+            targetScore: null,
+            sections: partStats.map(p => ({
+              ...p,
+              maxScoreTotal: 9 // giả sử mỗi part tối đa 9 điểm
+            })),
+          });
+
+          // Đồng bộ section name từ partStats nếu bạn không cần gọi getAllPartsAPI()
+          setSectionNames(partStats.map(p => p.name));
+        }
+      } catch (err) {
+        console.error("❌ Lỗi khi lấy user/stats:", err);
+      }
+    };
+
+    fetchUserAndStats();
+  }, []);
+
+  useEffect(() => {
+    const fetchChartData = async () => {
+      try {
+        const data = await getAccuracyOverTimeAPI(30);
+        setChartPoints(data);
+      } catch (error) {
+        console.error('❌ Lỗi lấy dữ liệu biểu đồ:', error);
+      }
+    };
+
+    fetchChartData();
+  }, []);
+
+  useEffect(() => {
+    const fetchTestHistory = async () => {
+      try {
+        const data = await getUserTestHistoryAPI();
+        setTestHistory(data);
+      } catch (error) {
+        console.error('❌ Lỗi khi lấy lịch sử đề thi:', error);
+      }
+    };
+
+    fetchTestHistory();
+  }, []);
+
+
+
+
+  const currentPartName = sectionNames[activeSection];
+  const currentStats = stats.sections.find(p => p.name === currentPartName);
+
+  const chartData = {
+    labels: chartPoints.map(p => p.date),
+    datasets: [
+      {
+        label: '%Correct (30D)',
+        data: chartPoints.map(p => p.accuracy),
+        fill: false,
+        borderColor: '#ff6699',
+        backgroundColor: '#ff6699',
+        tension: 0.3,
+        pointBackgroundColor: '#ff6699',
+        pointBorderColor: '#ff6699',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+      },
+    ],
+  };
+
 
   return (
     <div className="analytics-scroll-page">
@@ -132,26 +198,27 @@ export default function AdminTestAnalyticsPage() {
         <div className="section-stats-row">
           <div className="section-card">
             <div className="section-title">Số đề đã làm</div>
-            <div className="section-value">{stats.sections[activeSection]?.done || 0}</div>
+            <div className="section-value">{currentStats?.done || 0}</div>
             <div className="section-desc">đề thi</div>
           </div>
           <div className="section-card">
             <div className="section-title">Độ chính xác (#đúng/#tổng)</div>
-            <div className="section-value">{stats.sections[activeSection]?.accuracy || 0}%</div>
+            <div className="section-value">{currentStats?.accuracy || 0}%</div>
           </div>
           <div className="section-card">
             <div className="section-title">Thời gian trung bình</div>
-            <div className="section-value">{stats.sections[activeSection]?.avgTime || 0}</div>
+            <div className="section-value">{currentStats?.avgTime || 0}</div>
           </div>
           <div className="section-card">
             <div className="section-title">Điểm trung bình</div>
-            <div className="section-value">{stats.sections[activeSection]?.avgScore || 0}/9.0</div>
+            <div className="section-value">{currentStats?.avgScore || 0}/9.0</div>
           </div>
           <div className="section-card">
             <div className="section-title">Điểm cao nhất</div>
-            <div className="section-value">{stats.sections[activeSection]?.maxScore || 0}/{stats.sections[activeSection]?.maxScoreTotal || 9}</div>
+            <div className="section-value">{currentStats?.maxScore || 0}/{currentStats?.maxScoreTotal || 9}</div>
           </div>
         </div>
+
         {/* Chart card moved to a separate card below all other cards */}
         <div className="chart-card">
           <div className="chart-title">Thống kê kết quả theo thời gian</div>
@@ -171,77 +238,28 @@ export default function AdminTestAnalyticsPage() {
               </tr>
             </thead>
             <tbody>
-              {/* Demo data, replace with real data if available */}
-              <tr>
-                <td>27/03/2025</td>
-                <td>IELTS Simulation Listening test 8 <span className="test-tag">Luyện tập</span> <span className="test-tag">Recording 4</span></td>
-                <td>0/10</td>
-                <td>0:12:38</td>
-                <td><a className="test-detail-link" href="#">Xem chi tiết</a></td>
-              </tr>
-              <tr>
-                <td>27/03/2025</td>
-                <td>IELTS Simulation Listening test 8 <span className="test-tag">Luyện tập</span> <span className="test-tag">Recording 3</span></td>
-                <td>7/10</td>
-                <td>0:08:35</td>
-                <td><a className="test-detail-link" href="#">Xem chi tiết</a></td>
-              </tr>
-              <tr>
-                <td>27/03/2025</td>
-                <td>IELTS Simulation Listening test 8 <span className="test-tag">Luyện tập</span> <span className="test-tag">Recording 3</span></td>
-                <td>3/10</td>
-                <td>0:09:44</td>
-                <td><a className="test-detail-link" href="#">Xem chi tiết</a></td>
-              </tr>
-              <tr>
-                <td>27/03/2025</td>
-                <td>IELTS Simulation Listening test 8 <span className="test-tag">Luyện tập</span> <span className="test-tag">Recording 2</span></td>
-                <td>7/10</td>
-                <td>0:09:31</td>
-                <td><a className="test-detail-link" href="#">Xem chi tiết</a></td>
-              </tr>
-              <tr>
-                <td>27/03/2025</td>
-                <td>IELTS Simulation Listening test 8 <span className="test-tag">Luyện tập</span> <span className="test-tag">Recording 2</span></td>
-                <td>0/10</td>
-                <td>0:08:51</td>
-                <td><a className="test-detail-link" href="#">Xem chi tiết</a></td>
-              </tr>
-              <tr>
-                <td>27/03/2025</td>
-                <td>IELTS Simulation Listening test 8 <span className="test-tag">Luyện tập</span> <span className="test-tag">Recording 1</span></td>
-                <td>7/10</td>
-                <td>0:33:54</td>
-                <td><a className="test-detail-link" href="#">Xem chi tiết</a></td>
-              </tr>
-              <tr>
-                <td>27/03/2025</td>
-                <td>IELTS Simulation Listening test 8 <span className="test-tag">Luyện tập</span> <span className="test-tag">Recording 1</span></td>
-                <td>1/10</td>
-                <td>0:11:29</td>
-                <td><a className="test-detail-link" href="#">Xem chi tiết</a></td>
-              </tr>
-              <tr>
-                <td>25/03/2025</td>
-                <td>IELTS Simulation Listening test 7 <span className="test-tag">Luyện tập</span> <span className="test-tag">Recording 1</span></td>
-                <td>7/10</td>
-                <td>0:06:20</td>
-                <td><a className="test-detail-link" href="#">Xem chi tiết</a></td>
-              </tr>
-              <tr>
-                <td>25/03/2025</td>
-                <td>IELTS Simulation Listening test 7 <span className="test-tag">Luyện tập</span> <span className="test-tag">Recording 1</span></td>
-                <td>1/10</td>
-                <td>0:10:14</td>
-                <td><a className="test-detail-link" href="#">Xem chi tiết</a></td>
-              </tr>
-              <tr>
-                <td>22/03/2025</td>
-                <td>IELTS Simulation Listening test 6 <span className="test-tag">Luyện tập</span> <span className="test-tag">Recording 4</span></td>
-                <td>1/10</td>
-                <td>0:05:37</td>
-                <td><a className="test-detail-link" href="#">Xem chi tiết</a></td>
-              </tr>
+              {testHistory.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>Chưa có đề thi nào.</td>
+                </tr>
+              ) : (
+                testHistory.map((item) => (
+                  <tr key={item.userTestId}>
+                    <td>{new Date(item.date).toLocaleDateString('vi-VN')}</td>
+                    <td>{item.title} <span className="test-tag">Luyện tập</span></td>
+                    <td>{item.correct}/{item.total}</td>
+                    <td>{item.duration}</td>
+                    <td>
+                      <a
+                        className="test-detail-link"
+                        href={`/test-review-detail/${item.userTestId}`} // hoặc route phù hợp
+                      >
+                        Xem chi tiết
+                      </a>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -11,6 +11,7 @@ import questiontestRouter from './question_test_router.js';
 import AdminUserRouter from './AdminUser_router.js';
 import AminTestRouter from  './AdminTest_router.js';
 import accountRouter from './account_router.js';
+import statisticalRouter from './statistical_router.js';
 // import userRouter from './user.route.js';
 // import questionRouter from './question.route.js';
 
@@ -30,5 +31,6 @@ router.use('/questionTest', questiontestRouter);
 router.use('/adminUser', AdminUserRouter);
 router.use('/adminTest', AminTestRouter);
 router.use('/account', accountRouter);
+router.use('/statistical', statisticalRouter);
 
 export default router;
