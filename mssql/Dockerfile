@@ -16,7 +16,10 @@ RUN apt-get update && \
 # Copy dữ liệu khởi tạo
 COPY ./backup/ChatbotToeic.bak /var/opt/mssql/backup/
 COPY ./init /init
+COPY ./restore.sh /mssql/restore.sh
 
+# Đảm bảo cả 2 script chạy được
+RUN chmod +x /init/init.sh /mssql/restore.sh
 # Đảm bảo script chạy được
 RUN chmod +x /init/init.sh
 
