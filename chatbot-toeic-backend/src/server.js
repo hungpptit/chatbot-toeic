@@ -40,6 +40,6 @@ app.use('/api', router); // Định nghĩa các route API SAU middleware static
 // Test kết nối database
 db.connectToDB();
 
-app.listen(port, hostname, () => {
-  console.log(`Example app listening on port ${port}`);
+app.listen(port || 8080, '0.0.0.0', () => {
+  console.log(`✅ Backend server listening on http://0.0.0.0:${port || 8080}`);
 });

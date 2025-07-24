@@ -6,9 +6,9 @@ import Sequelize from 'sequelize';
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USERNAME,
-  process.env.DB_PASSWORD,
+  process.env.DB_PASS,
   {
-    host: process.env.DB_SERVER,
+    host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT),
     dialect: 'mssql',
     dialectOptions: {
@@ -50,8 +50,8 @@ const initDb = async () => {
   db.Synonym = (await import('./synonym.js')).default(sequelize, Sequelize.DataTypes);
   db.Antonym = (await import('./antonym.js')).default(sequelize, Sequelize.DataTypes);
   db.Meaning = (await import('./meaning.js')).default(sequelize, Sequelize.DataTypes);
-  db.Conversation = (await import('./conversation.js')).default(sequelize, Sequelize.DataTypes);
-  db.Message = (await import('./message.js')).default(sequelize, Sequelize.DataTypes);
+  db.Conversation = (await import('./Conversation.js')).default(sequelize, Sequelize.DataTypes);
+  db.Message = (await import('./Message.js')).default(sequelize, Sequelize.DataTypes);
   db.Test = (await import('./Tests.js')).default(sequelize, Sequelize.DataTypes);
   db.Course = (await import('./Courses.js')).default(sequelize, Sequelize.DataTypes);
   db.QuestionType = (await import('./QuestionType.js')).default(sequelize, Sequelize.DataTypes);

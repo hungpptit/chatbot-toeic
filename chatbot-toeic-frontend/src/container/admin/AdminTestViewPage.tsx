@@ -6,7 +6,7 @@ import {
 } from "../../services/question_test_services";
 import { FaEdit, FaSave, FaTimes } from "react-icons/fa";
 import "../../styles/AdminTestViewPage.css";
-import "../../styles/CardQuestion.css";
+import "../../styles/cardQuestion.css";
 
 export default function AdminTestViewPage() {
   const { id } = useParams<{ id: string }>();

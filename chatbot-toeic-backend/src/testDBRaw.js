@@ -3,9 +3,9 @@ require('dotenv').config();
 
 const config = {
   user: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
+  password: process.env.DB_PASS,
   database: process.env.DB_NAME,
-  server: process.env.DB_SERVER,
+  server: process.env.DB_HOST,
   port: parseInt(process.env.DB_PORT || '1433'),
   options: {
     encrypt: false,

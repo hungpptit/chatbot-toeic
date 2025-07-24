@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
 import "../../styles/AdminTestPage.css";
 import {getAllTestsAPI, type Test, deleteTestByIdAPI} from '../../services/adminTestService';
-import {deleteCourseByIdAPI} from '../../services/testCourseService'
+// import {deleteCourseByIdAPI} from '../../services/testCourseService'
 import { useNavigate } from "react-router-dom";
 
 

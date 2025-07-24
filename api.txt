@@ -1,1 +1,4 @@
 https://api.dictionaryapi.dev/api/v2/entries/en/<word>
+
+docker-compose down
+docker-compose up -d --build

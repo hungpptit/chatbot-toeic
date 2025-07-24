@@ -44,10 +44,10 @@ export interface Part {
     name: string;
 }
 
-interface DeleteTestResponse {
-  success: boolean;
-  message: string;
-}
+// interface DeleteTestResponse {
+//   success: boolean;
+//   message: string;
+// }
 
 // Lấy danh sách tất cả bài test
 export const getAllTestsAPI = async (): Promise<Test[]> => {

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FaSave, FaPlus, FaUpload } from "react-icons/fa";
 import Select from "react-select";
 import "../../styles/AdminTestViewPage.css";
-import "../../styles/CardQuestion.css";
+import "../../styles/cardQuestion.css";
 import {
   getAllCourseNamesAPI,
   type Course,
