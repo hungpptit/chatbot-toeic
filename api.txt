@@ -2,3 +2,11 @@ https://api.dictionaryapi.dev/api/v2/entries/en/<word>
 
 docker-compose down
 docker-compose up -d --build
+
+phamtuanhung9a5@toeic-server:~/Chatbot_Toeic/Chatbot_Toeic/chatbot-toeic-frontend$ cat /etc/nginx/sites-available/hungptit.dev
+
+
+phamtuanhung9a5@toeic-server:~/Chatbot_Toeic/Chatbot_Toeic/chatbot-toeic-frontend$ sudo rm -rf /var/www/hungptit.dev/*
+phamtuanhung9a5@toeic-server:~/Chatbot_Toeic/Chatbot_Toeic/chatbot-toeic-frontend$ sudo cp -r dist/* /var/www/hungptit.dev/
+phamtuanhung9a5@toeic-server:~/Chatbot_Toeic/Chatbot_Toeic/chatbot-toeic-frontend$ sudo systemctl reload nginx
+phamtuanhung9a5@toeic-server:~/Chatbot_Toeic/Chatbot_Toeic/chatbot-toeic-frontend$ 

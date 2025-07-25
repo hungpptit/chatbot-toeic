@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Swal from 'sweetalert2';
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { GoogleLogin } from "@react-oauth/google";
@@ -35,7 +36,8 @@ const LoginSignup: React.FC = () => {
         alert("❌ No credential received.");
         return;
       }
-      const res = await axios.post(`${API_URL}/api/auth/google`, { token: googleToken });
+      console.log("🔑 Google token:", googleToken);
+      const res = await axios.post(`${API_URL}/api/auth/google-login`, { token: googleToken }, { withCredentials: true });
       const user = (res.data as any).data;
      
       localStorage.setItem("user", JSON.stringify(user));
@@ -62,13 +64,17 @@ const LoginSignup: React.FC = () => {
       );
 
       const user = res.data.data; // token đã nằm trong cookie, không cần lấy
-      alert("✅ Login successful!");
+      Swal.fire({ icon: 'success', title: 'Đăng nhập thành công!' });
       navigate(user.role_id === Role.ADMIN ? "/admin/users" : "/home", {
         state: { justLoggedIn: true },
       });
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
-      alert(`❌ ${error.response?.data?.message || "Login failed!"}`);
+      Swal.fire({
+        icon: 'error',
+        title: 'Đăng nhập thất bại',
+        text: error.response?.data?.message || "Login failed!"
+      });
     }
 
   } else if (action === "Sign Up") {
@@ -79,11 +85,11 @@ const LoginSignup: React.FC = () => {
 
     try {
       await axios.post(`${API_URL}/api/auth/send-register-otp`, { email });
-      alert("📩 OTP has been sent to your email. Please verify to complete registration.");
+      Swal.fire({ icon: 'success', title: 'Đã gửi OTP', text: '📩 OTP has been sent to your email. Please verify to complete registration.' });
       setAction("VerifyEmail");
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
-      alert(`❌ ${error.response?.data?.message || "Failed to send OTP."}`);
+      Swal.fire({ icon: 'error', title: 'Lỗi', text: error.response?.data?.message || "Failed to send OTP." });
     }
   }
 };
@@ -91,7 +97,7 @@ const LoginSignup: React.FC = () => {
 
   const handleForgotPassword = async () => {
     if (!email) {
-      alert("❌ Please enter your email.");
+      Swal.fire({ icon: 'error', title: 'Thiếu email', text: '❌ Please enter your email.' });
       return;
     }
     try {
@@ -99,32 +105,32 @@ const LoginSignup: React.FC = () => {
       setMessage("✅ OTP has been sent to your email.");
       setAction("ResetPassword");
     } catch (err) {
-       const error = err as { response?: { data?: { message?: string } } };
-      alert(`❌ ${error.response?.data?.message || "Failed to send OTP."}`);
+      const error = err as { response?: { data?: { message?: string } } };
+      Swal.fire({ icon: 'error', title: 'Lỗi', text: error.response?.data?.message || "Failed to send OTP." });
     }
   };
 
   const handleResetPassword = async () => {
     if (!email || !otp || !newPassword) {
-      alert("❌ Please fill in all fields");
+      Swal.fire({ icon: 'error', title: 'Thiếu thông tin', text: '❌ Please fill in all fields' });
       return;
     }
     try {
       await axios.post(`${API_URL}/api/auth/reset-password`, { email, otp, newPassword });
-      alert("✅ Password has been reset! You can now log in.");
+      Swal.fire({ icon: 'success', title: 'Đặt lại mật khẩu thành công!', text: '✅ Password has been reset! You can now log in.' });
       setAction("Login");
       setEmail("");
       setOtp("");
       setNewPassword("");
     } catch (err) {
-       const error = err as { response?: { data?: { message?: string } } };
-      alert(`❌ ${error.response?.data?.message || "Reset failed."}`);
+      const error = err as { response?: { data?: { message?: string } } };
+      Swal.fire({ icon: 'error', title: 'Lỗi', text: error.response?.data?.message || "Reset failed." });
     }
   };
 
   const handleVerifyEmail = async () => {
     if (!verifyOtp || !email || !username || !password) {
-      alert("❌ Please complete all fields");
+      Swal.fire({ icon: 'error', title: 'Thiếu thông tin', text: '❌ Please complete all fields' });
       return;
     }
     try {
@@ -134,15 +140,15 @@ const LoginSignup: React.FC = () => {
         name: username,
         password,
       });
-      alert("✅ Registration complete! You can now log in.");
+      Swal.fire({ icon: 'success', title: 'Đăng ký thành công!', text: '✅ Registration complete! You can now log in.' });
       setAction("Login");
       setUsername("");
       setEmail("");
       setPassword("");
       setVerifyOtp("");
     } catch (err) {
-       const error = err as { response?: { data?: { message?: string } } };
-      alert(`❌ ${error.response?.data?.message || "OTP verification failed"}`);
+      const error = err as { response?: { data?: { message?: string } } };
+      Swal.fire({ icon: 'error', title: 'Lỗi', text: error.response?.data?.message || "OTP verification failed" });
     }
   };
 

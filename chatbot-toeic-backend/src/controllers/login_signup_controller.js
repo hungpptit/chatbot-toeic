@@ -6,6 +6,7 @@ import {
   resetPassword,
   sendRegisterOtp,
   verifyRegisterOtp,
+  googleLogin ,
 } from '../services/login_signup_service.js';
 import jwt from 'jsonwebtoken'; 
 // Đăng ký
@@ -75,6 +76,27 @@ const verifyRegisterOtpController = async (req, res) => {
   res.status(result.code).json(result);
 };
 
+const googleLoginController = async (req, res) => {
+  const result = await googleLogin(req.body);
+
+  if (result.code !== 200) {
+    return res.status(result.code).json({ message: result.message });
+  }
+
+  const { token, data } = result;
+
+  res.cookie("token", token, {
+    path: "/",
+    httpOnly: true,
+    secure: false,
+    sameSite: "Lax",
+    maxAge: 24 * 60 * 60 * 1000,
+  });
+
+  res.status(200).json({ message: result.message, data });
+};
+
+
 export {
   registerController,
   loginController,
@@ -83,4 +105,5 @@ export {
   resetPasswordController,
   sendRegisterOtpController,
   verifyRegisterOtpController,
+  googleLoginController,
 };

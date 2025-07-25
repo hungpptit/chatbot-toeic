@@ -7,6 +7,7 @@ import {
   resetPasswordController,
   sendRegisterOtpController,
   verifyRegisterOtpController,
+  googleLoginController,
 } from '../controllers/login_signup_controller.js';
 
 const router = express.Router();
@@ -32,4 +33,5 @@ router.post("/reset-password", resetPasswordController);
 // Lấy thông tin người dùng từ token
 router.get("/me", getUserController);
 
+router.post("/google-login", googleLoginController);
 export default router;

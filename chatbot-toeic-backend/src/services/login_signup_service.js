@@ -2,6 +2,7 @@ import db from '../models/index.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
+import { OAuth2Client } from 'google-auth-library';
 
 const User = db.User;
 const SECRET_KEY = process.env.JWT_SECRET_KEY;
@@ -60,13 +61,18 @@ const login = async ({ email, password }) => {
     return { code: 404, message: "Tài khoản không tồn tại" };
   }
 
+  if (user.status === false) {
+    console.log(`Tài khoản bị khóa: email=${email}`);
+    return { code: 403, message: "Tài khoản đang bị khóa. Vui lòng liên hệ quản trị viên." };
+  }
+
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
     return { code: 401, message: "Sai mật khẩu" };
   }
 
   const token = jwt.sign(
-    { id: user.id,name:user.username, email: user.email, role_id: user.role_id },
+    { id: user.id, name: user.username, email: user.email, role_id: user.role_id },
     SECRET_KEY,
     { expiresIn: '1d' }
   );
@@ -167,6 +173,59 @@ const verifyRegisterOtp = async ({ email, otp, name, password }) => {
   };
 };
 
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+const googleLogin = async ({ token }) => {
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    console.log("🔑 GOOGLE PAYLOAD:", payload);
+    const email = payload.email;
+    const name = payload.name;
+
+    let user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      user = await User.create({
+        username: name,
+        email,
+        password: 'google_login', // Dummy password
+        role_id: 1,
+      });
+    }
+
+    if (user.status === false) {
+      return { code: 403, message: "Tài khoản bị khóa" };
+    }
+
+    const jwtToken = jwt.sign(
+      { id: user.id, name: user.username, email: user.email, role_id: user.role_id },
+      SECRET_KEY,
+      { expiresIn: '1d' }
+    );
+
+    return {
+      code: 200,
+      message: "Đăng nhập Google thành công",
+      token: jwtToken,
+      data: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role_id: user.role_id,
+      },
+    };
+  } catch (error) {
+    console.error("[googleLogin]", error);
+    return { code: 400, message: "Google token không hợp lệ" };
+  }
+};
+
 export {
   register,
   login,
@@ -175,4 +234,5 @@ export {
   resetPassword,
   sendRegisterOtp,
   verifyRegisterOtp,
+   googleLogin,
 };
