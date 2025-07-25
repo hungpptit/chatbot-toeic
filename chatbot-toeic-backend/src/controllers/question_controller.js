@@ -1,5 +1,7 @@
 import { getSmartItem } from '../services/question_service.js';
 
+
+
 const handleQuestionRequest = async (req, res) => {
   try {
     const { rawText } = req.body;
@@ -11,63 +13,56 @@ const handleQuestionRequest = async (req, res) => {
       return res.status(400).json({ error: 'Thiếu dữ liệu đầu vào (rawText)' });
     }
 
-    // Nếu không có conversationId, có thể gán mặc định (ví dụ: "default" hoặc để null)
-    const convId = conversationId || "default"; // Điều chỉnh logic nếu cần
-
-    let result;
-    try {
-      result = await getSmartItem(rawText, convId); // Truyền conversationId vào getSmartItem
-    } catch (err) {
-      console.error('❌ Error in getSmartItem:', err.message);
-      return res.status(400).json({ error: 'Không xử lý được yêu cầu', detail: err.message });
+    const items = await getSmartItem(rawText, conversationId); // xử lý nhiều câu
+    if (!items.length) {
+      return res.status(400).json({ error: 'Không có câu hỏi hợp lệ' });
     }
 
-    // 🟥 Trắc nghiệm
-    if (result.question) {
-      return res.json({
-        type: result.question.type,
-        source: result.source,
-        question: result.question.question,
-        options: {
-          A: result.question.optionA,
-          B: result.question.optionB,
-          C: result.question.optionC,
-          D: result.question.optionD,
-        },
-        answer: result.question.correctAnswer,
-        explanation: result.question.explanation,
-      });
-    }
+    return res.json({
+      count: items.length,
+      results: items.map((r) => {
+        if (r.question) {
+          return {
+            type: r.question.type,
+            source: r.source,
+            question: r.question.question,
+            options: {
+              A: r.question.optionA,
+              B: r.question.optionB,
+              C: r.question.optionC,
+              D: r.question.optionD,
+            },
+            answer: r.question.correctAnswer,
+            explanation: r.question.explanation,
+          };
+        }
 
-    // 🟨 Từ vựng
-    if (result.vocab) {
-      return res.json({
-        type: 'Vocabulary-Lookup',
-        source: result.source,
-        word: result.vocab.word,
-        definition: result.vocab.definition,
-        example: result.vocab.example,
-        synonyms: result.vocab.synonyms?.map(s => s.synonym) || [],
-        antonyms: result.vocab.antonyms?.map(a => a.antonym) || [],
-        viExplanation: result.viExplanation || '',
-      });
-    }
+        if (r.vocab) {
+          return {
+            type: 'Vocabulary-Lookup',
+            source: r.source,
+            word: r.vocab.word,
+            definition: r.vocab.definition,
+            example: r.vocab.example,
+            synonyms: r.vocab.synonyms?.map(s => s.synonym) || [],
+            antonyms: r.vocab.antonyms?.map(a => a.antonym) || [],
+            viExplanation: r.viExplanation || '',
+          };
+        }
 
-    // 🟩 Câu hỏi tự do
-    if (result.type === 'Free') {
-      return res.json({
-        type: 'Free',
-        source: 'ai',
-        answer: result.answer,
-      });
-    }
-
-    return res.status(400).json({ error: 'Không nhận diện được loại câu hỏi.' });
+        return {
+          type: 'Free',
+          source: r.source,
+          answer: r.answer,
+        };
+      }),
+    });
 
   } catch (err) {
-    console.error('❌ Error in handleQuestionRequest:', err.message);
-    res.status(500).json({ error: 'Server error', detail: err.message });
+    console.error('❌ Lỗi trong batch handler:', err.message);
+    return res.status(500).json({ error: 'Server error', detail: err.message });
   }
 };
+
 
 export { handleQuestionRequest };

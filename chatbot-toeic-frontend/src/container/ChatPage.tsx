@@ -26,55 +26,80 @@ export default function ChatPage() {
   
 
   const handleSend = async () => {
-  if (!input.trim()) return; // Nếu không có input, không gửi
-  if (!selectedConversation || !selectedConversation.id) {
-    setMessages((prev) => [...prev, { sender: "bot", text: "❌ Bạn chưa chọn đoạn chat!" }]);
-    return;
-  }
-  const userMessage: Message = { sender: "user", text: input };
-  setMessages((prev) => [...prev, userMessage]);
-  setInput("");
-  try {
-    await createMessageAPI({
-      conversationId: selectedConversation.id,
-      role: "user",
-      content: input,
-    });
-    const res = await getQuestionFromRawText(input, conversationId);
-    let reply = "";
-    if (res.type === "Vocabulary-Lookup") {
-      reply += `🔤 Từ: ${res.word}\n`;
-      reply += `• Định nghĩa: ${res.definition}\n`;
-      reply += `• Ví dụ: ${res.example}\n`;
-      if (res.synonyms?.length) reply += `• Đồng nghĩa: ${res.synonyms.join(", ")}\n`;
-      if (res.antonyms?.length) reply += `• Trái nghĩa: ${res.antonyms.join(", ")}\n`;
-      if (res.viExplanation) reply += `• Giải thích TV: ${res.viExplanation}`;
-    } else if (res.type === "Free") {
-      reply = `💬 Trả lời: ${res.answer}`;
-    } else {
-      reply += `❓ ${res.question}\n`;
-      for (const [key, val] of Object.entries(res.options || {})) {
-        reply += `  ${key}. ${val}\n`;
-      }
-      reply += `✅ Đáp án: ${res.answer}\n`;
-      reply += `🧠 Giải thích: ${res.explanation}`;
+    if (!input.trim()) return;
+
+    if (!selectedConversation || !selectedConversation.id) {
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "❌ Bạn chưa chọn đoạn chat!" },
+      ]);
+      return;
     }
-    const botMessage: Message = { sender: "bot", text: reply };
-    setMessages((prev) => [...prev, botMessage]);
-    await createMessageAPI({
-      conversationId: selectedConversation.id,
-      role: "model",
-      content: reply,
-    });
-  } catch (err) {
-    console.error("❌ API error:", err);
-    const errorMessage: Message = {
-      sender: "bot",
-      text: "❌ Đã xảy ra lỗi khi xử lý câu hỏi. Vui lòng thử lại.",
-    };
-    setMessages((prev) => [...prev, errorMessage]);
-  }
-};
+
+    const userMessage: Message = { sender: "user", text: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+
+    try {
+      await createMessageAPI({
+        conversationId: selectedConversation.id,
+        role: "user",
+        content: input,
+      });
+
+      const res = await getQuestionFromRawText(input, String(selectedConversation.id));
+
+      const allReplies: string[] = [];
+
+      for (const item of res.results) {
+        let reply = "";
+
+        if (item.type === "Vocabulary-Lookup") {
+          reply += `🔤 Từ: ${item.word}\n`;
+          reply += `• Định nghĩa: ${item.definition}\n`;
+          reply += `• Ví dụ: ${item.example}\n`;
+          if (item.synonyms?.length)
+            reply += `• Đồng nghĩa: ${item.synonyms.join(", ")}\n`;
+          if (item.antonyms?.length)
+            reply += `• Trái nghĩa: ${item.antonyms.join(", ")}\n`;
+          if (item.viExplanation)
+            reply += `• Giải thích TV: ${item.viExplanation}`;
+        } else if (item.type === "Free") {
+          reply += `💬 Trả lời: ${item.answer}`;
+        } else {
+          reply += `❓ ${item.question}\n`;
+          for (const [key, val] of Object.entries(item.options || {})) {
+            reply += `  ${key}. ${val}\n`;
+          }
+          reply += `✅ Đáp án: ${item.answer}\n`;
+          reply += `🧠 Giải thích: ${item.explanation}`;
+        }
+
+        allReplies.push(reply);
+      }
+
+      const botMessage: Message = {
+        sender: "bot",
+        text: allReplies.join("\n\n------------------------\n\n"),
+      };
+
+      setMessages((prev) => [...prev, botMessage]);
+
+      await createMessageAPI({
+        conversationId: selectedConversation.id,
+        role: "model",
+        content: botMessage.text,
+      });
+    } catch (err) {
+      console.error("❌ API error:", err);
+      const errorMessage: Message = {
+        sender: "bot",
+        text: "❌ Đã xảy ra lỗi khi xử lý câu hỏi. Vui lòng thử lại.",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    }
+  };
+
 
 
   useEffect(() => {

@@ -15,4 +15,4 @@ RUN chmod +x /wait-for-db.sh
 EXPOSE 8080
 ENV NODE_ENV=production
 
-CMD /wait-for-db.sh "$DB_HOST" "$DB_PORT" node src/server.js
+# CMD /wait-for-db.sh "$DB_HOST" "$DB_PORT" node src/server.js

@@ -1,25 +1,35 @@
+// models/index.js
 import dotenv from 'dotenv';
 dotenv.config();
 
 import Sequelize from 'sequelize';
 
+// ✅ Khởi tạo Sequelize với pool tối ưu hơn
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USERNAME,
   process.env.DB_PASS,
   {
     host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT),
+    port: parseInt(process.env.DB_PORT || '1433'),
     dialect: 'mssql',
     dialectOptions: {
       options: {
         encrypt: process.env.DB_ENCRYPT === 'true',
-        trustServerCertificate: true
-      }
+        trustServerCertificate: true,
+      },
     },
-    freezeTableName: true,
-    timestamps: true,
-    logging: false // hoặc true nếu bạn muốn xem câu lệnh SQL
+    pool: {
+      max: 50,            // ✅ Tăng để xử lý nhiều kết nối
+      min: 5,
+      acquire: 30000,
+      idle: 10000
+    },
+    define: {
+      freezeTableName: true,
+      timestamps: true,
+    },
+    logging: false
   }
 );
 
@@ -29,6 +39,7 @@ const connectToDB = async () => {
     console.log('✅ Connected to SQL Server successfully.');
   } catch (err) {
     console.error('❌ Connection failed:', err);
+    process.exit(1); // ⚠️ Nếu không kết nối được thì thoát app
   }
 };
 
@@ -39,7 +50,7 @@ const initDb = async () => {
     connectToDB,
   };
 
-  // Load models
+  // ✅ Load models
   db.Vocabulary = (await import('./Vocabulary.js')).default(sequelize, Sequelize.DataTypes);
   db.Question = (await import('./Questions.js')).default(sequelize, Sequelize.DataTypes);
   db.User = (await import('./Users.js')).default(sequelize, Sequelize.DataTypes);
@@ -57,10 +68,10 @@ const initDb = async () => {
   db.QuestionType = (await import('./QuestionType.js')).default(sequelize, Sequelize.DataTypes);
   db.Part = (await import('./Part.js')).default(sequelize, Sequelize.DataTypes);
   db.TestQuestion = (await import('./TestQuestion.js')).default(sequelize, Sequelize.DataTypes);
-  db.UserTest = (await import ('./UserTests.js')).default(sequelize, Sequelize.DataTypes);
+  db.UserTest = (await import('./UserTests.js')).default(sequelize, Sequelize.DataTypes);
   db.Test_Courses = (await import('./TestCourse.js')).default(sequelize, Sequelize.DataTypes);
 
-  // Tạo associations nếu có
+  // ✅ Gắn associations (nếu có)
   Object.keys(db).forEach(modelName => {
     if (db[modelName]?.associate) {
       db[modelName].associate(db);
@@ -71,9 +82,6 @@ const initDb = async () => {
 };
 
 const db = await initDb();
-// console.log("✅ Các models đã được load:", Object.keys(db));
 
 export default db;
-
-// ✅ THÊM DÒNG NÀY
 export { initDb };

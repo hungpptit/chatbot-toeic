@@ -16,7 +16,7 @@ export default (sequelize, DataTypes) => {
         otherKey: 'courseId',
         timestamps: false      
       });
-      Test.hasMany(models.UserTest, { foreignKey: 'testId' });
+      Test.hasMany(models.TestQuestion, { foreignKey: 'testId', as: 'testQuestions' });
 
     }
   }

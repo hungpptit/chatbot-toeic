@@ -49,7 +49,7 @@ services:
     volumes:
       - ./chatbot-toeic-backend:/app
       - ./frontend/public/Img_project:/Img_project
-    command: ["/bin/sh", "wait-for-db.sh", "mssql", "1433", "node", "src/server.js"]
+    command: ["./wait-for-db.sh", "mssql", "1433", "node", "src/server.js"]
 
   frontend:
     build:

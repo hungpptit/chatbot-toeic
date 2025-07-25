@@ -1,36 +1,65 @@
 import db from "../models/index.js"
 
+
 const Test = db.Test;
 const Course = db.Course;
+const { fn, col, literal } = db.Sequelize;
 
 const getAllTestsWithCourses = async () => {
-    try{
-        const testList = await Test.findAll({
-            order: [['id', 'ASC']],
-            attributes: ['id', 'title', 'duration', 'participants','comments','questions'],
-            include:{
-                model: Course,
-                attributes: ['name'],
-                through: { attributes: [] },
-            },
-        });
-        const formattedTests = testList.map(test => ({
-            id: test.id,
-            title: test.title,
-            duration: test.duration,
-            participants: test.participants,
-            comments: test.comments,
-            questions: test.questions,
-         
-            tags: test.Courses.map(course => course.name),
-        }));
-        return formattedTests;
-    }catch (error){
-        console.error('Error fetching tests with Courses', error);
-        throw error;
-    }
+  try {
+    const testList = await Test.findAll({
+      attributes: [
+        'id',
+        'title',
+        'duration',
+        'participants',
+        'comments',
+        [fn('COUNT', col('testQuestions.id')), 'questionCount'], // ⬅️ dùng alias
+      ],
+      include: [
+        {
+          model: Course,
+          attributes: ['name'],
+          through: { attributes: [] },
+        },
+        {
+          model: db.TestQuestion,
+          as: 'testQuestions', // ⬅️ dùng đúng alias như trong model
+          attributes: [], // chỉ dùng để đếm
+        },
+      ],
+      group: [
+        'Test.id',
+        'Test.title',
+        'Test.duration',
+        'Test.participants',
+        'Test.comments',
+        'Courses.id',
+        'Courses.name',
+        'Courses->Test_Courses.courseId',
+        'Courses->Test_Courses.testId',
+      ],
+      having: literal('COUNT(testQuestions.id) >= 40'), // ⬅️ dùng alias ở đây nữa
+      order: [['id', 'ASC']],
+    });
 
+    const formattedTests = testList.map(test => ({
+      id: test.id,
+      title: test.title,
+      duration: test.duration,
+      participants: test.participants,
+      comments: test.comments,
+      questions: Number(test.getDataValue('questionCount')),
+      tags: test.Courses.map(course => course.name),
+    }));
+
+    return formattedTests;
+  } catch (error) {
+    console.error('❌ Error fetching tests with Courses:', error);
+    throw error;
+  }
 };
+
 
 
 const getAllCourseNames = async () => {

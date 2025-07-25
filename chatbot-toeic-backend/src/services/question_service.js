@@ -31,45 +31,48 @@ const callGemini = async (contents) => {
 // 📥 Phân tích input thô thành object
 // 📥 Phân tích input thô thành object
 const parseUserInput = async (rawText, conversationId) => {
-  const { data: history } = await getMessagesForGemini(conversationId); // Lấy lịch sử 15 cặp
-  const prompt = `Bạn là trợ lý trích xuất dữ liệu câu hỏi tiếng Anh. Dưới đây là lịch sử hội thoại và chuỗi đầu vào thô mới, hãy phân tích và trả về một object JSON với định dạng:
+  const { data: history } = await getMessagesForGemini(conversationId);
+
+  const prompt = `
+Bạn là trợ lý trích xuất dữ liệu luyện thi TOEIC. Chuỗi đầu vào bên dưới có thể chứa một hoặc nhiều câu hỏi. Nhiệm vụ:
+✅ Nếu có nhiều câu hỏi → hãy tách và phân tích từng câu, trả về mảng JSON gồm các object có dạng:
 
 {
-  "type": "Vocabulary-Lookup" | "Free" | "MultipleChoice",
-  "questionText": "nếu có",
+  "type": "MultipleChoice",
+  "questionText": "With the help of ...",
   "options": {
-    "A": "...",
-    "B": "...",
-    "C": "...",
-    "D": "..."
-  },
-  "word": "nếu là từ vựng đơn"
+    "A": "recover",
+    "B": "recovers",
+    "C": "recovering",
+    "D": "recovered"
+  }
 }
 
-Nếu là từ vựng thì chỉ trả lại type = "Vocabulary-Lookup" và word.
-Nếu là câu hỏi trắc nghiệm thì có questionText và options.
-Nếu là tự do thì chỉ có type = "Free" và questionText.
+✅ Nếu là từ vựng → type = "Vocabulary-Lookup" và word = "..."
 
-❗Không bao quanh JSON bằng \`\`\` hoặc ghi chú. Trả về đúng JSON thuần túy.
+✅ Nếu là câu hỏi tự do → type = "Free" và questionText = "..."
 
-Lịch sử:
+❗Không bao quanh kết quả bằng \`\`\` hoặc chú thích gì cả. Trả về JSON thuần.
+
+Lịch sử hội thoại:
 ${JSON.stringify(history)}
-Chuỗi mới:
-"""${rawText}"""`;
+
+Dữ liệu mới:
+"""${rawText}"""
+`;
 
   const reply = await callGemini(history.concat({ role: "user", parts: [{ text: prompt }] }));
-
-  // ✅ Loại bỏ markdown code block nếu có
   const cleaned = reply.replace(/```json|```/g, "").trim();
 
   try {
     const parsed = JSON.parse(cleaned);
-    return parsed;
+    return Array.isArray(parsed) ? parsed : [parsed]; // luôn trả về mảng
   } catch (err) {
-    console.warn('❌ Không phân tích được JSON từ AI:', reply);
-    throw new Error('Không thể trích xuất dữ liệu từ chuỗi đầu vào');
+    console.warn("❌ Không phân tích được JSON từ AI:", reply);
+    throw new Error("Không thể trích xuất dữ liệu");
   }
 };
+
 
 // 🎯 Phân loại câu hỏi trắc nghiệm
 const detectQuestionType = async (questionText, options, conversationId) => {
@@ -129,14 +132,30 @@ Giải thích: <giải thích ngắn bằng tiếng Việt>
 Chỉ in kết quả, không thêm gì khác.`;
 
   const reply = await callGemini(history.concat({ role: "user", parts: [{ text: prompt }] }));
-  const answerMatch = reply.match(/Đáp án[:：]?\s*([A-D])/i);
-  const explanationMatch = reply.match(/Giải thích[:：]?\s*([\s\S]*)/i);
 
+  // 🪓 Cắt reply thành nhiều block nếu Gemini trả về nhiều phần
+  const blocks = reply.split(/(?:❓|Câu hỏi[:：]?)/).map(b => b.trim()).filter(Boolean);
+
+  for (const block of blocks) {
+    const answerMatch = block.match(/Đáp án[:：]?\s*([A-D])/i);
+    const explanationMatch = block.match(/Giải thích[:：]?\s*([\s\S]*?)(?:\nĐáp án:|\n?$)/i);
+
+    if (answerMatch) {
+      return {
+        answer: answerMatch[1].toUpperCase(),
+        explanation: explanationMatch?.[1]?.trim() || '',
+      };
+    }
+  }
+
+  // ❌ Fallback nếu không tìm được đáp án đúng
+  console.warn('❌ Không tìm được định dạng đúng từ reply:', reply);
   return {
-    answer: answerMatch?.[1]?.toUpperCase() || 'D',
-    explanation: explanationMatch?.[1]?.trim() || reply.trim(),
+    answer: 'D',
+    explanation: reply.trim(),
   };
 };
+
 
 // 📘 Từ vựng
 const askVocabularyAI = async (word, conversationId) => {
@@ -226,6 +245,8 @@ const getItemWithAI = async ({ type, questionText, options, word }, conversation
   if (existing) return { source: 'database', question: existing };
 
   const aiResult = await askWithLocalAI(questionText, options, type, conversationId);
+  const { questionType, part } = await classifyTypeAndPart(questionText, options, conversationId);
+  const { typeId, partId } = await findOrCreateTypeAndPart(questionType, part);
 
   const newQuestion = await Question.create({
     question: questionText,
@@ -237,15 +258,180 @@ const getItemWithAI = async ({ type, questionText, options, word }, conversation
     explanation: aiResult.explanation,
     type,
     topic: type === 'Vocabulary' ? 'Vocabulary' : 'General',
+    typeId,
+    partId,
   });
 
-  return { source: 'ai', question: newQuestion };
+  // 🔍 Lấy hoặc tạo course "AI-Test"
+  const [aiCourse] = await db.Course.findOrCreate({
+    where: { name: 'AI-Test' },
+  });
+
+  // 📚 Lấy test gần nhất trong AI-Test course
+  const tests = await db.Test.findAll({
+    include: [{
+      model: db.Course,
+      where: { id: aiCourse.id },
+      through: { attributes: [] }
+    }],
+    order: [['id', 'DESC']]
+  });
+
+  let testToUse = null;
+  let currentCount = 0;
+
+  for (const test of tests) {
+    const count = await db.TestQuestion.count({ where: { testId: test.id } });
+    if (count < 40) {
+      testToUse = test;
+      currentCount = count;
+      break;
+    }
+  }
+
+  // 📦 Nếu không còn test phù hợp thì tạo mới
+  if (!testToUse) {
+    testToUse = await db.Test.create({
+      title: `AI Test - ${new Date().toLocaleString('en-GB').replace(/[/,:\s]/g, '-')}`,
+      duration: 600,
+      participants: 0,
+      comments: 0,
+    });
+
+    await db.Test_Courses.create({
+      testId: testToUse.id,
+      courseId: aiCourse.id,
+    });
+  }
+
+  // ➕ Thêm câu hỏi vào Test
+  await db.TestQuestion.create({
+    testId: testToUse.id,
+    questionId: newQuestion.id,
+    sortOrder: currentCount + 1,
+  });
+
+
+  return {
+    source: 'ai',
+    questionId: newQuestion.id,
+    testId: testToUse.id,
+    courseId: aiCourse.id,
+    typeId,
+    partId,
+    question: newQuestion,
+  };
 };
+
+const parseUserInputMulti = async (rawText, conversationId) => {
+  const { data: history } = await getMessagesForGemini(conversationId);
+
+  const prompt = `Bạn là trợ lý trích xuất dữ liệu câu hỏi tiếng Anh. Dưới đây là chuỗi đầu vào chứa nhiều câu hỏi, hãy phân tích và trả về một mảng JSON gồm các object có định dạng như sau:
+
+[
+  {
+    "type": "MultipleChoice",
+    "questionText": "...",
+    "options": {
+      "A": "...",
+      "B": "...",
+      "C": "...",
+      "D": "..."
+    }
+  },
+  {
+    "type": "MultipleChoice",
+    "questionText": "...",
+    "options": { ... }
+  }
+]
+
+Chỉ trả về JSON thuần túy, không markdown hay giải thích. Nếu một dòng không đủ dữ liệu thì bỏ qua.
+
+Lịch sử hội thoại: ${JSON.stringify(history)}
+Chuỗi mới:
+"""${rawText}"""`;
+
+  const reply = await callGemini(history.concat({ role: "user", parts: [{ text: prompt }] }));
+  const cleaned = reply.replace(/```json|```/g, "").trim();
+
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (!Array.isArray(parsed)) throw new Error("Không phải mảng");
+    return parsed;
+  } catch (err) {
+    console.warn("❌ Không phân tích được mảng JSON từ AI:", reply);
+    throw new Error("Không thể trích xuất danh sách câu hỏi");
+  }
+};
+
 
 // 💡 Hàm mới: xử lý từ chuỗi thô bất kỳ
 const getSmartItem = async (rawText, conversationId) => {
-  const parsed = await parseUserInput(rawText, conversationId);
-  return await getItemWithAI(parsed, conversationId);
+  const items = await parseUserInputMulti(rawText, conversationId);
+  const results = [];
+
+  for (const item of items) {
+    try {
+      const result = await getItemWithAI(item, conversationId);
+      results.push(result);
+    } catch (err) {
+      console.warn(`❌ Lỗi khi xử lý item:\n${JSON.stringify(item)}\n`, err.message);
+    }
+  }
+
+  return results;
 };
+
+
+const classifyTypeAndPart = async (questionText, options, conversationId) => {
+  const { data: history } = await getMessagesForGemini(conversationId);
+
+  const prompt = `
+Bạn là trợ lý phân loại câu hỏi tiếng Anh. Dưới đây là một câu hỏi mới.
+Hãy xác định:
+- "questionType": Một trong các loại sau: Multiple Choice, Fill in the Blank, Matching, Rearrangement, True/False, Short Answer
+- "part": Một phần trong bài thi TOEIC như Part 1, Part 2, Part 5, v.v.
+
+Trả về JSON đúng định dạng sau (không ghi chú hoặc markdown):
+{
+  "questionType": "Multiple Choice",
+  "part": "Part 5"
+}
+
+Lịch sử hội thoại: ${JSON.stringify(history)}
+Câu hỏi: ${questionText}
+A. ${options?.A || ''}
+B. ${options?.B || ''}
+C. ${options?.C || ''}
+D. ${options?.D || ''}
+`;
+
+  const reply = await callGemini(history.concat({ role: "user", parts: [{ text: prompt }] }));
+  const cleaned = reply.replace(/```json|```/g, "").trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (err) {
+    console.warn("❌ Không phân tích được JSON từ AI:", reply);
+    throw new Error("Không thể phân loại câu hỏi");
+  }
+};
+
+const findOrCreateTypeAndPart = async (questionTypeName, partName) => {
+  const [type] = await db.QuestionType.findOrCreate({
+    where: { name: questionTypeName },
+    defaults: { description: '' },
+  });
+
+  const [part] = await db.Part.findOrCreate({
+    where: { name: partName },
+  });
+
+  return { typeId: type.id, partId: part.id };
+};
+
+
+
 
 export { getItemWithAI, getSmartItem };
