@@ -301,11 +301,13 @@ const LoginSignup: React.FC = () => {
         )}
 
         {action !== "ForgotPassword" && action !== "ResetPassword" && action !== "VerifyEmail" && (
-          <div className="social-login" style={{ marginTop: 24, textAlign: "center" }}>
-            <GoogleLogin
-              onSuccess={handleGoogleLoginSuccess}
-              onError={() => alert("❌ Google login failed!")}
-            />
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 24 }}>
+            <div style={{ width: 300 }}>
+              <GoogleLogin
+                onSuccess={handleGoogleLoginSuccess}
+                onError={() => alert("❌ Google login failed!")}
+              />
+            </div>
           </div>
         )}
 
