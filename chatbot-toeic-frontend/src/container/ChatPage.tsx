@@ -47,7 +47,9 @@ export default function ChatPage() {
         content: input,
       });
 
+      console.log("🚀 Gửi tới BE:", input, selectedConversation.id);
       const res = await getQuestionFromRawText(input, String(selectedConversation.id));
+      console.log("✅ Nhận từ BE:", res);
 
       const allReplies: string[] = [];
 
@@ -163,6 +165,19 @@ export default function ChatPage() {
       })();
     }
   }, [selectedConversation]);
+
+  useEffect(() => {
+    if (conversationId) {
+      const convId = Number(conversationId);
+      setSelectedConversation({
+        id: convId,
+        title: `Conversation ${convId}`, // tạm thời
+        userId: 0,
+        createdAt: "",
+        updatedAt: "",
+      });
+    }
+  }, [conversationId]);
 
 
  

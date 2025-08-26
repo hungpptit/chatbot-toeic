@@ -10,3 +10,7 @@ phamtuanhung9a5@toeic-server:~/Chatbot_Toeic/Chatbot_Toeic/chatbot-toeic-fronten
 phamtuanhung9a5@toeic-server:~/Chatbot_Toeic/Chatbot_Toeic/chatbot-toeic-frontend$ sudo cp -r dist/* /var/www/hungptit.dev/
 phamtuanhung9a5@toeic-server:~/Chatbot_Toeic/Chatbot_Toeic/chatbot-toeic-frontend$ sudo systemctl reload nginx
 phamtuanhung9a5@toeic-server:~/Chatbot_Toeic/Chatbot_Toeic/chatbot-toeic-frontend$ 
+
+
+
+sửa file question_service.js / chatPage.tsx
