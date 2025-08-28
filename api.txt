@@ -14,3 +14,24 @@ phamtuanhung9a5@toeic-server:~/Chatbot_Toeic/Chatbot_Toeic/chatbot-toeic-fronten
 
 
 sửa file question_service.js / chatPage.tsx
+
+thêm 4 bảng db mới :
+Skills – danh mục kỹ năng
+QuestionSkills – nối câu ↔ kỹ năng
+QuestionStats – thống kê độ khó/toàn hệ thống
+QuestionEmbeddings – embedding vector cho kNN
+
+Thuật toán Naive Bayes → tìm kỹ năng yếu
+Data cần dùng
+
+    UserResults
+
+    userId, questionId, isCorrect → log người dùng làm đúng/sai.
+
+    QuestionSkills
+
+    questionId, skillId → xác định mỗi câu hỏi thuộc kỹ năng nào.
+
+    Skills
+
+    id, name → để hiển thị tên kỹ năng (Preposition, Verb tense…).
