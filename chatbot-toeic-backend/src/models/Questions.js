@@ -14,6 +14,12 @@ export default (sequelize, DataTypes) => {
         otherKey: 'testId',
         as: 'tests',
       });
+      Question.hasOne(models.QuestionEmbedding, {
+        foreignKey: 'questionId',
+        as: 'embedding',
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+      });
     
     }
   }

@@ -10,7 +10,8 @@ import {
   createNewTestController,
   updatePartNameController,
   updateQuestionTypeController,
-  deleteTestByIdController
+  deleteTestByIdController,
+  generateMissingEmbeddingsController 
 } from '../controllers/AdminTest_controller.js';
 
 import { authMiddleware } from '../Middleware/authMiddleware.js';
@@ -39,4 +40,6 @@ router.post('/createTestNew', authMiddleware, createNewTestController);
 // Xóa bài test theo ID
 router.delete('/deleteTest/:testId', authMiddleware, deleteTestByIdController);
 
+
+router.post('/tests/generate-missing-embeddings', generateMissingEmbeddingsController);
 export default router;

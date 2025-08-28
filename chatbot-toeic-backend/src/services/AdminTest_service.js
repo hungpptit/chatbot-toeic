@@ -1,4 +1,5 @@
 import db from "../models/index.js";
+import embeddingService from "./embeddingService.js";
 
 
 const Test = db.Test;
@@ -184,6 +185,15 @@ const createNewTest = async (testData) => {
         typeId: q.typeId || 1,
         partId: q.partId || null,
       });
+       // ⬇️ Generate embedding cho câu hỏi mới tạo
+      if (question.question) {
+        try {
+          await embeddingService.generateEmbeddingForQuestion(question);
+          console.log(`✅ Embedding generated for questionId ${question.id}`);
+        } catch (err) {
+          console.error(`⚠️ Failed to generate embedding for questionId ${question.id}:`, err);
+        }
+      }
       return question;
     }));
 

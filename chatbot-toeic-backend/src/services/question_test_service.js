@@ -183,6 +183,25 @@ export const SubmitTestResult = async ({ userId, testId, answers }) => {
       status: 'completed'
     }, { transaction });
 
+    await db.sequelize.query(`
+      MERGE QuestionStats AS target
+      USING (
+        SELECT questionId,
+              COUNT(*) AS attempts,
+              SUM(CASE WHEN isCorrect = 1 THEN 1 ELSE 0 END) AS correct
+        FROM UserResults
+        GROUP BY questionId
+      ) AS src
+      ON target.questionId = src.questionId
+      WHEN MATCHED THEN
+        UPDATE SET attempts = src.attempts, correct = src.correct
+      WHEN NOT MATCHED THEN
+        INSERT (questionId, attempts, correct)
+        VALUES (src.questionId, src.attempts, src.correct);
+    `, { transaction });
+
+
+
     return {
       userTestId: userTest.id,
       correctCount,

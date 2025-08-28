@@ -14,6 +14,8 @@ import {getAllTestsWithCourses,
   deleteTestById
  } from '../services/AdminTest_service.js';
 
+ import embeddingService from '../services/embeddingService.js';
+
 const getTestList = async (req, res) => {
   try {
     const data = await getAllTestsWithCourses();
@@ -193,6 +195,22 @@ const updateQuestionTypeController = async (req, res) => {
   }
 };
 
+// ✅ Generate missing embeddings (safety net)
+const generateMissingEmbeddingsController = async (req, res) => {
+  try {
+    await embeddingService.generateMissingEmbeddings();
+    res.status(200).json({
+      message: "Generated embeddings for all missing questions"
+    });
+  } catch (error) {
+    console.error("❌ Error in generateMissingEmbeddingsController:", error);
+    res.status(500).json({
+      message: "Failed to generate missing embeddings"
+    });
+  }
+};
+
+
 export {
   getTestList,
   getQuestionTypes,
@@ -204,5 +222,6 @@ export {
   createNewTestController,
   updatePartNameController,
   updateQuestionTypeController,
-  deleteTestByIdController
+  deleteTestByIdController,
+  generateMissingEmbeddingsController
 };

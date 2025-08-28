@@ -70,6 +70,10 @@ const initDb = async () => {
   db.TestQuestion = (await import('./TestQuestion.js')).default(sequelize, Sequelize.DataTypes);
   db.UserTest = (await import('./UserTests.js')).default(sequelize, Sequelize.DataTypes);
   db.Test_Courses = (await import('./TestCourse.js')).default(sequelize, Sequelize.DataTypes);
+   db.Skill = (await import('./skill.js')).default(sequelize, Sequelize.DataTypes);
+  db.QuestionSkill = (await import('./QuestionSkills.js')).default(sequelize, Sequelize.DataTypes);
+  db.QuestionStat = (await import('./QuestionStats.js')).default(sequelize, Sequelize.DataTypes);
+  db.QuestionEmbedding = (await import('./QuestionEmbeddings.js')).default(sequelize, Sequelize.DataTypes);
 
   // ✅ Gắn associations (nếu có)
   Object.keys(db).forEach(modelName => {
