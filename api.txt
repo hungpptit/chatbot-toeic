@@ -35,3 +35,38 @@ Data cần dùng
     Skills
 
     id, name → để hiển thị tên kỹ năng (Preposition, Verb tense…).
+
+
+
+
+
+
+
+
+
+    SELECT 
+    ur.userId,
+    qs.skillId,
+    COUNT(*) AS attempts,
+    SUM(CASE WHEN ur.isCorrect = 1 THEN 1 ELSE 0 END) AS correct,
+    CAST(SUM(CASE WHEN ur.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS accuracy,
+    CASE 
+        WHEN CAST(SUM(CASE WHEN ur.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) < 0.6 
+        THEN 1 ELSE 0 
+    END AS isWeak
+FROM UserResults ur
+JOIN QuestionSkills qs ON ur.questionId = qs.questionId
+GROUP BY ur.userId, qs.skillId;
+
+
+
+
+SELECT 
+    ur.userId,
+    qs.skillId,
+    COUNT(*) AS attempts,
+    SUM(CASE WHEN ur.isCorrect = 1 THEN 1 ELSE 0 END) AS correct,
+    CAST(SUM(CASE WHEN ur.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS accuracy
+FROM UserResults ur
+JOIN QuestionSkills qs ON ur.questionId = qs.questionId
+GROUP BY ur.userId, qs.skillId;
