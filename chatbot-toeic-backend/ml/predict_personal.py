@@ -1,3 +1,4 @@
+# có thể dùng để train riêng cập nhật cho user 
 import joblib
 import pandas as pd
 

@@ -1,4 +1,5 @@
 # script để load model và dự đoán (cho Node.js gọi).
+# ko dùng tới
 
 import joblib
 import pandas as pd

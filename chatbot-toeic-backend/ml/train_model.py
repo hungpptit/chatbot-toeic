@@ -1,4 +1,6 @@
 # script để query SQL, train Naive Bayes, lưu model .pkls
+# phải làm sao cho chạy lại định kì để có data mới để train
+
 
 
 import os

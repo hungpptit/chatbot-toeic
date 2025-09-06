@@ -40,7 +40,7 @@ async function createEmbedding(text) {
 }
 
 // --- Hàm tìm k câu hỏi gần nhất ---
-async function findSimilar(inputText, k = 5) {
+async function findSimilar(inputText, k = 20) {
   const pool = await sql.connect(dbConfig);
 
   // 1. Tạo embedding cho input
@@ -55,6 +55,7 @@ async function findSimilar(inputText, k = 5) {
 
   const similarities = [];
 
+// knn ============================
   for (const row of result.recordset) {
     const vec = row.vector.split(",").map(Number);
     const sim = cosineSimilarity(inputEmbedding, vec);
@@ -64,17 +65,29 @@ async function findSimilar(inputText, k = 5) {
   // 3. Sắp xếp theo similarity giảm dần
   similarities.sort((a, b) => b.score - a.score);
 
-  return similarities.slice(0, k);
-}
-
-// --- Demo chạy ---
-const query = "Which city is the capital of France?";
-
-findSimilar(query, 5).then(results => {
-  console.log(`🔍 Input: "${query}"\n`);
-  console.log("Top 5 similar questions:");
-  results.forEach(r => {
-    console.log(`- [${r.score.toFixed(4)}] ${r.question}`);
+  // 4. Lọc bỏ duplicate theo id
+  const seen = new Set();
+  const unique = similarities.filter(r => {
+    if (!r.id || !r.question) return false; // bỏ object thiếu field
+    if (seen.has(r.id)) return false;       // bỏ duplicate id
+    seen.add(r.id);
+    return true;
   });
-  process.exit(0);
-}).catch(err => console.error("❌ Error:", err));
+
+  return unique.slice(0, k);
+}
+// =========================================
+
+// --- CLI mode (nhận input từ Python) ---
+if (process.argv.length > 2) {
+  const query = process.argv[2];
+  const k = process.argv[3] ? parseInt(process.argv[3]) : 5;
+
+  findSimilar(query, k).then(results => {
+    console.log(JSON.stringify(results, null, 2)); // in JSON
+    process.exit(0);
+  }).catch(err => {
+    console.error("❌ Error:", err);
+    process.exit(1);
+  });
+}

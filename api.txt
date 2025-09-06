@@ -187,3 +187,84 @@ similarity score
 
 ✅ Vậy thứ tự làm việc trong DB là:
 UserResults → Questions → QuestionSkills → Skills → (QuestionEmbeddings)
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+✅ Hôm nay bạn đã làm xong
+
+Phát hiện kỹ năng yếu (Weak Skills)
+
+Viết predict_hybrid.py:
+
+Train global model (Naive Bayes) từ tất cả user.
+
+Train personal model cho từng user nếu có đủ dữ liệu.
+
+Hybrid rule:
+
+< 10 attempts → dùng global model.
+
+>= 10 attempts → dùng personal model.
+
+Output: { skillName: Weak/Strong (global|personal) }.
+
+Lấy anchor câu sai trong skill yếu
+
+Query UserResults + Questions + QuestionSkills → tìm câu user làm sai trong skill yếu.
+
+Chọn 1 câu làm “anchor” để tìm câu tương tự.
+
+Gợi ý câu hỏi mới bằng kNN
+
+Viết findSimilar.js:
+
+Sinh embedding cho câu anchor.
+
+So sánh với vector trong QuestionEmbeddings.
+
+Dùng cosine similarity để sort.
+
+Trả về top-k câu hỏi → chính là kNN.
+
+Fix để output ra JSON.
+
+Tích hợp gọi từ Python → Node qua subprocess.
+
+Test end-to-end
+
+Chạy python ml/predict_hybrid.py.
+
+Kết quả: dự đoán skill yếu, chọn anchor, gọi findSimilar.js, trả về câu hỏi gợi ý dạng JSON.
+
+🚀 Ngày mai dự tính làm tiếp
+
+Cải thiện chất lượng gợi ý
+
+Lọc duplicate kết quả trong findSimilar.js.
+
+Loại bỏ các câu user đã làm (join với UserResults).
+
+Ưu tiên câu hỏi theo độ khó phù hợp (easy/medium/hard nếu DB có).
+
+Chuẩn hoá dữ liệu output
+
+Parse JSON trong Python thay vì in raw string.
+
+Chuẩn bị format để dễ đưa vào API/Frontend.
+
+Tích hợp API
+
+Tạo API (Flask/FastAPI hoặc trong NodeJS Express) endpoint /recommend/:userId.
+
+Input: userId.
+
+Output: Weak skills + danh sách câu hỏi gợi ý.
+
+Optional nâng cao
+
+Gợi ý nhiều anchor hơn (không chỉ 1 câu sai, mà lấy top-N câu sai gần đây).
+
+Kết hợp embedding với metadata (ví dụ: chỉ tìm trong đúng skill yếu, đúng Part).
+
+👉 Như vậy, hôm nay bạn đã hoàn thành pipeline core: detect Weak Skills (Naive Bayes) + Recommend Questions (kNN).
+Ngày mai chủ yếu là làm sạch, tối ưu và mở API để frontend xài được.
