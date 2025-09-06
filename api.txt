@@ -39,6 +39,56 @@ Data cần dùng
 
 
 
+🔄 Luồng hoạt động hoàn chỉnh
+
+User làm bài test → lưu kết quả vào DB (UserResults)
+
+Lưu userId, questionId, isCorrect.
+
+predict_hybrid.py (ML)
+
+Gom dữ liệu theo skill.
+
+Dự đoán skill nào user Weak / Strong.
+
+Output:
+
+{
+  "Vocabulary": "Weak",
+  "Reading": "Strong"
+}
+
+
+Xác định câu hỏi gốc để làm "anchor"
+
+Với skill Weak, tìm ra các câu sai (isCorrect = 0) của user trong skill đó.
+
+Lấy nội dung câu hỏi đó làm input (anchor text).
+
+findSimilar.js (embedding search)
+
+Input: nội dung của câu hỏi user sai.
+
+Tìm k câu hỏi tương tự trong DB (Questions + Embeddings) cùng skill đó.
+
+Loại bỏ những câu mà user đã làm rồi.
+
+Trả về gợi ý luyện tập
+
+Danh sách câu hỏi mới để user làm thêm, được chọn từ skill yếu, có độ tương đồng cao với những câu user đã sai.
+
+Ví dụ:
+
+User 6 yếu Vocabulary → đã sai câu “Which city is the capital of France?”
+⇒ Hệ thống gợi ý thêm 5 câu Vocabulary tương tự (chưa làm).
+
+✅ Tóm lại:
+
+👉 Flow đúng là:
+predict_hybrid.py → Weak skills → lấy câu sai trong skill yếu → findSimilar.js → gợi ý câu hỏi mới.
+
+
+
 
 
 
@@ -70,3 +120,70 @@ SELECT
 FROM UserResults ur
 JOIN QuestionSkills qs ON ur.questionId = qs.questionId
 GROUP BY ur.userId, qs.skillId;
+
+
+
++++++++++++++++++++++++++++++++++
+
+
+1️⃣ Lấy kết quả làm bài của user
+
+Bảng UserResults: chứa userId, questionId, isCorrect.
+
+Đây là data gốc để biết user làm đúng/sai câu nào.
+
+👉 Từ đây bạn join qua Questions và QuestionSkills để biết mỗi câu thuộc skill nào.
+
+2️⃣ Tính toán theo skill
+
+Gom group theo (userId, skillId) từ join ở trên.
+
+Tính:
+
+attempts = COUNT(questionId)
+
+correct = SUM(isCorrect)
+
+accuracy = correct / attempts
+
+👉 Nếu accuracy < 0.6 → gắn nhãn Weak, ngược lại Strong.
+(Cái này chính là input để train/test với Naive Bayes trong predict_hybrid.py.)
+
+3️⃣ Xác định skill yếu của user
+
+Dùng output từ predict_hybrid.py để lấy danh sách skill Weak.
+
+Ví dụ: User 6 → Weak: Vocabulary.
+
+4️⃣ Lấy các câu sai trong skill yếu
+
+Từ UserResults lọc isCorrect = 0
+
+Join với QuestionSkills để chỉ lấy những câu sai thuộc skill Weak.
+
+Đây sẽ là “anchor question(s)” để tìm tương tự.
+
+5️⃣ Gợi ý câu hỏi mới
+
+Lấy embedding của các “anchor questions”.
+
+So sánh với vector trong bảng QuestionEmbeddings (nếu bạn có bảng đó, hoặc có thể bổ sung dựa trên Questions).
+
+Chọn top-k câu hỏi tương tự, cùng skill, nhưng loại trừ những câu user đã làm (dựa vào UserResults).
+
+6️⃣ Trả kết quả
+
+Output cuối cùng là danh sách câu hỏi mới:
+
+questionId
+
+question
+
+skill
+
+similarity score
+
+👉 Gửi danh sách này cho frontend để hiển thị câu hỏi luyện tập tiếp theo.
+
+✅ Vậy thứ tự làm việc trong DB là:
+UserResults → Questions → QuestionSkills → Skills → (QuestionEmbeddings)
