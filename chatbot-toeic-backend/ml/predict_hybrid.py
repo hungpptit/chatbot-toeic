@@ -3,6 +3,7 @@ import pyodbc
 import pandas as pd
 import joblib
 import subprocess
+import json
 from sklearn.naive_bayes import GaussianNB
 from dotenv import load_dotenv
 
@@ -85,11 +86,9 @@ def predict_hybrid(userId: int):
         return {}
 
     results = {}
-
-    # Load global model
     global_model = joblib.load("ml/weak_skill_model.pkl")
 
-    for _, row in df.iterrows():    
+    for _, row in df.iterrows():
         skillName = row['skillName']
         attempts = row['attempts']
         correct = row['correct']
@@ -99,15 +98,9 @@ def predict_hybrid(userId: int):
                              columns=['attempts', 'correct', 'accuracy'])
 
         if attempts < 10:
-            # Dùng global model
             y_pred = global_model.predict(X_new)[0]
             results[skillName] = "Weak (global)" if y_pred == 1 else "Strong (global)"
         else:
-            # Dùng personal model
-            # kiểm tra xem đã có Personal Model chưa:
-            # Nếu chưa có -> gọi train_personal_model(userId) để train riêng model cho user đó (train Naive Bayes trên chính dữ liệu của user đó).
-            # nếu có rồi mà user đã cải thiện thì model bị cũ, cần tìm giải pháp chỗ này để cập nhật cho model mới nhất để phản ánh đúng học lực user.
-
             model_path = f"ml/user_{userId}_model.pkl"
             if not os.path.exists(model_path):
                 train_personal_model(userId)
@@ -120,13 +113,12 @@ def predict_hybrid(userId: int):
 # -----------------------------
 # Gọi NodeJS để gợi ý câu hỏi
 # -----------------------------
-def recommend_questions(anchor_question: str, k: int = 5):
-    """Call NodeJS findSimilar.js with an anchor question"""
+def recommend_questions(anchor_id: int, k: int = 2):
     result = subprocess.run(
-        ["node", FIND_SIMILAR_PATH, anchor_question, str(k)],
+        ["node", FIND_SIMILAR_PATH, str(anchor_id), str(k)],
         capture_output=True, text=True
     )
-    return result.stdout
+    return result.stdout.strip() if result.stdout else None
 
 # -----------------------------
 # 🧪 Test với userId
@@ -136,7 +128,6 @@ if __name__ == "__main__":
     results = predict_hybrid(userId)
     print("🔎 Weak/Strong:", results)
 
-    # Tìm skill yếu
     weak_skills = [skill for skill, status in results.items() if "Weak" in status]
 
     if not weak_skills:
@@ -145,7 +136,7 @@ if __name__ == "__main__":
         conn = pyodbc.connect(conn_str)
         for skill in weak_skills:
             query = f"""
-            SELECT TOP 1 q.question
+            SELECT TOP 10 q.id, q.question
             FROM UserResults ur
             JOIN Questions q ON ur.questionId = q.id
             JOIN QuestionSkills qs ON q.id = qs.questionId
@@ -153,14 +144,39 @@ if __name__ == "__main__":
             WHERE ur.userId = {userId}
               AND ur.isCorrect = 0
               AND s.name = '{skill}'
+            ORDER BY ur.answeredAt DESC
             """
-            df = pd.read_sql(query, conn)
-            if df.empty:
+            mistakes = pd.read_sql(query, conn)
+            if mistakes.empty:
                 print(f"⚠️ User {userId} chưa có câu sai trong skill {skill}")
                 continue
 
-            anchor = df.iloc[0]['question']
-            print(f"\n📌 Anchor (skill {skill}): {anchor}")
+           # all_suggestions = {}  # giữ unique theo id
+            all_suggestions = {}
 
-            suggestions = recommend_questions(anchor, 5)
-            print("🔮 Suggested questions:\n", suggestions)
+            for _, row in mistakes.iterrows():
+                anchor_id = row['id']
+                anchor_text = row['question']
+
+                # luôn giữ anchor
+                all_suggestions[anchor_id] = anchor_text
+
+                # lấy 2 câu tương tự
+                raw_json = recommend_questions(anchor_id, 2)
+                if raw_json:
+                    try:
+                        print("DEBUG raw_json:", raw_json)   # để debug
+                        suggestions = json.loads(raw_json)
+                        for s in suggestions:
+                            all_suggestions[s['id']] = s['question']  # overwrite nếu trùng id
+                    except Exception as e:
+                        print("❌ Parse error:", e)
+
+            # ✅ lọc unique bằng dict
+            unique_suggestions = list(all_suggestions.items())
+
+            print("\n🔮 Final Suggested Questions (unique, including mistakes):")
+            for qid, qtext in unique_suggestions:
+                print(f"- ({qid}) {qtext}")
+
+            print(f"\n📊 Tổng số câu gợi ý: {len(unique_suggestions)} (mong đợi ~30 nếu đủ 10 mistakes)")
