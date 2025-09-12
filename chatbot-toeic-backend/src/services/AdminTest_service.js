@@ -151,7 +151,7 @@ const updateQuestionType = async (typeId, newName, newDescription = null) => {
   }
 };
 
-
+// tạo câu hỏi ở đây nha và tạo test luôn
 
 const createNewTest = async (testData) => {
   try {
@@ -185,6 +185,8 @@ const createNewTest = async (testData) => {
         typeId: q.typeId || 1,
         partId: q.partId || null,
       });
+
+      // tạo questionStat record trong hook của question model rồi 
        // ⬇️ Generate embedding cho câu hỏi mới tạo
       if (question.question) {
         try {

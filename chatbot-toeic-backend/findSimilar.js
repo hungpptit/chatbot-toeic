@@ -1,6 +1,6 @@
 import "dotenv/config";
 import sql from "mssql";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { pipeline } from "@xenova/transformers"; // model all-MiniLM-L6-v2
 
 // DB config
 const dbConfig = {
@@ -15,18 +15,18 @@ const dbConfig = {
   },
 };
 
-// Gemini API key
-const GEMINI_KEYS = process.env.GEMINI_API_KEYS.split(",");
-const GOOGLE_API_KEY = GEMINI_KEYS[0].trim();
-
-const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
-const model = genAI.getGenerativeModel({ model: "embedding-001" });
+// Load mô hình all-MiniLM-L6-v2 một lần
+let miniLMPipeline = null;
+async function getMiniLMModel() {
+  if (!miniLMPipeline) {
+    miniLMPipeline = await pipeline("feature-extraction", "sentence-transformers/all-MiniLM-L6-v2");
+  }
+  return miniLMPipeline;
+}
 
 // --- Hàm cosine similarity ---
 function cosineSimilarity(vecA, vecB) {
-  let dot = 0,
-    normA = 0,
-    normB = 0;
+  let dot = 0, normA = 0, normB = 0;
   for (let i = 0; i < vecA.length; i++) {
     dot += vecA[i] * vecB[i];
     normA += vecA[i] * vecA[i];
@@ -35,14 +35,14 @@ function cosineSimilarity(vecA, vecB) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-// --- Hàm tạo embedding mới từ Gemini ---
+// --- Hàm tạo embedding mới bằng all-MiniLM-L6-v2 ---
 async function createEmbedding(text) {
-  console.error("✅ Tạo embedding mới từ Gemini cho input text");
-  const result = await model.embedContent(text);
-  return result.embedding.values;
+  const miniLM = await getMiniLMModel();
+  const output = await miniLM(text, { pooling: "mean", normalize: true });
+  return Array.from(output.data);
 }
 
-// --- Hàm lấy embedding cho anchor ---
+// --- Hàm lấy embedding cho input ---
 async function getInputEmbedding(pool, input) {
   // Nếu input là số (questionId) thì thử lấy vector từ DB
   if (!isNaN(input)) {
@@ -50,20 +50,18 @@ async function getInputEmbedding(pool, input) {
     const result = await pool
       .request()
       .input("questionId", sql.Int, qId)
-      .query(
-        "SELECT vector FROM QuestionEmbeddings WHERE questionId = @questionId"
-      );
+      .query("SELECT vector FROM QuestionEmbeddings WHERE questionId = @questionId");
 
     if (result.recordset.length > 0) {
-      console.error("✅ Lấy embedding từ DB cho questionId =", qId);
+      console.error("Lấy embedding từ DB cho questionId =", qId);
       return result.recordset[0].vector.split(",").map(Number);
     } else {
-      throw new Error(`❌ Không tìm thấy embedding trong DB cho questionId=${qId}`);
+      throw new Error(`Không tìm thấy embedding trong DB cho questionId=${qId}`);
     }
   }
 
-  // Nếu input là chuỗi text → tạo embedding mới bằng Gemini
-  
+  // Nếu input là text → tạo embedding mới bằng MiniLM
+  console.error("Tạo embedding mới từ all-MiniLM-L6-v2 cho input text");
   return await createEmbedding(input);
 }
 
@@ -71,7 +69,7 @@ async function getInputEmbedding(pool, input) {
 async function findSimilar(input, k = 5) {
   const pool = await sql.connect(dbConfig);
 
-  // 1. Lấy embedding cho input (DB hoặc Gemini)
+  // 1. Lấy embedding cho input (DB hoặc MiniLM)
   const inputEmbedding = await getInputEmbedding(pool, input);
 
   // 2. Lấy toàn bộ embeddings từ DB
@@ -105,18 +103,18 @@ async function findSimilar(input, k = 5) {
   return unique.slice(0, k);
 }
 
-// --- CLI mode (nhận input từ Python) ---
+// --- CLI mode ---
 if (process.argv.length > 2) {
   const query = process.argv[2]; // có thể là questionId hoặc text
   const k = process.argv[3] ? parseInt(process.argv[3]) : 5;
 
   findSimilar(query, k)
     .then((results) => {
-      console.log(JSON.stringify(results, null, 2)); // in JSON
+      console.log(JSON.stringify(results, null, 2));
       process.exit(0);
     })
     .catch((err) => {
-      console.error("❌ Error:", err);
+      console.error("Error:", err);
       process.exit(1);
     });
 }

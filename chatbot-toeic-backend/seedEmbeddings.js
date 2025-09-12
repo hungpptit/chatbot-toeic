@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import sql from "mssql";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { pipeline } from "@xenova/transformers"; // Dùng local model all-MiniLM-L6-v2
 
 // 1. Config DB từ .env
 const dbConfig = {
@@ -15,17 +15,25 @@ const dbConfig = {
   }
 };
 
-// 2. Lấy Gemini API key (lấy cái đầu tiên trong danh sách .env)
-const GEMINI_KEYS = process.env.GEMINI_API_KEYS.split(",");
-const GOOGLE_API_KEY = GEMINI_KEYS[0].trim();
+// 2. Load mô hình all-MiniLM-L6-v2 một lần duy nhất
+let miniLMPipeline = null;
+async function getMiniLMModel() {
+  if (!miniLMPipeline) {
+    // Dùng bản onnx chính thức
+    miniLMPipeline = await pipeline(
+      "feature-extraction",
+      "Xenova/all-MiniLM-L6-v2"
+    );
+  }
+  return miniLMPipeline;
+}
 
-const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
-const model = genAI.getGenerativeModel({ model: "embedding-001" });
 
-// 3. Hàm tạo embedding
+// 3. Hàm tạo embedding bằng all-MiniLM-L6-v2
 async function createEmbedding(text) {
-  const result = await model.embedContent(text);
-  return result.embedding.values; // mảng float
+  const miniLM = await getMiniLMModel();
+  const output = await miniLM(text, { pooling: "mean", normalize: true });
+  return Array.from(output.data); // mảng float
 }
 
 // 4. Hàm lưu vào DB
@@ -35,7 +43,7 @@ async function upsertEmbedding(pool, questionId, vector) {
 
   await pool.request()
     .input("questionId", sql.Int, questionId)
-    .input("model", sql.NVarChar, "gemini-embedding-001")
+    .input("model", sql.NVarChar, "all-MiniLM-L6-v2") // đổi tên model
     .input("dim", sql.Int, dim)
     .input("vector", sql.NVarChar(sql.MAX), vectorString)
     .query(`
@@ -62,14 +70,14 @@ async function seedEmbeddings() {
   console.log(`Found ${result.recordset.length} questions`);
 
   for (const row of result.recordset) {
-    console.log(`➡️  Processing Question ${row.id}`);
+    console.log(`Processing Question ${row.id}`);
     const embedding = await createEmbedding(row.question);
     await upsertEmbedding(pool, row.id, embedding);
   }
 
-  console.log("✅ Done seeding embeddings");
+  console.log("Done seeding embeddings");
   pool.close();
 }
 
 // Chạy script
-seedEmbeddings().catch(err => console.error("❌ Error:", err));
+seedEmbeddings().catch(err => console.error("Error:", err));

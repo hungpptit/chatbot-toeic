@@ -39,13 +39,14 @@ export default (sequelize, DataTypes) => {
     },
     updatedAt: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
+      allowNull: false,
+      defaultValue: sequelize.literal('GETDATE()'), // để SQL Server tự set
     },
   }, {
     sequelize,
     modelName: 'QuestionEmbedding',
     tableName: 'QuestionEmbeddings',
-    timestamps: false,  // mình có updatedAt riêng rồi
+    timestamps: false, // không dùng timestamps mặc định, chỉ dùng updatedAt custom
   });
 
   return QuestionEmbedding;
