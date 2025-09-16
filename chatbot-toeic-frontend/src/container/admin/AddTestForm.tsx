@@ -1,3 +1,4 @@
+// Thêm đề thi mới - Admin
 import { useEffect, useState } from "react";
 import { FaSave, FaPlus, FaUpload } from "react-icons/fa";
 import Select from "react-select";
@@ -13,6 +14,8 @@ import {
   type QuestionType,
   type Part,
   createNewTestAPI,
+  getAllSkillsAPI,
+  type Skill,
 } from "../../services/adminTestService";
 
 export default function AdminTestAddPage() {
@@ -28,17 +31,20 @@ export default function AdminTestAddPage() {
   const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
   const [selectedPartId, setSelectedPartId] = useState<number | null>(null);
 
+  const [skills, setSkills] = useState<Skill[]>([]);
+
   useEffect(() => {
     getAllCourseNamesAPI().then(setCourses);
     getAllQuestionTypesAPI().then(setQuestionTypes);
     getAllPartsAPI().then(setParts);
+    getAllSkillsAPI().then(setSkills);
   }, []);
 
-  const handleChange = (index: number, field: string, value: string) => {
+  const handleChange = (index: number, field: string, value: string | number | null) => {
     setQuestions((prev) =>
       prev.map((q, i) => (i === index ? { ...q, [field]: value } : q))
     );
-  };
+  };  
 
   const handleAddMoreQuestion = () => {
     setQuestions((prev) => [...prev, createEmptyQuestion()]);
@@ -60,6 +66,7 @@ export default function AdminTestAddPage() {
         // courseId: selectedCourseId,
         typeId: selectedTypeId,
         partId: selectedPartId,
+        skillId: q.skillId || null,
       })),
     };
     try {
@@ -168,61 +175,70 @@ export default function AdminTestAddPage() {
         </button>
       </div>
 
-      {questions.map((q, i) => (
-        <div key={i} className="card-container">
-          <h2 className="card-question">
-            {i + 1}.{" "}
-            <input
-              value={q.question}
-              onChange={(e) => handleChange(i, "question", e.target.value)}
-              placeholder="Nhập nội dung câu hỏi..."
-            />
-          </h2>
+    {questions.map((q, i) => (
+      <div key={i} className="card-container">
+        <h2 className="card-question">
+          {i + 1}.{" "}
+          <input
+            value={q.question}
+            onChange={(e) => handleChange(i, "question", e.target.value)}
+            placeholder="Nhập nội dung câu hỏi..."
+          />
+        </h2>
 
-          <div className="card-options">
-            {["A", "B", "C", "D"].map((opt) => {
-              const optionKey = `option${opt}` as keyof Question;
-              return (
-                <div key={opt} className="card-option edit-mode">
-                  <input
-                    value={q[optionKey]}
-                    onChange={(e) => handleChange(i, optionKey, e.target.value)}
-                    placeholder={`Đáp án ${opt}`}
-                  />
-                  <input
-                    type="radio"
-                    name={`correct-${i}`}
-                    checked={q.correctAnswer === opt}
-                    onChange={() => handleChange(i, "correctAnswer", opt)}
-                  />
-                  <label>Đúng</label>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="card-explanation">
-            <p>
-              Correct Answer:{" "}
-              <span className="card-correct">{q.correctAnswer || "?"}</span>
-            </p>
-            <textarea
-              value={q.explanation}
-              onChange={(e) => handleChange(i, "explanation", e.target.value)}
-              placeholder="Giải thích đáp án..."
-            />
-          </div>
-
-          <div className="card-actions">
-            <button className="save-btn" onClick={handleSave}>
-              <FaSave /> Lưu đề
-            </button>
-            <button className="edit-btn" onClick={handleAddMoreQuestion}>
-              <FaPlus /> Thêm câu hỏi
-            </button>
-          </div>
+        <div className="card-options">
+          {["A", "B", "C", "D"].map((opt) => {
+            const optionKey = `option${opt}` as keyof Question;
+            return (
+              <div key={opt} className="card-option edit-mode">
+                <input
+                  value={q[optionKey] ?? ""} 
+                  onChange={(e) => handleChange(i, optionKey, e.target.value)}
+                  placeholder={`Đáp án ${opt}`}
+                />
+                <input
+                  type="radio"
+                  name={`correct-${i}`}
+                  checked={q.correctAnswer === opt}
+                  onChange={() => handleChange(i, "correctAnswer", opt)}
+                />
+                <label>Đúng</label>
+              </div>
+            );
+          })}
         </div>
-      ))}
+
+        {/* ✅ Dropdown chọn Skill cho từng câu hỏi */}
+        <Dropdown
+          label="Chọn Skill"
+          options={skills}             // mảng lấy từ API getAllSkillsAPI
+          value={q.skillId ?? null}    // giá trị hiện tại của câu hỏi
+          onChange={(id) => handleChange(i, "skillId", id)} // update skillId trong state
+        />
+
+        <div className="card-explanation">
+          <p>
+            Correct Answer:{" "}
+            <span className="card-correct">{q.correctAnswer || "?"}</span>
+          </p>
+          <textarea
+            value={q.explanation}
+            onChange={(e) => handleChange(i, "explanation", e.target.value)}
+            placeholder="Giải thích đáp án..."
+          />
+        </div>
+
+        <div className="card-actions">
+          <button className="save-btn" onClick={handleSave}>
+            <FaSave /> Lưu đề
+          </button>
+          <button className="edit-btn" onClick={handleAddMoreQuestion}>
+            <FaPlus /> Thêm câu hỏi
+          </button>
+        </div>
+      </div>
+    ))}
+
     </div>
   );
 }
@@ -236,6 +252,7 @@ type Question = {
   optionD: string;
   correctAnswer: string;
   explanation: string;
+  skillId?: number | null;
 };
 
 // Init câu hỏi trống
@@ -251,34 +268,7 @@ function createEmptyQuestion(): Question {
   };
 }
 
-// Dropdown Component
-// function Dropdown({
-//   label,
-//   options,
-//   onChange,
-// }: {
-//   label: string;
-//   options: { id: number; name: string }[];
-//   onChange: (id: number | null) => void;
-// }) {
-//   return (
-//     <div className="dropdown-wrapper">
-//       <label>
-//         <strong>{label}:</strong>
-//       </label>
-//       <Select
-//         classNamePrefix="custom-react-select"
-//         options={options.map((item) => ({
-//           value: item.id,
-//           label: item.name,
-//         }))}
-//         onChange={(selected) => onChange(selected ? selected.value : null)}
-//         placeholder={`-- ${label} --`}
-//         menuPortalTarget={document.body}
-//       />
-//     </div>
-//   );
-// }
+
 
 
 function Dropdown({

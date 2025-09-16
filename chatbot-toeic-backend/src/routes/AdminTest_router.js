@@ -11,7 +11,12 @@ import {
   updatePartNameController,
   updateQuestionTypeController,
   deleteTestByIdController,
-  generateMissingEmbeddingsController 
+  generateMissingEmbeddingsController,
+  getSkillsController,
+  getSkillByIdController,
+  createSkillController,
+  updateSkillController,
+  deleteSkillController,
 } from '../controllers/AdminTest_controller.js';
 
 import { authMiddleware } from '../Middleware/authMiddleware.js';
@@ -42,4 +47,10 @@ router.delete('/deleteTest/:testId', authMiddleware, deleteTestByIdController);
 
 
 router.post('/tests/generate-missing-embeddings', generateMissingEmbeddingsController);
+// Skill routes
+router.get('/skills', authMiddleware, getSkillsController);// Lấy tất cả skill
+router.get('/skills/:id', authMiddleware, getSkillByIdController);// Lấy skill theo ID
+router.post('/skills', authMiddleware, createSkillController);// Tạo skill mới
+router.put('/skills/:id', authMiddleware, updateSkillController);// Cập nhật skill
+router.delete('/skills/:id', authMiddleware, deleteSkillController);// Xóa skill
 export default router;

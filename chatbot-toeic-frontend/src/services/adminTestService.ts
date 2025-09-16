@@ -25,6 +25,7 @@ export interface Question {
   explanation: string;
   typeId: number;
   partId: number;
+  skillId?: number | null;
 
   // questionType: QuestionType;
   // part: Part;
@@ -42,6 +43,16 @@ export interface QuestionType {
 export interface Part {
     id: number;
     name: string;
+}
+
+
+export interface Skill {
+  id: number;
+  name: string;
+  description?: string;
+  parentId?: number | null;
+  parent?: Skill | null;
+  children?: Skill[];
 }
 
 // interface DeleteTestResponse {
@@ -114,8 +125,27 @@ export const deleteQuestionTypeAPI = async (id: number): Promise<void> => {
 };
 
 // Tạo mới một bài test
-export const createNewTestAPI = async (testData: TestCreate): Promise<TestCreate> => {
-  const response = await axios.post<TestCreate>(
+// export const createNewTestAPI = async (testData: TestCreate): Promise<TestCreate> => {
+//   const response = await axios.post<TestCreate>(
+//     `${API_BASE_URL}/createTestNew`,
+//     testData,
+//     { withCredentials: true }
+//   );
+//   return response.data;
+// };
+
+export interface CreateTestResponse {
+  message: string;
+  data: {
+    testId: number;
+    questionIds: number[];
+  };
+}
+
+export const createNewTestAPI = async (
+  testData: TestCreate
+): Promise<CreateTestResponse> => {
+  const response = await axios.post<CreateTestResponse>(
     `${API_BASE_URL}/createTestNew`,
     testData,
     { withCredentials: true }
@@ -169,5 +199,57 @@ export const updateQuestionTypeAPI = async (
     console.error("❌ Error updating question type:", error);
     throw error;
   }
+};
+
+// ================== SKILLS ==================
+
+// Lấy tất cả skills
+export const getAllSkillsAPI = async (): Promise<Skill[]> => {
+  const response = await axios.get<Skill[]>(`${API_BASE_URL}/skills`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// Lấy skill theo id
+export const getSkillByIdAPI = async (id: number): Promise<Skill> => {
+  const response = await axios.get<Skill>(`${API_BASE_URL}/skills/${id}`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// Tạo skill mới
+export const createSkillAPI = async (
+  name: string,
+  description?: string,
+  parentId?: number | null
+): Promise<Skill> => {
+  const response = await axios.post<Skill>(
+    `${API_BASE_URL}/skills`,
+    { name, description, parentId },
+    { withCredentials: true }
+  );
+  return response.data;
+};
+
+// Cập nhật skill
+export const updateSkillAPI = async (
+  id: number,
+  updates: { name?: string; description?: string; parentId?: number | null }
+): Promise<Skill> => {
+  const response = await axios.put<Skill>(
+    `${API_BASE_URL}/skills/${id}`,
+    updates,
+    { withCredentials: true }
+  );
+  return response.data;
+};
+
+// Xóa skill
+export const deleteSkillAPI = async (id: number): Promise<void> => {
+  await axios.delete(`${API_BASE_URL}/skills/${id}`, {
+    withCredentials: true,
+  });
 };
 

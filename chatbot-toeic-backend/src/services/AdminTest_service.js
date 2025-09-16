@@ -1,3 +1,6 @@
+// =============================================================
+// tạo câu hỏi ở đây nha và tạo test luôn
+// =============================================================
 import db from "../models/index.js";
 import embeddingService from "./embeddingService.js";
 
@@ -9,6 +12,7 @@ const Part = db.Part;
 const QuestionType = db.QuestionType;
 const TestQuestion = db.TestQuestion;
 const Test_Courses = db.TestCourse;
+const Skills = db.Skill;
 
 const getAllTestsWithCourses = async () => {
   try {
@@ -150,8 +154,9 @@ const updateQuestionType = async (typeId, newName, newDescription = null) => {
     throw error;  
   }
 };
-
+// =============================================================
 // tạo câu hỏi ở đây nha và tạo test luôn
+// =============================================================
 
 const createNewTest = async (testData) => {
   try {
@@ -185,6 +190,13 @@ const createNewTest = async (testData) => {
         typeId: q.typeId || 1,
         partId: q.partId || null,
       });
+      if (q.skillId) {
+        await db.QuestionSkill.create({
+          questionId: question.id,
+          skillId: q.skillId,
+          weight: 1, // 👈 tùy bạn, có thể mặc định 1
+        });
+      }
 
       // tạo questionStat record trong hook của question model rồi 
        // ⬇️ Generate embedding cho câu hỏi mới tạo
@@ -244,6 +256,86 @@ const deleteTestById = async (testIdRaw) => {
   }
 };
 
+// =============================================================
+// CRUD cho Skills
+// =============================================================
+
+// Tạo skill mới
+const createSkill = async (skillData) => {
+  try {
+    const { name, description, parentId } = skillData;
+    const newSkill = await Skills.create({ name, description, parentId });
+    return newSkill;
+  } catch (error) {
+    console.error("❌ Error creating Skill:", error);
+    throw error;
+  }
+};
+
+// Lấy tất cả skill
+const getAllSkills = async () => {
+  try {
+    const skills = await Skills.findAll({
+      attributes: ["id", "name", "description", "parentId"],
+      include: [
+        { model: Skills, as: "children", attributes: ["id", "name"] },
+        { model: Skills, as: "parent", attributes: ["id", "name"] },
+      ],
+      order: [["id", "ASC"]],
+    });
+    return skills;
+  } catch (error) {
+    console.error("❌ Error fetching Skills:", error);
+    throw error;
+  }
+};
+
+// Lấy skill theo id
+const getSkillById = async (id) => {
+  try {
+    const skill = await Skills.findByPk(id, {
+      attributes: ["id", "name", "description", "parentId"],
+      include: [
+        { model: Skills, as: "children", attributes: ["id", "name"] },
+        { model: Skills, as: "parent", attributes: ["id", "name"] },
+      ],
+    });
+    if (!skill) throw new Error(`Skill with ID ${id} not found`);
+    return skill;
+  } catch (error) {
+    console.error("❌ Error fetching Skill by ID:", error);
+    throw error;
+  }
+};
+
+// Cập nhật skill
+const updateSkill = async (id, updates) => {
+  try {
+    const skill = await Skills.findByPk(id);
+    if (!skill) throw new Error(`Skill with ID ${id} not found`);
+
+    await skill.update(updates);
+    return skill;
+  } catch (error) {
+    console.error("❌ Error updating Skill:", error);
+    throw error;
+  }
+};
+
+// Xóa skill
+const deleteSkill = async (id) => {
+  try {
+    const skill = await Skills.findByPk(id);
+    if (!skill) throw new Error(`Skill with ID ${id} not found`);
+
+    await skill.destroy();
+    return { success: true, message: `Skill with ID ${id} deleted` };
+  } catch (error) {
+    console.error("❌ Error deleting Skill:", error);
+    throw error;
+  }
+};
+
 
 
 export { getAllTestsWithCourses,
@@ -255,5 +347,10 @@ export { getAllTestsWithCourses,
   createNewTest,
   updatePartName,
   updateQuestionType,
-  deleteTestById
+  deleteTestById,
+  createSkill,
+  getAllSkills,
+  getSkillById,
+  updateSkill,
+  deleteSkill,
  };

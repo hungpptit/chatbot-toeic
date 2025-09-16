@@ -1,3 +1,4 @@
+// dành cho phần thống kê của admin
 export default function AdminStatsPage() {
   return (
     <div>

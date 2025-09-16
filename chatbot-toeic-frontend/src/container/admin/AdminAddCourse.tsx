@@ -1,3 +1,4 @@
+// dành cho admin thêm mới khóa học, part, question type, item thêm/ sửa
 import { useState } from "react";
 import { FaPlusCircle, FaBook, FaPuzzlePiece, FaQuestion, FaEdit,
   FaTrash, } from "react-icons/fa";
@@ -14,7 +15,11 @@ import{getAllQuestionTypesAPI,
     deletePartAPI,
     deleteQuestionTypeAPI,
     updatePartNameAPI,
-    updateQuestionTypeAPI
+    updateQuestionTypeAPI,
+    getAllSkillsAPI,
+    createSkillAPI,
+    deleteSkillAPI,
+    updateSkillAPI,
 } from "../../services/adminTestService";
 import { useEffect } from "react";
 
@@ -31,6 +36,9 @@ export default function AdminAddCourse() {
   const [courses, setCourses] = useState<DataItem[]>([]);
   const [parts, setParts] = useState<DataItem[]>([]);
   const [questionTypes, setQuestionTypes] = useState<DataItem[]>([]);
+
+  const [skillName, setSkillName] = useState("");
+  const [skills, setSkills] = useState<DataItem[]>([]);
 
     const handleAddCourse = async () => {
         if (!courseName.trim()) return alert("Vui lòng nhập tên khóa học.");
@@ -171,23 +179,78 @@ export default function AdminAddCourse() {
         }
     };
 
-    useEffect(() => {
-    const fetchAll = async () => {
-        try {
-        const [courseData, partData, questionTypeData] = await Promise.all([
-            getAllCourseNamesAPI(),
-            getAllPartsAPI(),
-            getAllQuestionTypesAPI()
-        ]);
-        setCourses(courseData);
-        setParts(partData);
-        setQuestionTypes(questionTypeData);
-        } catch (error) {
-        console.error("❌ Lỗi khi tải dữ liệu:", error);
-        }
+    // Tương tự cho Skill
+    // Add Skill
+    const handleAddSkill = async () => {
+      if (!skillName.trim()) return alert("Vui lòng nhập tên Skill.");
+
+      try {
+        const newSkill = await createSkillAPI(skillName.trim());
+        setSkills((prev) => [...prev, newSkill]);
+        setSkillName("");
+        alert(`✅ Đã thêm Skill: ${newSkill.name}`);
+      } catch (error) {
+        console.error("❌ Lỗi khi thêm Skill:", error);
+        alert("Thêm Skill thất bại.");
+      }
     };
-    fetchAll();
+
+    // Delete Skill
+    const handleDeleteSkill = async (id: number) => {
+      if (!window.confirm("Xóa Skill này?")) return;
+
+      try {
+        await deleteSkillAPI(id);
+        setSkills((prev) => prev.filter((s) => s.id !== id));
+        alert("🗑️ Đã xóa Skill.");
+      } catch (error) {
+        console.error("❌ Lỗi khi xóa Skill:", error);
+        alert("Xóa Skill thất bại.");
+      }
+    };
+
+    // Update Skill
+    const handleUpdateSkill = async (id: number) => {
+      const current = skills.find((s) => s.id === id);
+      if (!current) return;
+
+      const newName = window.prompt("Tên mới cho Skill:", current.name);
+      if (!newName || !newName.trim()) return;
+
+      try {
+        const updated = await updateSkillAPI(id, { name: newName.trim() });
+        setSkills((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, name: updated.name } : s))
+        );
+        alert("✅ Đã cập nhật Skill.");
+      } catch (error) {
+        console.error("❌ Lỗi cập nhật Skill:", error);
+        alert("Cập nhật Skill thất bại.");
+      }
+    };
+
+
+    useEffect(() => {
+      const fetchAll = async () => {
+        try {
+          const [courseData, partData, questionTypeData, skillData] =
+            await Promise.all([
+              getAllCourseNamesAPI(),
+              getAllPartsAPI(),
+              getAllQuestionTypesAPI(),
+              getAllSkillsAPI(),
+            ]);
+          setCourses(courseData);
+          setParts(partData);
+          setQuestionTypes(questionTypeData);
+          setSkills(skillData);
+        } catch (error) {
+          console.error("❌ Lỗi khi tải dữ liệu:", error);
+        }
+      };
+      fetchAll();
     }, []);
+
 
 
    return (
@@ -322,6 +385,50 @@ export default function AdminAddCourse() {
                     <FaEdit />
                   </button>
                   <button onClick={() => handleDeleteQuestionType(qt.id)}>
+                    <FaTrash />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* Box 4: Thêm Skill */}
+      <div className="admin-box">
+        <h3>
+          <FaPuzzlePiece /> Thêm Skill
+        </h3>
+        <input
+          type="text"
+          placeholder="Tên Skill"
+          value={skillName}
+          onChange={(e) => setSkillName(e.target.value)}
+        />
+        <button onClick={handleAddSkill}>
+          <span style={{ marginRight: "6px" }}>
+            <FaPlusCircle />
+          </span>
+          Thêm Skill
+        </button>
+
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tên Skill</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            {skills.map((s) => (
+              <tr key={s.id}>
+                <td>{s.id}</td>
+                <td>{s.name}</td>
+                <td className="action-buttons">
+                  <button onClick={() => handleUpdateSkill(s.id)}>
+                    <FaEdit />
+                  </button>
+                  <button onClick={() => handleDeleteSkill(s.id)}>
                     <FaTrash />
                   </button>
                 </td>

@@ -11,7 +11,12 @@ import {getAllTestsWithCourses,
   createNewTest,
   updatePartName,
   updateQuestionType,
-  deleteTestById
+  deleteTestById,
+  createSkill,
+  getAllSkills,
+  getSkillById,
+  updateSkill,
+  deleteSkill,
  } from '../services/AdminTest_service.js';
 
  import embeddingService from '../services/embeddingService.js';
@@ -210,6 +215,81 @@ const generateMissingEmbeddingsController = async (req, res) => {
   }
 };
 
+// Lấy tất cả skill
+const getSkillsController = async (req, res) => {
+  try {
+    const skills = await getAllSkills();
+    res.status(200).json(skills);
+  } catch (err) {
+    console.error("❌ Error fetching skills:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Lấy skill theo ID
+const getSkillByIdController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const skill = await getSkillById(id);
+
+    if (!skill) {
+      return res.status(404).json({ message: "Skill not found" });
+    }
+
+    res.status(200).json(skill);
+  } catch (err) {
+    console.error("❌ Error fetching skill by id:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Tạo skill mới
+const createSkillController = async (req, res) => {
+  try {
+    const { name, description, parentId } = req.body;
+    if (!name) {
+      return res.status(400).json({ message: "Skill name is required" });
+    }
+
+    const newSkill = await createSkill({ name, description, parentId });
+    res.status(201).json(newSkill);
+  } catch (err) {
+    console.error("❌ Error creating skill:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Cập nhật skill
+const updateSkillController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const updatedSkill = await updateSkill(id, updates);
+    res.status(200).json({
+      message: "Skill updated successfully",
+      skill: updatedSkill,
+    });
+  } catch (err) {
+    console.error("❌ Error updating skill:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Xóa skill
+const deleteSkillController = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await deleteSkill(id);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("❌ Error deleting skill:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 
 export {
   getTestList,
@@ -223,5 +303,10 @@ export {
   updatePartNameController,
   updateQuestionTypeController,
   deleteTestByIdController,
-  generateMissingEmbeddingsController
+  generateMissingEmbeddingsController,
+  getSkillsController,
+  getSkillByIdController,
+  createSkillController,
+  updateSkillController,
+  deleteSkillController,
 };

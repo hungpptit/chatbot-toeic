@@ -29,7 +29,7 @@ router.use('/courses', coursesRouter);
 router.use('/testcourses', testcourseRouter);
 router.use('/questionTest', questiontestRouter);
 router.use('/adminUser', AdminUserRouter);
-router.use('/adminTest', AminTestRouter);
+router.use('/adminTest', AminTestRouter); // AdminTest_router.js chứa các endpoint liên quan đến quản lý bài thi
 router.use('/account', accountRouter);
 router.use('/statistical', statisticalRouter);
 
