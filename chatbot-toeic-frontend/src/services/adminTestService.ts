@@ -23,8 +23,8 @@ export interface Question {
   optionD: string;
   correctAnswer: string;
   explanation: string;
-  typeId: number;
-  partId: number;
+  typeId?: number | null;  // ← Made optional
+  partId?: number | null;  // ← Made optional
   skillId?: number | null;
 
   // questionType: QuestionType;
@@ -138,19 +138,33 @@ export interface CreateTestResponse {
   message: string;
   data: {
     testId: number;
+    title: string;
+    questionCount: number;
     questionIds: number[];
+    questionTypes: number[];
   };
 }
 
 export const createNewTestAPI = async (
   testData: TestCreate
 ): Promise<CreateTestResponse> => {
-  const response = await axios.post<CreateTestResponse>(
-    `${API_BASE_URL}/createTestNew`,
-    testData,
-    { withCredentials: true }
-  );
-  return response.data;
+  try {
+    console.log("🔍 Sending test data:", testData);
+    const response = await axios.post<CreateTestResponse>(
+      `${API_BASE_URL}/createTestNew`,
+      testData,
+      { withCredentials: true }
+    );
+    console.log("✅ Response received:", response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ API Error:", error);
+    if (error.response) {
+      console.error("❌ Response data:", error.response.data);
+      console.error("❌ Response status:", error.response.status);
+    }
+    throw error;
+  }
 };
 
 export const deleteTestByIdAPI = async (testId: number): Promise<void> => {

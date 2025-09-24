@@ -593,7 +593,7 @@ const getItemWithAI = async (item, conversationId) => {
 
   for (const test of tests) {
     const count = await db.TestQuestion.count({ where: { testId: test.id } });
-    if (count < 40) {
+    if (count >0) {
       testToUse = test;
       currentCount = count;
       break;

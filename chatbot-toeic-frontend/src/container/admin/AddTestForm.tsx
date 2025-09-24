@@ -125,14 +125,58 @@ export default function AdminTestAddPage() {
         // Lấy partId từ level gốc của JSON hoặc từ câu hỏi đầu tiên
         const partId = json.partId || json.questions[0]?.partId || null;
 
-        // Validate từng câu hỏi có đủ thông tin cơ bản không (typeId và skillId có thể null)
+        // Validate từng câu hỏi theo loại (typeId và skillId có thể null)
         for (let i = 0; i < json.questions.length; i++) {
           const q = json.questions[i];
+          const questionType = q.typeId || 1; // Default là Multiple Choice
           
-          // Chỉ validate các field bắt buộc cơ bản
-          if (!q.question || !q.optionA || !q.optionB || !q.optionC || !q.optionD || !q.correctAnswer) {
-            alert(`❌ File JSON: Câu hỏi ${i + 1} thiếu thông tin bắt buộc!`);
+          // Validate question và correctAnswer - bắt buộc cho tất cả loại
+          if (!q.question || !q.correctAnswer) {
+            alert(`❌ File JSON: Câu hỏi ${i + 1} thiếu nội dung câu hỏi hoặc đáp án đúng!`);
             return;
+          }
+
+          // Validate options theo từng loại câu hỏi
+          switch (questionType) {
+            case 1: // Multiple Choice - cần đủ 4 options
+              if (!q.optionA || !q.optionB || !q.optionC || !q.optionD) {
+                alert(`❌ File JSON: Câu hỏi ${i + 1} (Multiple Choice) thiếu đáp án A, B, C, hoặc D!`);
+                return;
+              }
+              break;
+
+            case 2: // Fill in Blank - options có thể null
+              // Không cần validate options, chỉ cần question và correctAnswer
+              break;
+
+            case 3: // Matching - cần ít nhất 2 cặp để ghép
+              if (!q.optionA || !q.optionB || !q.optionC || !q.optionD) {
+                alert(`❌ File JSON: Câu hỏi ${i + 1} (Matching) cần đủ 4 options để ghép đôi!`);
+                return;
+              }
+              break;
+
+            case 4: // Rearrangement - cần các từ để sắp xếp
+              if (!q.optionA || !q.optionB) {
+                alert(`❌ File JSON: Câu hỏi ${i + 1} (Rearrangement) cần ít nhất 2 từ để sắp xếp!`);
+                return;
+              }
+              break;
+
+            case 5: // True/False - options có thể null vì chỉ cần True/False
+              // Không cần validate options
+              break;
+
+            case 6: // Short Answer - options có thể null
+              // Không cần validate options, chỉ cần question và correctAnswer
+              break;
+
+            default:
+              // Loại câu hỏi không xác định - validate như Multiple Choice
+              if (!q.optionA || !q.optionB || !q.optionC || !q.optionD) {
+                alert(`❌ File JSON: Câu hỏi ${i + 1} (Unknown type) thiếu thông tin options!`);
+                return;
+              }
           }
         }
 
@@ -141,18 +185,50 @@ export default function AdminTestAddPage() {
         setSelectedCourseId(json.courseId);
         setSelectedPartId(partId);
 
-        // Loại bỏ các field không cần thiết khỏi mỗi question (typeId, skillId có thể null)
-        const cleanedQuestions = json.questions.map((q: any) => ({
-          question: q.question,
-          optionA: q.optionA,
-          optionB: q.optionB,
-          optionC: q.optionC,
-          optionD: q.optionD,
-          correctAnswer: q.correctAnswer,
-          explanation: q.explanation || "",
-          typeId: q.typeId || null, // có thể null, sẽ chỉnh tay sau
-          skillId: q.skillId || null, // có thể null, sẽ chỉnh tay sau
-        }));
+        // Xử lý dữ liệu theo từng loại câu hỏi
+        const cleanedQuestions = json.questions.map((q: any) => {
+          const questionType = q.typeId || 1;
+          
+          // Base data cho tất cả loại câu hỏi
+          const baseQuestion = {
+            question: q.question,
+            correctAnswer: q.correctAnswer,
+            explanation: q.explanation || "",
+            typeId: q.typeId || null,
+            skillId: q.skillId || null,
+          };
+
+          // Xử lý options theo từng loại
+          switch (questionType) {
+            case 2: // Fill in Blank - options có thể để trống
+            case 6: // Short Answer - options có thể để trống
+              return {
+                ...baseQuestion,
+                optionA: q.optionA || "",
+                optionB: q.optionB || "",
+                optionC: q.optionC || "",
+                optionD: q.optionD || "",
+              };
+
+            case 5: // True/False - chỉ cần optionA, B làm placeholder
+              return {
+                ...baseQuestion,
+                optionA: q.optionA || "True",
+                optionB: q.optionB || "False", 
+                optionC: q.optionC || "",
+                optionD: q.optionD || "",
+              };
+
+            default: // Multiple Choice, Matching, Rearrangement - giữ nguyên options
+              return {
+                ...baseQuestion,
+                optionA: q.optionA || "",
+                optionB: q.optionB || "",
+                optionC: q.optionC || "",
+                optionD: q.optionD || "",
+              };
+          }
+        });
 
         setQuestions(cleanedQuestions);
 

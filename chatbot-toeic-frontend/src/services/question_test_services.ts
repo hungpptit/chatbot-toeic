@@ -26,6 +26,7 @@ export interface Question {
   explanation: string;
   typeId: number;
   partId: number;
+  skillId?: number; // Skill ID for question categorization (6 = Listening, 7 = Reading)
 
   // questionType: QuestionType;
   // part: Part;

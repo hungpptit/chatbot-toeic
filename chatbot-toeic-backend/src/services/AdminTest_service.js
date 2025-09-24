@@ -162,6 +162,11 @@ const createNewTest = async (testData) => {
   try {
     const { title, courseId, questions } = testData;
 
+    // Validate input data
+    if (!title || !courseId || !questions || !Array.isArray(questions) || questions.length === 0) {
+      throw new Error("Invalid test data: title, courseId and questions are required");
+    }
+
     // Create test
     const test = await db.Test.create({
       title,
@@ -177,37 +182,121 @@ const createNewTest = async (testData) => {
       testId: test.id,
     });
 
-    // Create questions
-    const questionRecords = await Promise.all(questions.map(async (q) => {
+    // Create questions with flexible handling based on question type
+    const questionRecords = await Promise.all(questions.map(async (q, index) => {
+      const questionType = q.typeId || 1;
+      
+      // Validate required fields for all question types
+      if (!q.question || !q.correctAnswer) {
+        throw new Error(`Question ${index + 1}: Missing required fields (question or correctAnswer)`);
+      }
+
+      // Process options based on question type
+      let processedOptions = {};
+      
+      switch (questionType) {
+        case 1: // Multiple Choice - require all 4 options
+          if (!q.optionA || !q.optionB || !q.optionC || !q.optionD) {
+            throw new Error(`Question ${index + 1}: Multiple Choice requires all 4 options (A, B, C, D)`);
+          }
+          processedOptions = {
+            optionA: q.optionA,
+            optionB: q.optionB,
+            optionC: q.optionC,
+            optionD: q.optionD,
+          };
+          break;
+
+        case 2: // Fill in Blank - options can be null
+          processedOptions = {
+            optionA: q.optionA || "",
+            optionB: q.optionB || "",
+            optionC: q.optionC || "",
+            optionD: q.optionD || "",
+          };
+          break;
+
+        case 3: // Matching - require all 4 options for pairs
+          if (!q.optionA || !q.optionB || !q.optionC || !q.optionD) {
+            throw new Error(`Question ${index + 1}: Matching requires all 4 options for pairing`);
+          }
+          processedOptions = {
+            optionA: q.optionA,
+            optionB: q.optionB,
+            optionC: q.optionC,
+            optionD: q.optionD,
+          };
+          break;
+
+        case 4: // Rearrangement - require at least 2 options
+          if (!q.optionA || !q.optionB) {
+            throw new Error(`Question ${index + 1}: Rearrangement requires at least 2 options`);
+          }
+          processedOptions = {
+            optionA: q.optionA,
+            optionB: q.optionB,
+            optionC: q.optionC || "",
+            optionD: q.optionD || "",
+          };
+          break;
+
+        case 5: // True/False - auto-set options
+          processedOptions = {
+            optionA: "True",
+            optionB: "False",
+            optionC: "",
+            optionD: "",
+          };
+          break;
+
+        case 6: // Short Answer - options can be null
+          processedOptions = {
+            optionA: q.optionA || "",
+            optionB: q.optionB || "",
+            optionC: q.optionC || "",
+            optionD: q.optionD || "",
+          };
+          break;
+
+        default: // Unknown type - treat as Multiple Choice
+          console.warn(`Unknown question type ${questionType} for question ${index + 1}, treating as Multiple Choice`);
+          processedOptions = {
+            optionA: q.optionA || "",
+            optionB: q.optionB || "",
+            optionC: q.optionC || "",
+            optionD: q.optionD || "",
+          };
+      }
+
+      // Create question record
       const question = await Question.create({
-        question: q.question || null,
-        optionA: q.optionA || null,
-        optionB: q.optionB || null,
-        optionC: q.optionC || null,
-        optionD: q.optionD || null,
-        correctAnswer: q.correctAnswer || null,
-        explanation: q.explanation || null,
-        typeId: q.typeId || 1,
+        question: q.question,
+        ...processedOptions,
+        correctAnswer: q.correctAnswer,
+        explanation: q.explanation || "",
+        typeId: questionType,
         partId: q.partId || null,
       });
+
+      // Create skill relationship if skillId provided
       if (q.skillId) {
         await db.QuestionSkill.create({
           questionId: question.id,
           skillId: q.skillId,
-          weight: 1, // 👈 tùy bạn, có thể mặc định 1
+          weight: 1, // Default weight
         });
       }
 
-      // tạo questionStat record trong hook của question model rồi 
-       // ⬇️ Generate embedding cho câu hỏi mới tạo
+      // Generate embedding for question
       if (question.question) {
         try {
           await embeddingService.generateEmbeddingForQuestion(question);
-          console.log(`✅ Embedding generated for questionId ${question.id}`);
+          console.log(`✅ Embedding generated for question ${index + 1} (ID: ${question.id})`);
         } catch (err) {
-          console.error(`⚠️ Failed to generate embedding for questionId ${question.id}:`, err);
+          console.error(`⚠️ Failed to generate embedding for question ${index + 1} (ID: ${question.id}):`, err);
         }
       }
+
       return question;
     }));
 
@@ -219,9 +308,14 @@ const createNewTest = async (testData) => {
     }));
     await TestQuestion.bulkCreate(testQuestionRecords);
 
+    console.log(`✅ Test created successfully: "${title}" with ${questionRecords.length} questions`);
+    
     return {
       testId: test.id,
+      title: test.title,
+      questionCount: questionRecords.length,
       questionIds: questionRecords.map(q => q.id),
+      questionTypes: questionRecords.map(q => q.typeId),
     };
   } catch (err) {
     console.error('❌ Error creating test:', err);

@@ -39,7 +39,7 @@ const getAllTestsWithCourses = async () => {
         'Courses->Test_Courses.courseId',
         'Courses->Test_Courses.testId',
       ],
-      having: literal('COUNT(testQuestions.id) >= 40'), // ⬅️ dùng alias ở đây nữa
+      having: literal('COUNT(testQuestions.id) >= 0'), // ⬅️ dùng alias ở đây nữa
       order: [['id', 'ASC']],
     });
 

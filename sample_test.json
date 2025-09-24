@@ -1,5 +1,5 @@
 {
-  "title": "TOEIC Reading Test Sample",
+  "title": "TOEIC Mixed Question Types Test",
   "courseId": 1,
   "partId": 1,
   "questions": [
@@ -15,25 +15,58 @@
       "skillId": 1
     },
     {
-      "question": "According to the passage, when will the new policy take effect?",
-      "optionA": "January 1st",
-      "optionB": "February 15th",
-      "optionC": "March 30th", 
-      "optionD": "April 1st",
-      "correctAnswer": "D",
-      "explanation": "The passage mentions that the new policy will be implemented starting April 1st of this year.",
-      "typeId": 1,
+      "question": "The company will _____ its new product next month.",
+      "optionA": null,
+      "optionB": null,
+      "optionC": null,
+      "optionD": null,
+      "correctAnswer": "launch",
+      "explanation": "After 'will', we use the base form of the verb.",
+      "typeId": 2,
       "skillId": 1
     },
     {
-      "question": "Which department is responsible for handling customer complaints?",
-      "optionA": "Sales Department",
-      "optionB": "Marketing Department",
-      "optionC": "Customer Service Department",
-      "optionD": "Human Resources Department",
-      "correctAnswer": "C",
-      "explanation": "Customer complaints are typically handled by the Customer Service Department as stated in the company policy.",
-      "typeId": 1,
+      "question": "Match the words with their meanings:",
+      "optionA": "Revenue",
+      "optionB": "Profit",
+      "optionC": "Total income from sales",
+      "optionD": "Money left after expenses",
+      "correctAnswer": "A-C, B-D",
+      "explanation": "Revenue means total income from sales, Profit means money left after expenses.",
+      "typeId": 3,
+      "skillId": 1
+    },
+    {
+      "question": "Arrange the words to make a correct sentence:",
+      "optionA": "meeting",
+      "optionB": "The",
+      "optionC": "tomorrow",
+      "optionD": "is",
+      "correctAnswer": "B-A-D-C",
+      "explanation": "The correct sentence is 'The meeting is tomorrow'.",
+      "typeId": 4,
+      "skillId": 1
+    },
+    {
+      "question": "The company's revenue increased by 15% last quarter.",
+      "optionA": null,
+      "optionB": null,
+      "optionC": null,
+      "optionD": null,
+      "correctAnswer": "True",
+      "explanation": "According to the financial report, the company's revenue did increase by 15% in the last quarter.",
+      "typeId": 5,
+      "skillId": 1
+    },
+    {
+      "question": "What are three key benefits of remote work for employees?",
+      "optionA": null,
+      "optionB": null,
+      "optionC": null,
+      "optionD": null,
+      "correctAnswer": "Flexibility, cost savings, better work-life balance",
+      "explanation": "The main benefits include flexible schedule, reduced commuting costs, and improved work-life balance.",
+      "typeId": 6,
       "skillId": 1
     }
   ]

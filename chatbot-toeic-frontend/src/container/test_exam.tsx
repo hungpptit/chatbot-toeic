@@ -168,7 +168,126 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
       {/* Main content */}
       {(mode === "review" || !showStartPopup) && (
         <div className="test-container">
-          <div className="test1">{testTitle}</div>
+          <div className="main-content">
+            <div className="test1">{testTitle}</div>
+
+            {/* ✅ Chỉ hiện test3 khi skillId = 6 (Listening) hoặc khi review có showResult */}
+          {(() => {
+            // Kiểm tra xem có câu hỏi nào có skillId = 6 không
+            const hasListeningQuestions = questionData.some(q => {
+              // Tạm thời check theo part hoặc type nếu chưa có skillId field
+              // Hoặc nếu có skillId field thì check trực tiếp
+              return q.skillId === 6 || q.partId <= 4; // Part 1-4 thường là Listening
+            });
+
+            // Chỉ hiển thị khi:
+            // 1. Mode exam và có câu hỏi Listening (skillId = 6)
+            // 2. Mode review và showResult = true
+            const shouldShowTest3 = (mode === "exam" && hasListeningQuestions) || (mode === "review" && showResult);
+
+            if (!shouldShowTest3) return null;
+
+            return (
+              <div className="test3">
+                {mode === "exam" ? (
+                  <>
+                    <div className="audio-controls">
+                      <button>▶</button>
+                      <div className="progress-bar">
+                        <div className="filled"></div>
+                      </div>
+                      <span>-47:00</span>
+                      <input type="range" />
+                      <button>⚙</button>
+                    </div>
+                    <div className="parts">
+                      {["Part 1", "Part 2", "Part 3", "Part 4", "Part 5", "Part 6", "Part 7"].map((part, idx) => (
+                        <div key={idx} className={`part-button ${idx === 4 ? "active" : ""}`}>
+                          {part}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  showResult && (
+                    <div className="review-summary">
+                      <div className="summary-box">
+                        <h3 className="summary-title">Kết quả làm bài</h3>
+                        <div className="summary-score">
+                          <span className="big-score">{correctCount}/{questionData.length}</span>
+                          <span className="accuracy">
+                            🎯 Độ chính xác: <strong>{((correctCount / questionData.length) * 100).toFixed(1)}%</strong>
+                          </span>
+                        </div>
+                      </div>
+                      <div className="summary-status">
+                        <div className="status correct">
+                          <span>✔ Trả lời đúng</span>
+                          <p>{correctCount} câu hỏi</p>
+                        </div>
+                        <div className="status incorrect">
+                          <span>✘ Trả lời sai</span>
+                          <p>{incorrectAnswers.length} câu hỏi</p>
+                        </div>
+                        <div className="status skipped">
+                          <span>➖ Bỏ qua</span>
+                          <p>{questionData.length - correctCount - incorrectAnswers.length} câu hỏi</p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            );
+            })()}
+            {/* ======================================= */}
+            <div className="test4">
+              
+              {questionData.map((item, index) => (
+                <div id={`question-${index + 1}`} key={item.id}>
+                  <CardQuestion
+                    key={item.id}
+                    item={item}
+                    index={index + 1}
+                    selectedAnswer={userAnswers[item.id] || null}
+                    onSelectAnswer={
+                      mode === "exam"
+                        ? (questionId, selected) => {
+                            setUserAnswers(prev => ({
+                              ...prev,
+                              [questionId]: selected
+                            }));
+                            const alreadyAnswered = Object.keys(userAnswers).map(Number);
+                            if (!alreadyAnswered.includes(questionId)) {
+                              setAnsweredQuestions([...answeredQuestions, index + 1]);
+                            }
+                          }
+                        : () => {}
+                    }
+                    onAnswer={
+                      mode === "exam"
+                        ? (questionNumber, isAnswered) => {
+                            if (isAnswered) {
+                              if (!answeredQuestions.includes(questionNumber)) {
+                                setAnsweredQuestions([...answeredQuestions, questionNumber]);
+                              }
+                            } else {
+                              setAnsweredQuestions(
+                                answeredQuestions.filter(q => q !== questionNumber)
+                              );
+                            }
+                          }
+                        : () => {}
+                    }
+
+                    showResult={showResult}
+                    incorrectAnswer={incorrectAnswers.find(ans => ans.questionId === item.id) || null}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="test2">
             <ExamSidebar
               answeredQuestions={answeredQuestions}
@@ -180,104 +299,6 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
               score={score}
               startTime={startTime}
             />
-          </div>
-
-          {/* ✅ Bỏ test3 khi review */}
-          <div className="test3">
-            {mode === "exam" ? (
-              <>
-                <div className="audio-controls">
-                  <button>▶</button>
-                  <div className="progress-bar">
-                    <div className="filled"></div>
-                  </div>
-                  <span>-47:00</span>
-                  <input type="range" />
-                  <button>⚙</button>
-                </div>
-                <div className="parts">
-                  {["Part 1", "Part 2", "Part 3", "Part 4", "Part 5", "Part 6", "Part 7"].map((part, idx) => (
-                    <div key={idx} className={`part-button ${idx === 4 ? "active" : ""}`}>
-                      {part}
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              showResult && (
-                <div className="review-summary">
-                  <div className="summary-box">
-                    <h3 className="summary-title">Kết quả làm bài</h3>
-                    <div className="summary-score">
-                      <span className="big-score">{correctCount}/{questionData.length}</span>
-                      <span className="accuracy">
-                        🎯 Độ chính xác: <strong>{((correctCount / questionData.length) * 100).toFixed(1)}%</strong>
-                      </span>
-                    </div>
-                  </div>
-                  <div className="summary-status">
-                    <div className="status correct">
-                      <span>✔ Trả lời đúng</span>
-                      <p>{correctCount} câu hỏi</p>
-                    </div>
-                    <div className="status incorrect">
-                      <span>✘ Trả lời sai</span>
-                      <p>{incorrectAnswers.length} câu hỏi</p>
-                    </div>
-                    <div className="status skipped">
-                      <span>➖ Bỏ qua</span>
-                      <p>{questionData.length - correctCount - incorrectAnswers.length} câu hỏi</p>
-                    </div>
-                  </div>
-                </div>
-              )
-            )}
-          </div>
-          {/* ======================================= */}
-          <div className="test4">
-            
-            {questionData.map((item, index) => (
-              <div id={`question-${index + 1}`} key={item.id}>
-                <CardQuestion
-                  key={item.id}
-                  item={item}
-                  index={index + 1}
-                  selectedAnswer={userAnswers[item.id] || null}
-                  onSelectAnswer={
-                    mode === "exam"
-                      ? (questionId, selected) => {
-                          setUserAnswers(prev => ({
-                            ...prev,
-                            [questionId]: selected
-                          }));
-                          const alreadyAnswered = Object.keys(userAnswers).map(Number);
-                          if (!alreadyAnswered.includes(questionId)) {
-                            setAnsweredQuestions([...answeredQuestions, index + 1]);
-                          }
-                        }
-                      : () => {}
-                  }
-                  onAnswer={
-                    mode === "exam"
-                      ? (questionNumber, isAnswered) => {
-                          if (isAnswered) {
-                            if (!answeredQuestions.includes(questionNumber)) {
-                              setAnsweredQuestions([...answeredQuestions, questionNumber]);
-                            }
-                          } else {
-                            setAnsweredQuestions(
-                              answeredQuestions.filter(q => q !== questionNumber)
-                            );
-                          }
-                        }
-                      : () => {}
-                  }
-
-                  showResult={showResult}
-                  incorrectAnswer={incorrectAnswers.find(ans => ans.questionId === item.id) || null}
-                />
-              </div>
-            ))}
           </div>
         </div>
       )}
