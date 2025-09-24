@@ -28,7 +28,6 @@ export default function AdminTestAddPage() {
   const [parts, setParts] = useState<Part[]>([]);
 
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
-  const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
   const [selectedPartId, setSelectedPartId] = useState<number | null>(null);
 
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -51,9 +50,18 @@ export default function AdminTestAddPage() {
   };
 
   const handleSave = async () => {
-    if (!testTitle || !selectedCourseId || !selectedTypeId || !selectedPartId) {
+    if (!testTitle || !selectedCourseId || !selectedPartId) {
       alert("❌ Vui lòng điền đầy đủ thông tin đề thi và chọn đủ các mục.");
       return;
+    }
+
+    // Kiểm tra từng câu hỏi có skill và type chưa
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      if (!q.skillId || !q.typeId) {
+        alert(`❌ Câu hỏi ${i + 1}: Vui lòng chọn đủ Skill và Type!`);
+        return;
+      }
     }
 
     const fullTestData = {
@@ -64,9 +72,9 @@ export default function AdminTestAddPage() {
       questions: questions.map((q) => ({
         ...q,
         // courseId: selectedCourseId,
-        typeId: selectedTypeId,
+        typeId: q.typeId as number, // đã validate nên chắc chắn không null
         partId: selectedPartId,
-        skillId: q.skillId || null,
+        skillId: q.skillId as number, // đã validate nên chắc chắn không null
       })),
     };
     try {
@@ -114,18 +122,26 @@ export default function AdminTestAddPage() {
           return;
         }
 
-        // Lấy typeId và partId từ câu hỏi đầu tiên (giả định giống nhau)
-        const firstQuestion = json.questions[0];
-        const typeId = firstQuestion.typeId || null;
-        const partId = firstQuestion.partId || null;
+        // Lấy partId từ level gốc của JSON hoặc từ câu hỏi đầu tiên
+        const partId = json.partId || json.questions[0]?.partId || null;
+
+        // Validate từng câu hỏi có đủ thông tin cơ bản không (typeId và skillId có thể null)
+        for (let i = 0; i < json.questions.length; i++) {
+          const q = json.questions[i];
+          
+          // Chỉ validate các field bắt buộc cơ bản
+          if (!q.question || !q.optionA || !q.optionB || !q.optionC || !q.optionD || !q.correctAnswer) {
+            alert(`❌ File JSON: Câu hỏi ${i + 1} thiếu thông tin bắt buộc!`);
+            return;
+          }
+        }
 
         // Fill vào form
         setTestTitle(json.title);
         setSelectedCourseId(json.courseId);
-        setSelectedTypeId(typeId);
         setSelectedPartId(partId);
 
-        // Loại bỏ các field không cần thiết khỏi mỗi question (nếu muốn)
+        // Loại bỏ các field không cần thiết khỏi mỗi question (typeId, skillId có thể null)
         const cleanedQuestions = json.questions.map((q: any) => ({
           question: q.question,
           optionA: q.optionA,
@@ -133,7 +149,9 @@ export default function AdminTestAddPage() {
           optionC: q.optionC,
           optionD: q.optionD,
           correctAnswer: q.correctAnswer,
-          explanation: q.explanation,
+          explanation: q.explanation || "",
+          typeId: q.typeId || null, // có thể null, sẽ chỉnh tay sau
+          skillId: q.skillId || null, // có thể null, sẽ chỉnh tay sau
         }));
 
         setQuestions(cleanedQuestions);
@@ -164,7 +182,6 @@ export default function AdminTestAddPage() {
       <div className="box-items">
         <Dropdown label="Chọn Course" options={courses} onChange={setSelectedCourseId}  value={selectedCourseId}/>
         <Dropdown label="Chọn Part" options={parts} onChange={setSelectedPartId}  value={selectedPartId}/>
-        <Dropdown label="Chọn Type" options={questionTypes} onChange={setSelectedTypeId} value={selectedTypeId}/>
       </div>
 
       <div className="upload-section" style={{ marginBottom: "20px" }}>
@@ -177,6 +194,22 @@ export default function AdminTestAddPage() {
 
     {questions.map((q, i) => (
       <div key={i} className="card-container">
+        {/* ✅ Dropdown chọn Skill cho từng câu hỏi */}
+        <Dropdown
+          label="Chọn Skill"
+          options={skills}             // mảng lấy từ API getAllSkillsAPI
+          value={q.skillId ?? null}    // giá trị hiện tại của câu hỏi
+          onChange={(id) => handleChange(i, "skillId", id)} // update skillId trong state
+        />
+
+        {/* ✅ Dropdown chọn Type cho từng câu hỏi */}
+        <Dropdown
+          label="Chọn Type"
+          options={questionTypes}      // mảng lấy từ API getAllQuestionTypesAPI
+          value={q.typeId ?? null}     // giá trị hiện tại của câu hỏi
+          onChange={(id) => handleChange(i, "typeId", id)} // update typeId trong state
+        />
+
         <h2 className="card-question">
           {i + 1}.{" "}
           <input
@@ -207,14 +240,6 @@ export default function AdminTestAddPage() {
             );
           })}
         </div>
-
-        {/* ✅ Dropdown chọn Skill cho từng câu hỏi */}
-        <Dropdown
-          label="Chọn Skill"
-          options={skills}             // mảng lấy từ API getAllSkillsAPI
-          value={q.skillId ?? null}    // giá trị hiện tại của câu hỏi
-          onChange={(id) => handleChange(i, "skillId", id)} // update skillId trong state
-        />
 
         <div className="card-explanation">
           <p>
@@ -252,6 +277,7 @@ type Question = {
   optionD: string;
   correctAnswer: string;
   explanation: string;
+  typeId?: number | null;
   skillId?: number | null;
 };
 
@@ -265,6 +291,8 @@ function createEmptyQuestion(): Question {
     optionD: "",
     correctAnswer: "",
     explanation: "",
+    typeId: null,
+    skillId: null,
   };
 }
 

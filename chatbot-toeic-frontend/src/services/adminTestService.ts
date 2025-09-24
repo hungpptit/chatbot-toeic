@@ -238,13 +238,14 @@ export const updateSkillAPI = async (
   id: number,
   updates: { name?: string; description?: string; parentId?: number | null }
 ): Promise<Skill> => {
-  const response = await axios.put<Skill>(
+  const response = await axios.put<{ skill: Skill }>(
     `${API_BASE_URL}/skills/${id}`,
     updates,
     { withCredentials: true }
   );
-  return response.data;
+  return response.data.skill; 
 };
+
 
 // Xóa skill
 export const deleteSkillAPI = async (id: number): Promise<void> => {

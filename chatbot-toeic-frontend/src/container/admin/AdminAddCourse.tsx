@@ -218,16 +218,21 @@ export default function AdminAddCourse() {
       if (!newName || !newName.trim()) return;
 
       try {
+        // Gọi đúng API update skill
         const updated = await updateSkillAPI(id, { name: newName.trim() });
+
+        // Update state skills chứ không phải questionTypes
         setSkills((prev) =>
           prev.map((s) => (s.id === id ? { ...s, name: updated.name } : s))
         );
+
         alert("✅ Đã cập nhật Skill.");
       } catch (error) {
         console.error("❌ Lỗi cập nhật Skill:", error);
         alert("Cập nhật Skill thất bại.");
       }
     };
+
 
 
     useEffect(() => {
