@@ -74,6 +74,7 @@ const initDb = async () => {
   db.QuestionSkill = (await import('./QuestionSkills.js')).default(sequelize, Sequelize.DataTypes);
   db.QuestionStat = (await import('./QuestionStats.js')).default(sequelize, Sequelize.DataTypes);
   db.QuestionEmbedding = (await import('./QuestionEmbeddings.js')).default(sequelize, Sequelize.DataTypes);
+  db.QuestionMedia = (await import('./QuestionMedia.js')).default(sequelize, Sequelize.DataTypes);
 
   // ✅ Gắn associations (nếu có)
   Object.keys(db).forEach(modelName => {

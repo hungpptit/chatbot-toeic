@@ -38,6 +38,12 @@ export default (sequelize, DataTypes) => {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       });
+      Question.hasMany(models.QuestionMedia, {
+        foreignKey: 'questionId',
+        as: 'media',
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+      });
     }
   }
 

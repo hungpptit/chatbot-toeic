@@ -279,3 +279,20 @@ def recommend_questions(anchor_id: int, k: int = 5):
     if result.stderr:
         print("⚠️ Node error:", result.stderr)
     return result.stdout.strip() if result.stdout else None
+
+
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+{
+  "question": "Look at the picture and listen to the question.",
+  "optionA": "They are sitting in a park.",
+  "optionB": "They are cooking in the kitchen.",
+  "optionC": "They are waiting for the bus.",
+  "optionD": "They are talking on the phone.",
+  "correctAnswer": "A",
+  "media": [
+    { "type": "audio", "url": "/audio/q1.mp3" },
+    { "type": "image", "url": "/images/q1.png" }
+  ]
+}

@@ -211,6 +211,17 @@ const createNewTest = async (testData) => {
       return question;
     }));
 
+    if (q.media && q.media.length > 0) {
+      await Promise.all(q.media.map(async (m, idx) => {
+        await db.QuestionMedia.create({
+          questionId: question.id,
+          mediaType: m.type, // 'audio' | 'image'
+          mediaUrl: m.url,
+          sortOrder: idx + 1,
+        });
+      }));
+    }
+
     // Create test-question relationships
     const testQuestionRecords = questionRecords.map((q, index) => ({
       testId: test.id,
