@@ -12,6 +12,7 @@ import AdminUserRouter from './AdminUser_router.js';
 import AminTestRouter from  './AdminTest_router.js';
 import accountRouter from './account_router.js';
 import statisticalRouter from './statistical_router.js';
+import uploadRouter from './upload.js';
 // import userRouter from './user.route.js';
 // import questionRouter from './question.route.js';
 
@@ -32,5 +33,6 @@ router.use('/adminUser', AdminUserRouter);
 router.use('/adminTest', AminTestRouter); // AdminTest_router.js chứa các endpoint liên quan đến quản lý bài thi
 router.use('/account', accountRouter);
 router.use('/statistical', statisticalRouter);
+router.use('/', uploadRouter);
 
 export default router;

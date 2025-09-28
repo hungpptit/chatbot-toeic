@@ -38,9 +38,9 @@ export default (sequelize, DataTypes) => {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       });
-      Question.hasMany(models.QuestionMedia, {
+      Question.hasMany(models.QuestionMediaMap, {
         foreignKey: 'questionId',
-        as: 'media',
+        as: 'mediaMappings',   // đổi alias cho rõ nghĩa hơn
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       });

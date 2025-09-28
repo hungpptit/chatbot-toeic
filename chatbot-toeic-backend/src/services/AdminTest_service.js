@@ -198,6 +198,27 @@ const createNewTest = async (testData) => {
         });
       }
 
+      // Nếu có media (ảnh/audio)
+      if (q.media && q.media.length > 0) {
+        await Promise.all(q.media.map(async (m, idx) => {
+          // 1. Lưu file vào MediaFiles
+          const mediaFile = await db.MediaFiles.create({
+            mediaType: m.type,   // 'audio' | 'image'
+            mediaUrl: m.url,     // link Cloudinary
+            description: m.description || null,
+          });
+
+          // 2. Tạo mapping tới câu hỏi
+          await db.QuestionMediaMap.create({
+            questionId: question.id,
+            mediaId: mediaFile.id,
+            startSecond: m.startSecond || null,
+            endSecond: m.endSecond || null,
+            sortOrder: idx + 1,
+          });
+        }));
+      }
+
       // tạo questionStat record trong hook của question model rồi 
        // ⬇️ Generate embedding cho câu hỏi mới tạo
       if (question.question) {
@@ -211,16 +232,7 @@ const createNewTest = async (testData) => {
       return question;
     }));
 
-    if (q.media && q.media.length > 0) {
-      await Promise.all(q.media.map(async (m, idx) => {
-        await db.QuestionMedia.create({
-          questionId: question.id,
-          mediaType: m.type, // 'audio' | 'image'
-          mediaUrl: m.url,
-          sortOrder: idx + 1,
-        });
-      }));
-    }
+
 
     // Create test-question relationships
     const testQuestionRecords = questionRecords.map((q, index) => ({
