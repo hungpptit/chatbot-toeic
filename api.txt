@@ -296,3 +296,34 @@ def recommend_questions(anchor_id: int, k: int = 5):
     { "type": "image", "url": "/images/q1.png" }
   ]
 }
+
+
+
+
+{
+  "title": "TOEIC Practice Test 1",
+  "courseId": 1,
+  "questions": [
+    {
+      "question": "What is the capital of France?",
+      "optionA": "London",
+      "optionB": "Paris",
+      "optionC": "Berlin",
+      "optionD": "Madrid",
+      "correctAnswer": "B",
+      "explanation": "Paris is the capital of France",
+      "typeId": 1,
+      "partId": 1,
+      "skillId": 6,  // 6 = Listening, 7 = Reading
+      "media": [
+        {
+          "type": "audio",  // hoặc "image"
+          "url": "https://cloudinary.com/audio/file.mp3",
+          "description": "Question audio",
+          "startSecond": 0,
+          "endSecond": 30
+        }
+      ]
+    }
+  ]
+}

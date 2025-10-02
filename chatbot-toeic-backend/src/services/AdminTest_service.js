@@ -13,6 +13,9 @@ const QuestionType = db.QuestionType;
 const TestQuestion = db.TestQuestion;
 const Test_Courses = db.TestCourse;
 const Skills = db.Skill;
+const QuestionSkill = db.QuestionSkill;
+const MediaFiles = db.MediaFiles;
+const QuestionMediaMap = db.QuestionMediaMap;
 
 const getAllTestsWithCourses = async () => {
   try {
@@ -191,7 +194,7 @@ const createNewTest = async (testData) => {
         partId: q.partId || null,
       });
       if (q.skillId) {
-        await db.QuestionSkill.create({
+        await QuestionSkill.create({
           questionId: question.id,
           skillId: q.skillId,
           weight: 1, // 👈 tùy bạn, có thể mặc định 1
@@ -202,14 +205,14 @@ const createNewTest = async (testData) => {
       if (q.media && q.media.length > 0) {
         await Promise.all(q.media.map(async (m, idx) => {
           // 1. Lưu file vào MediaFiles
-          const mediaFile = await db.MediaFiles.create({
+          const mediaFile = await MediaFiles.create({
             mediaType: m.type,   // 'audio' | 'image'
             mediaUrl: m.url,     // link Cloudinary
             description: m.description || null,
           });
 
           // 2. Tạo mapping tới câu hỏi
-          await db.QuestionMediaMap.create({
+          await QuestionMediaMap.create({
             questionId: question.id,
             mediaId: mediaFile.id,
             startSecond: m.startSecond || null,

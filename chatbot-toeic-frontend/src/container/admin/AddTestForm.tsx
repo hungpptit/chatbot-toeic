@@ -16,7 +16,18 @@ import {
   createNewTestAPI,
   getAllSkillsAPI,
   type Skill,
+  type TestCreateInput,
+  type QuestionInput,
+  type MediaInput,
 } from "../../services/adminTestService";
+import { batchUploadFromPathsAPI } from "../../services/uploadService";
+
+// ✅ Helper: Tự động convert Windows paths (\) sang forward slash (/)
+const normalizeWindowsPath = (path: string): string => {
+  if (!path) return path;
+  // Replace all backslashes with forward slashes
+  return path.replace(/\\/g, '/');
+};
 
 export default function AdminTestAddPage() {
   const [testTitle, setTestTitle] = useState("");
@@ -32,6 +43,17 @@ export default function AdminTestAddPage() {
 
   const [skills, setSkills] = useState<Skill[]>([]);
 
+  // ✅ Test mode: 'reading' hoặc 'listening'
+  const [testMode, setTestMode] = useState<'reading' | 'listening'>('reading');
+  
+  // ✅ Global audio (cho listening mode)
+  const [globalAudioFile, setGlobalAudioFile] = useState<File | null>(null);
+  const [globalAudioUrl, setGlobalAudioUrl] = useState<string>('');
+  
+  // ✅ Loading states
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+
   useEffect(() => {
     getAllCourseNamesAPI().then(setCourses);
     getAllQuestionTypesAPI().then(setQuestionTypes);
@@ -39,7 +61,7 @@ export default function AdminTestAddPage() {
     getAllSkillsAPI().then(setSkills);
   }, []);
 
-  const handleChange = (index: number, field: string, value: string | number | null) => {
+  const handleChange = (index: number, field: string, value: string | number | null | File) => {
     setQuestions((prev) =>
       prev.map((q, i) => (i === index ? { ...q, [field]: value } : q))
     );
@@ -64,30 +86,72 @@ export default function AdminTestAddPage() {
       }
     }
 
-    const fullTestData = {
-      title: testTitle,
-      courseId: selectedCourseId,
-      // typeId: selectedTypeId,
-      // partId: selectedPartId,
-      questions: questions.map((q) => ({
-        ...q,
-        // courseId: selectedCourseId,
-        typeId: q.typeId as number, // đã validate nên chắc chắn không null
-        partId: selectedPartId,
-        skillId: q.skillId as number, // đã validate nên chắc chắn không null
-      })),
-    };
     try {
-      // console.log("🔍 Payload gửi lên:", fullTestData);
+      setIsUploadingMedia(true);
+
+      // ✅ Prepare questions based on test mode
+      const questionsInput: QuestionInput[] = [];
+
+      for (const q of questions) {
+        const questionInput: QuestionInput = {
+          question: q.question,
+          optionA: q.optionA,
+          optionB: q.optionB,
+          optionC: q.optionC,
+          optionD: q.optionD,
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation,
+          typeId: q.typeId as number,
+          partId: selectedPartId,
+          skillId: q.skillId as number,
+        };
+
+        // ✅ Handle media for LISTENING mode only
+        if (testMode === 'listening') {
+          const mediaFiles: MediaInput[] = [];
+
+          // Add image if exists (per question)
+          if (q.imageFile) {
+            mediaFiles.push({
+              type: 'image',
+              file: q.imageFile,
+              description: 'Question image',
+            });
+          }
+
+          // Add global audio (for all questions)
+          if (globalAudioFile) {
+            mediaFiles.push({
+              type: 'audio',
+              file: globalAudioFile,
+              description: 'Test audio',
+            });
+          }
+
+          if (mediaFiles.length > 0) {
+            questionInput.mediaFiles = mediaFiles;
+          }
+        }
+
+        questionsInput.push(questionInput);
+      }
+
+      const fullTestData: TestCreateInput = {
+        title: testTitle,
+        courseId: selectedCourseId,
+        questions: questionsInput,
+      };
+
+      console.log("📤 Đang tạo test...");
       const result = await createNewTestAPI(fullTestData);
       console.log("✅ Tạo đề thi thành công:", result);
       alert("✅ Đề thi đã được tạo!");
     } catch (error) {
-       console.error("❌ Lỗi khi tạo đề thi:", error);
+      console.error("❌ Lỗi khi tạo đề thi:", error);
       alert("❌ Tạo đề thi thất bại");
+    } finally {
+      setIsUploadingMedia(false);
     }
-
-
   };
 
   const handleUploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,6 +230,82 @@ export default function AdminTestAddPage() {
     reader.readAsText(uploadFile);
   };
 
+  // ✅ Handle batch upload từ paths trong JSON (cho Listening mode)
+  const handleBatchUploadFromPaths = async () => {
+    if (!uploadFile) {
+      alert("❌ Vui lòng chọn file JSON trước!");
+      return;
+    }
+
+    try {
+      setIsBatchProcessing(true);
+      
+      const text = await uploadFile.text();
+      const testData = JSON.parse(text);
+      
+      // Kiểm tra có paths không
+      const hasPaths = testData.audioPath || 
+        testData.questions?.some((q: any) => q.imagePath || q.audioPath);
+      
+      if (!hasPaths) {
+        alert("❌ JSON không chứa audioPath hoặc imagePath! Vui lòng sử dụng 'Load File lên form' thay vì.");
+        return;
+      }
+      
+      // ✅ Auto-format Windows paths (convert \ to /)
+      if (testData.audioPath) {
+        testData.audioPath = normalizeWindowsPath(testData.audioPath);
+      }
+      
+      if (testData.questions) {
+        testData.questions = testData.questions.map((q: any) => ({
+          ...q,
+          imagePath: q.imagePath ? normalizeWindowsPath(q.imagePath) : q.imagePath,
+          audioPath: q.audioPath ? normalizeWindowsPath(q.audioPath) : q.audioPath,
+        }));
+      }
+      
+      console.log('📤 Uploading files from local paths (auto-formatted)...');
+      console.log('🔧 Formatted audioPath:', testData.audioPath);
+      
+      // Gọi API batch upload
+      const uploadedData = await batchUploadFromPathsAPI(testData);
+      
+      // Load data với URLs vào form
+      setTestTitle(uploadedData.title);
+      setSelectedCourseId(uploadedData.courseId);
+      setSelectedPartId(uploadedData.partId || uploadedData.questions[0]?.partId);
+      
+      // Set listening mode và global audio URL
+      setTestMode('listening');
+      if (uploadedData.audioUrl) {
+        setGlobalAudioUrl(uploadedData.audioUrl);
+      }
+      
+      const cleanedQuestions = uploadedData.questions.map((q: any) => ({
+        question: q.question,
+        optionA: q.optionA,
+        optionB: q.optionB,
+        optionC: q.optionC,
+        optionD: q.optionD,
+        correctAnswer: q.correctAnswer,
+        explanation: q.explanation || "",
+        typeId: q.typeId || null,
+        skillId: q.skillId || null,
+        imageUrl: q.imageUrl || '',
+      }));
+      
+      setQuestions(cleanedQuestions);
+      
+      alert("✅ Upload thành công! Files đã được upload lên Cloudinary.");
+    } catch (error: any) {
+      console.error("❌ Batch upload failed:", error);
+      alert(`❌ Upload thất bại: ${error.message}`);
+    } finally {
+      setIsBatchProcessing(false);
+    }
+  };
+
 
   return (
     <div className="admin-test-view">
@@ -184,13 +324,85 @@ export default function AdminTestAddPage() {
         <Dropdown label="Chọn Part" options={parts} onChange={setSelectedPartId}  value={selectedPartId}/>
       </div>
 
+      {/* ✅ Test Mode Selection: Reading or Listening */}
+      <div style={{ marginTop: "20px", marginBottom: "20px", padding: "15px", border: "2px solid #2196F3", borderRadius: "8px", backgroundColor: "#E3F2FD" }}>
+        <h3 style={{ marginBottom: "15px", color: "#1565C0" }}>🎯 Chọn loại đề thi:</h3>
+        <div style={{ display: "flex", gap: "30px" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "16px" }}>
+            <input
+              type="radio"
+              name="testMode"
+              checked={testMode === 'reading'}
+              onChange={() => setTestMode('reading')}
+            />
+            <strong>📖 Reading</strong>
+            <span style={{ fontSize: "14px", color: "#666" }}>(Không cần audio/image)</span>
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "16px" }}>
+            <input
+              type="radio"
+              name="testMode"
+              checked={testMode === 'listening'}
+              onChange={() => setTestMode('listening')}
+            />
+            <strong>🎧 Listening</strong>
+            <span style={{ fontSize: "14px", color: "#666" }}>(Có audio/image)</span>
+          </label>
+        </div>
+      </div>
+
       <div className="upload-section" style={{ marginBottom: "20px" }}>
         <h3>Hoặc tải lên file JSON/CSV</h3>
         <input type="file" accept=".json,.csv" onChange={handleUploadFile} />
-        <button className="save-btn" style={{ marginTop: "10px" }} onClick={handleSubmitFile}>
-          <FaUpload /> Load File lên form
-        </button>
+        <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+          <button className="save-btn" onClick={handleSubmitFile}>
+            <FaUpload /> Load File lên form
+          </button>
+          {testMode === 'listening' && (
+            <button 
+              className="save-btn" 
+              onClick={handleBatchUploadFromPaths}
+              disabled={isBatchProcessing}
+              style={{ backgroundColor: "#4CAF50" }}
+            >
+              <FaUpload /> {isBatchProcessing ? "Đang upload..." : "Upload từ paths (JSON có paths)"}
+            </button>
+          )}
+        </div>
+        {testMode === 'listening' && (
+          <p style={{ fontSize: "13px", color: "#666", marginTop: "10px" }}>
+            💡 <strong>Tip:</strong> Nếu JSON có <code>audioPath</code>/<code>imagePath</code>, dùng button "Upload từ paths". 
+            Nếu không có paths, dùng "Load File" rồi chọn files bên dưới.
+          </p>
+        )}
       </div>
+
+      {/* ✅ Global Audio Input - Chỉ hiện khi Listening mode */}
+      {testMode === 'listening' && (
+        <div style={{ marginBottom: "20px", padding: "15px", border: "1px solid #4CAF50", borderRadius: "8px", backgroundColor: "#E8F5E9" }}>
+          <h4 style={{ marginBottom: "10px", color: "#2E7D32" }}>🎵 Audio chung cho toàn bộ đề thi</h4>
+          {globalAudioUrl ? (
+            <div style={{ padding: "10px", backgroundColor: "#FFF", borderRadius: "4px", marginBottom: "10px" }}>
+              <strong>URL đã upload:</strong> <a href={globalAudioUrl} target="_blank" rel="noopener noreferrer">{globalAudioUrl}</a>
+            </div>
+          ) : (
+            <div>
+              <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Chọn audio file từ máy:</label>
+              <input
+                type="file"
+                accept="audio/*"
+                onChange={(e) => setGlobalAudioFile(e.target.files?.[0] || null)}
+                style={{ padding: "5px" }}
+              />
+              {globalAudioFile && (
+                <p style={{ marginTop: "5px", color: "#2E7D32", fontSize: "14px" }}>
+                  ✅ Đã chọn: <strong>{globalAudioFile.name}</strong>
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
     {questions.map((q, i) => (
       <div key={i} className="card-container">
@@ -219,13 +431,46 @@ export default function AdminTestAddPage() {
           />
         </h2>
 
+        {/* ✅ Image input cho Listening mode */}
+        {testMode === 'listening' && (
+          <div style={{ marginTop: "10px", marginBottom: "15px", padding: "10px", border: "1px solid #2196F3", borderRadius: "8px", backgroundColor: "#E3F2FD" }}>
+            <h4 style={{ marginBottom: "8px", color: "#1565C0" }}>🖼️ Hình ảnh cho câu hỏi này (tùy chọn)</h4>
+            {q.imageUrl ? (
+              <div style={{ padding: "10px", backgroundColor: "#FFF", borderRadius: "4px" }}>
+                <strong>URL đã upload:</strong> <a href={q.imageUrl} target="_blank" rel="noopener noreferrer">{q.imageUrl}</a>
+              </div>
+            ) : (
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleChange(i, 'imageFile', file);
+                    }
+                  }}
+                  style={{ fontSize: "13px" }}
+                />
+                {q.imageFile && (
+                  <p style={{ marginTop: "5px", color: "#1565C0", fontSize: "12px" }}>
+                    ✅ Đã chọn: <strong>{(q.imageFile as File).name}</strong>
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="card-options">
           {["A", "B", "C", "D"].map((opt) => {
             const optionKey = `option${opt}` as keyof Question;
+            const optionValue = q[optionKey];
+            const displayValue = typeof optionValue === 'string' ? optionValue : '';
             return (
               <div key={opt} className="card-option edit-mode">
                 <input
-                  value={q[optionKey] ?? ""} 
+                  value={displayValue} 
                   onChange={(e) => handleChange(i, optionKey, e.target.value)}
                   placeholder={`Đáp án ${opt}`}
                 />
@@ -254,8 +499,12 @@ export default function AdminTestAddPage() {
         </div>
 
         <div className="card-actions">
-          <button className="save-btn" onClick={handleSave}>
-            <FaSave /> Lưu đề
+          <button 
+            className="save-btn" 
+            onClick={handleSave}
+            disabled={isUploadingMedia}
+          >
+            <FaSave /> {isUploadingMedia ? "Đang upload..." : "Lưu đề"}
           </button>
           <button className="edit-btn" onClick={handleAddMoreQuestion}>
             <FaPlus /> Thêm câu hỏi
@@ -279,6 +528,9 @@ type Question = {
   explanation: string;
   typeId?: number | null;
   skillId?: number | null;
+  // ✅ Media fields for listening mode
+  imageFile?: File | null;
+  imageUrl?: string;
 };
 
 // Init câu hỏi trống
@@ -293,6 +545,8 @@ function createEmptyQuestion(): Question {
     explanation: "",
     typeId: null,
     skillId: null,
+    imageFile: null,
+    imageUrl: '',
   };
 }
 

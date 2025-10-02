@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { uploadFileAPI } from './uploadService';
 
 
 
@@ -15,6 +16,24 @@ export interface Test {
 
 }
 
+// ✅ Media interface for questions
+export interface MediaFile {
+  type: 'audio' | 'image' | 'video';
+  url: string;
+  description?: string;
+  startSecond?: number;
+  endSecond?: number;
+}
+
+// ✅ Media input from frontend (with File object)
+export interface MediaInput {
+  type: 'audio' | 'image' | 'video';
+  file: File; // File object to upload
+  description?: string;
+  startSecond?: number;
+  endSecond?: number;
+}
+
 export interface Question {
   question: string;
   optionA: string;
@@ -26,15 +45,38 @@ export interface Question {
   typeId: number;
   partId: number;
   skillId?: number | null;
+  media?: MediaFile[]; // ✅ URLs after upload
 
   // questionType: QuestionType;
   // part: Part;
+}
+
+// ✅ Question input from frontend (before upload)
+export interface QuestionInput {
+  question: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  correctAnswer: string;
+  explanation: string;
+  typeId: number;
+  partId: number;
+  skillId?: number | null;
+  mediaFiles?: MediaInput[]; // ✅ Files to upload
 }
 
 export interface TestCreate {
     title: string;
     courseId: number;
     questions: Question[];
+}
+
+// ✅ Test input from frontend (before upload)
+export interface TestCreateInput {
+  title: string;
+  courseId: number;
+  questions: QuestionInput[];
 }
 export interface QuestionType {
     id: number;
@@ -124,16 +166,6 @@ export const deleteQuestionTypeAPI = async (id: number): Promise<void> => {
   });
 };
 
-// Tạo mới một bài test
-// export const createNewTestAPI = async (testData: TestCreate): Promise<TestCreate> => {
-//   const response = await axios.post<TestCreate>(
-//     `${API_BASE_URL}/createTestNew`,
-//     testData,
-//     { withCredentials: true }
-//   );
-//   return response.data;
-// };
-
 export interface CreateTestResponse {
   message: string;
   data: {
@@ -142,15 +174,91 @@ export interface CreateTestResponse {
   };
 }
 
+/**
+ * ✅ Create new test with automatic file upload
+ * Steps:
+ * 1. Upload all media files to Cloudinary
+ * 2. Replace File objects with URLs
+ * 3. Send test data to backend
+ */
 export const createNewTestAPI = async (
-  testData: TestCreate
+  testData: TestCreateInput
 ): Promise<CreateTestResponse> => {
-  const response = await axios.post<CreateTestResponse>(
-    `${API_BASE_URL}/createTestNew`,
-    testData,
-    { withCredentials: true }
-  );
-  return response.data;
+  try {
+    console.log('📤 Starting test creation with file uploads...');
+    
+    // ✅ STEP 1: Process each question and upload media files
+    const processedQuestions: Question[] = await Promise.all(
+      testData.questions.map(async (questionInput) => {
+        let uploadedMedia: MediaFile[] = [];
+
+        // Upload media files if they exist
+        if (questionInput.mediaFiles && questionInput.mediaFiles.length > 0) {
+          console.log(`📁 Uploading ${questionInput.mediaFiles.length} media file(s)...`);
+          
+          uploadedMedia = await Promise.all(
+            questionInput.mediaFiles.map(async (mediaInput) => {
+              try {
+                // Upload file and get URL
+                const uploadedUrl = await uploadFileAPI(
+                  mediaInput.file,
+                  mediaInput.type
+                );
+
+                return {
+                  type: mediaInput.type,
+                  url: uploadedUrl,
+                  description: mediaInput.description,
+                  startSecond: mediaInput.startSecond,
+                  endSecond: mediaInput.endSecond,
+                };
+              } catch (error) {
+                console.error('❌ Failed to upload media:', error);
+                throw new Error(`Failed to upload ${mediaInput.type} file`);
+              }
+            })
+          );
+
+          console.log('✅ All media files uploaded successfully');
+        }
+
+        // Return question with uploaded media URLs
+        return {
+          question: questionInput.question,
+          optionA: questionInput.optionA,
+          optionB: questionInput.optionB,
+          optionC: questionInput.optionC,
+          optionD: questionInput.optionD,
+          correctAnswer: questionInput.correctAnswer,
+          explanation: questionInput.explanation,
+          typeId: questionInput.typeId,
+          partId: questionInput.partId,
+          skillId: questionInput.skillId,
+          media: uploadedMedia.length > 0 ? uploadedMedia : undefined,
+        };
+      })
+    );
+
+    // ✅ STEP 2: Send processed data to backend
+    const finalTestData: TestCreate = {
+      title: testData.title,
+      courseId: testData.courseId,
+      questions: processedQuestions,
+    };
+
+    console.log('📤 Sending test data to backend...');
+    const response = await axios.post<CreateTestResponse>(
+      `${API_BASE_URL}/createTestNew`,
+      finalTestData,
+      { withCredentials: true }
+    );
+
+    console.log('✅ Test created successfully:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error creating test:', error);
+    throw error;
+  }
 };
 
 export const deleteTestByIdAPI = async (testId: number): Promise<void> => {

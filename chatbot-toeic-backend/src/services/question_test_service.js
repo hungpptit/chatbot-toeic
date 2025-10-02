@@ -21,12 +21,23 @@ export const RandomQuestionsByTestId = async (testId, limit = 40) => {
     const selectedIds = shuffled.map(row => row.questionId);
     const sortOrderMap = new Map(shuffled.map(row => [row.questionId, row.sortOrder]));
 
-    // Bước 4: Truy vấn các câu hỏi
+    // Bước 4: Truy vấn các câu hỏi với media (cho listening parts 1,2,3,4)
     const questions = await db.Question.findAll({
       where: { id: selectedIds },
       include: [
         { model: db.QuestionType, as: 'questionType' },
-        { model: db.Part, as: 'part' }
+        { model: db.Part, as: 'part' },
+        // ✅ Include media mappings và media files
+        {
+          model: db.QuestionMediaMap,
+          as: 'mediaMappings',
+          include: [{
+            model: db.MediaFiles,
+            as: 'media',
+            attributes: ['id', 'mediaType', 'mediaUrl', 'description']
+          }],
+          attributes: ['id', 'mediaId', 'startSecond', 'endSecond', 'sortOrder']
+        }
       ],
     });
 
@@ -277,7 +288,18 @@ export const GetUserTestDetailById = async (userTestId) => {
       attributes: ['questionId', 'selectedOption', 'isCorrect', 'answeredAt'],
       include: [{
         model: db.Question,
-        attributes: ['question','optionA','optionB','optionC', 'optionD','correctAnswer', 'explanation','typeId','partId']
+        attributes: ['question','optionA','optionB','optionC', 'optionD','correctAnswer', 'explanation','typeId','partId'],
+        // ✅ Include media cho listening questions
+        include: [{
+          model: db.QuestionMediaMap,
+          as: 'mediaMappings',
+          include: [{
+            model: db.MediaFiles,
+            as: 'media',
+            attributes: ['id', 'mediaType', 'mediaUrl', 'description']
+          }],
+          attributes: ['id', 'mediaId', 'startSecond', 'endSecond', 'sortOrder']
+        }]
       }]
     });
 
@@ -309,7 +331,17 @@ export const GetUserTestDetailById = async (userTestId) => {
         isCorrect: result.isCorrect,
         correctAnswer: result.Question.correctAnswer,
         explanation: result.Question.explanation,
-        answeredAt: result.answeredAt
+        answeredAt: result.answeredAt,
+        // ✅ Include media files (for listening parts 1,2,3,4)
+        mediaFiles: result.Question.mediaMappings?.map(mapping => ({
+          id: mapping.media?.id,
+          mediaType: mapping.media?.mediaType,
+          mediaUrl: mapping.media?.mediaUrl,
+          description: mapping.media?.description,
+          startSecond: mapping.startSecond,
+          endSecond: mapping.endSecond,
+          sortOrder: mapping.sortOrder
+        })) || []
       });
     }
 

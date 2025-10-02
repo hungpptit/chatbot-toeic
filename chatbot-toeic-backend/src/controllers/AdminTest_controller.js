@@ -116,16 +116,61 @@ const deleteQuestionTypeController = async (req, res) => {
 const createNewTestController = async (req, res) => {
   try {
     const { title, courseId, questions } = req.body;
-    // console.log("✅ Payload nhận được từ client:");
-    console.log({ title, courseId, questions });
+    console.log("📥 Payload nhận được từ client:");
+    console.log(JSON.stringify({ title, courseId, questionsCount: questions?.length }, null, 2));
 
-    // Validate input
-    if (!title || !courseId || !Array.isArray(questions) || questions.length === 0) {
+    // ✅ Validate basic fields
+    if (!title || typeof title !== 'string') {
       return res.status(400).json({
-        message: 'Missing or invalid fields: testTitle, courseId, and at least one question are required',
+        message: 'Test title is required and must be a string',
       });
     }
 
+    if (!courseId || typeof courseId !== 'number') {
+      return res.status(400).json({
+        message: 'Course ID is required and must be a number',
+      });
+    }
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({
+        message: 'Questions array is required and must contain at least one question',
+      });
+    }
+
+    // ✅ Validate each question structure
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      
+      // Required fields
+      if (!q.typeId || !q.partId) {
+        return res.status(400).json({
+          message: `Question ${i + 1}: typeId and partId are required`,
+        });
+      }
+
+      // ✅ Validate media array ONLY if it exists (optional for Reading questions)
+      if (q.media && Array.isArray(q.media) && q.media.length > 0) {
+        for (let j = 0; j < q.media.length; j++) {
+          const m = q.media[j];
+          
+          if (!m.type || !['audio', 'image', 'video'].includes(m.type)) {
+            return res.status(400).json({
+              message: `Question ${i + 1}, Media ${j + 1}: mediaType must be 'audio', 'image', or 'video'`,
+            });
+          }
+
+          if (!m.url || typeof m.url !== 'string') {
+            return res.status(400).json({
+              message: `Question ${i + 1}, Media ${j + 1}: mediaUrl is required and must be a string`,
+            });
+          }
+        }
+      }
+      // ✅ Media array có thể không có (null, undefined, []) - OK cho Reading questions
+    }
+
+    // ✅ Call service to create test
     const result = await createNewTest({ title, courseId, questions });
 
     res.status(201).json({
@@ -133,8 +178,11 @@ const createNewTestController = async (req, res) => {
       data: result, // Includes testId and questionIds
     });
   } catch (error) {
-    console.error('Error in createNewTestController:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('❌ Error in createNewTestController:', error);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 

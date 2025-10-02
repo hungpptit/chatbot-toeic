@@ -1,0 +1,44 @@
+{
+  "title": "TOEIC Listening Part 1 - Sample Test",
+  "courseId": 1,
+  "partId": 1,
+  "audioPath": "D:/toeic-media/audio/test1-part1.mp3",
+  "questions": [
+    {
+      "question": "Look at the picture. What is the man doing?",
+      "imagePath": "D:/toeic-media/images/test1-q1.jpg",
+      "optionA": "He is walking on the street",
+      "optionB": "He is sitting at a desk",
+      "optionC": "He is reading a book",
+      "optionD": "He is talking on the phone",
+      "correctAnswer": "A",
+      "explanation": "The man is clearly walking on the street in the picture.",
+      "typeId": 1,
+      "skillId": 6
+    },
+    {
+      "question": "Look at the picture. Where are the people?",
+      "imagePath": "D:/toeic-media/images/test1-q2.jpg",
+      "optionA": "In a restaurant",
+      "optionB": "In an office",
+      "optionC": "In a park",
+      "optionD": "In a library",
+      "correctAnswer": "C",
+      "explanation": "The picture shows people in a park with trees and benches.",
+      "typeId": 1,
+      "skillId": 6
+    },
+    {
+      "question": "Look at the picture. What can you see?",
+      "imagePath": "D:/toeic-media/images/test1-q3.jpg",
+      "optionA": "A car on the road",
+      "optionB": "A boat on the water",
+      "optionC": "A plane in the sky",
+      "optionD": "A train at the station",
+      "correctAnswer": "B",
+      "explanation": "The image clearly shows a boat on the water.",
+      "typeId": 1,
+      "skillId": 6
+    }
+  ]
+}
