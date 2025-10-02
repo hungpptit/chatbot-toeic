@@ -6,6 +6,7 @@ import {
   type QuestionWithMedia,
   type MediaMapping,
 } from "../../services/question_test_services";
+import { getAllPartsAPI, type Part } from "../../services/adminTestService";
 import { FaEdit, FaSave, FaTimes } from "react-icons/fa";
 import "../../styles/AdminTestViewPage.css";
 import "../../styles/cardQuestion.css";
@@ -22,10 +23,21 @@ export default function AdminTestViewPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>({});
   const [globalAudio, setGlobalAudio] = useState<string | null>(null);
+  
+  // ✅ Parts filtering
+  const [parts, setParts] = useState<Part[]>([]);
+  const [selectedPartId, setSelectedPartId] = useState<number | null>(null);
+  const [filteredQuestions, setFilteredQuestions] = useState<QuestionWithMedia[]>([]);
 
   useEffect(() => {
-    const fetchQuestions = async () => {
+    const fetchData = async () => {
       try {
+        // ✅ Load Parts data
+        const partsData = await getAllPartsAPI();
+        setParts(partsData);
+        console.log('📋 Admin view loaded parts:', partsData);
+
+        // Load questions
         const data = await getQuestionsByTestIdAPI(Number(id));
         console.log('📥 Frontend received questions:', data);
         
@@ -68,8 +80,28 @@ export default function AdminTestViewPage() {
         console.error("Lỗi khi lấy chi tiết đề thi:", error);
       }
     };
-    fetchQuestions();
+    fetchData();
   }, [id]);
+
+  // ✅ Filter questions based on selected part
+  useEffect(() => {
+    if (selectedPartId === null) {
+      setFilteredQuestions(questions);
+    } else {
+      const filtered = questions.filter(q => q.partId === selectedPartId);
+      setFilteredQuestions(filtered);
+      console.log(`🔍 Admin filtered ${filtered.length} questions for part ${selectedPartId}`);
+    }
+  }, [questions, selectedPartId]);
+
+  // ✅ Handle part selection
+  const handlePartSelect = (partId: number) => {
+    if (selectedPartId === partId) {
+      setSelectedPartId(null);
+    } else {
+      setSelectedPartId(partId);
+    }
+  };
 
   // ✅ Helper function to get image URL for a question
   const getQuestionImage = (question: QuestionWithMedia): string | null => {
@@ -119,6 +151,36 @@ export default function AdminTestViewPage() {
       <h2>Đề thi: {title}</h2>
       <p>Tổng số câu: {questions.length}</p>
 
+      {/* ✅ Parts Filter */}
+      <div className="parts-filter-container">
+        <h4>Lọc theo phần:</h4>
+        <div className="parts-filter">
+          <div 
+            className={`part-filter-button ${selectedPartId === null ? "active" : ""}`}
+            onClick={() => setSelectedPartId(null)}
+          >
+            Tất cả ({questions.length})
+          </div>
+          {parts.map((part) => {
+            const partQuestionCount = questions.filter(q => q.partId === part.id).length;
+            return (
+              <div 
+                key={part.id} 
+                className={`part-filter-button ${selectedPartId === part.id ? "active" : ""}`}
+                onClick={() => handlePartSelect(part.id)}
+              >
+                {part.name} ({partQuestionCount})
+              </div>
+            );
+          })}
+        </div>
+        {selectedPartId !== null && (
+          <p className="filter-info">
+            Hiển thị {filteredQuestions.length} câu hỏi thuộc {parts.find(p => p.id === selectedPartId)?.name}
+          </p>
+        )}
+      </div>
+
       {/* ✅ Global Audio Player (if exists) */}
       {globalAudio && (
         <div className="global-audio-container">
@@ -132,9 +194,12 @@ export default function AdminTestViewPage() {
         </div>
       )}
 
-      {questions.map((q, i) => {
+      {filteredQuestions.map((q, i) => {
         const isEditing = editingId === q.id;
         const questionImage = getQuestionImage(q);
+        
+        // ✅ Calculate actual question index in full list
+        const actualIndex = questions.findIndex(question => question.id === q.id) + 1;
 
         return (
           <div key={q.id} className="card-container">
@@ -150,7 +215,7 @@ export default function AdminTestViewPage() {
             )}
 
             <h2 className="card-question">
-              {i + 1}.{" "}
+              {actualIndex}.{" "}
               {isEditing ? (
                 <input
                   value={editData.question}
@@ -239,6 +304,13 @@ export default function AdminTestViewPage() {
           </div>
         );
       })}
+
+      {/* ✅ Show message when no questions in selected part */}
+      {filteredQuestions.length === 0 && selectedPartId !== null && (
+        <div className="no-questions-message">
+          <p>📝 Không có câu hỏi nào thuộc phần này</p>
+        </div>
+      )}
     </div>
   );
 }

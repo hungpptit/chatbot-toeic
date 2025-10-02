@@ -27,7 +27,7 @@ import RequireAuth from "./components/RequireAuth";
 
 
 const GOOGLE_CLIENT_ID =
-  "882409050775-mq8rrausj32gudb5fmni8gn28qg23nk4.apps.googleusercontent.com";
+  "434908138353-09ptjoatadgu8imb71eddm6cl3m3461q.apps.googleusercontent.com";
 
 function AppContent() {
   const location = useLocation();

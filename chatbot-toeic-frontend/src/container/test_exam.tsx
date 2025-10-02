@@ -11,6 +11,7 @@ import {
   type MediaMapping,
   type SubmitResult,
 } from "../services/question_test_services";
+import { getAllPartsAPI, type Part } from "../services/adminTestService";
 import ExamSidebar from "../components/ExamSidebar";
 
 interface TestExamProps {
@@ -30,6 +31,11 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
   const [score, setScore] = useState<number>(0);
   const [totalQuestions, setTotalQuestions] = useState<number>(0);
   const [globalAudio, setGlobalAudio] = useState<string | null>(null);
+  
+  // ✅ Parts state and filtering
+  const [parts, setParts] = useState<Part[]>([]);
+  const [selectedPartId, setSelectedPartId] = useState<number | null>(null);
+  const [filteredQuestions, setFilteredQuestions] = useState<QuestionWithMedia[]>([]);
 
   const { userTestId, id } = useParams();
   const userTestIdNum = Number(userTestId);
@@ -41,26 +47,13 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
   useEffect(() => {
     console.log("🌀 useEffect chạy", { mode, userTestId, id });
     
-    // ✅ Đảm bảo trang có thể cuộn
-    const originalBodyStyle = document.body.style.height;
-    const originalRootStyle = document.getElementById('root')?.style.height;
-    
-    // ✅ Force styles để trang có thể cuộn
-    document.body.style.height = 'auto !important';
-    document.body.style.minHeight = '100vh';
-    document.body.style.overflow = 'auto !important';
-    document.body.style.maxHeight = 'none !important';
-    
-    const rootElement = document.getElementById('root');
-    if (rootElement) {
-      rootElement.style.height = 'auto !important';
-      rootElement.style.minHeight = '100vh';
-      rootElement.style.overflow = 'visible !important';
-      rootElement.style.maxHeight = 'none !important';
-    }
-    
     const fetchData = async () => {
       try {
+        // ✅ Load Parts data
+        const partsData = await getAllPartsAPI();
+        setParts(partsData);
+        console.log('📋 Loaded parts:', partsData);
+
         if (mode === "review" && userTestId) {
           const data = await getUserTestDetailByIdAPI(userTestIdNum);
           console.log('📥 Review mode received data:', data);
@@ -160,29 +153,30 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
     };
 
     fetchData();
-    
-    // ✅ Apply styles để đảm bảo trang có thể cuộn
-    setTimeout(() => {
-      // ✅ Force HTML, BODY và ROOT có thể cuộn
-      document.documentElement.style.cssText += '; height: auto !important; max-height: none !important; overflow: auto !important;';
-      document.body.style.cssText += '; height: auto !important; max-height: none !important; overflow: auto !important;';
-      
-      const rootElement = document.getElementById('root');
-      if (rootElement) {
-        rootElement.style.cssText += '; height: auto !important; max-height: none !important; overflow: visible !important;';
-      }
-    }, 100);
-    
-    // ✅ Cleanup function để restore styles khi component unmount
-    return () => {
-      document.body.style.height = originalBodyStyle;
-      document.body.style.overflow = '';
-      const rootElement = document.getElementById('root');
-      if (rootElement && originalRootStyle) {
-        rootElement.style.height = originalRootStyle;
-      }
-    };
   }, [mode, id, userTestId]);
+
+  // ✅ Filter questions based on selected part
+  useEffect(() => {
+    if (selectedPartId === null) {
+      // Show all questions
+      setFilteredQuestions(questionData);
+    } else {
+      // Filter by selected part
+      const filtered = questionData.filter(q => q.partId === selectedPartId);
+      setFilteredQuestions(filtered);
+      console.log(`🔍 Filtered ${filtered.length} questions for part ${selectedPartId}`);
+    }
+  }, [questionData, selectedPartId]);
+
+  // ✅ Handle part selection
+  const handlePartSelect = (partId: number) => {
+    if (selectedPartId === partId) {
+      // Deselect if clicking the same part
+      setSelectedPartId(null);
+    } else {
+      setSelectedPartId(partId);
+    }
+  };
 
   // Start test
   const handleStartTest = async () => {
@@ -279,7 +273,7 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
                       </div>
                     )}
                     
-                    <div className="audio-controls">
+                    {/* <div className="audio-controls">
                       <button>▶</button>
                       <div className="progress-bar">
                         <div className="filled"></div>
@@ -287,13 +281,26 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
                       <span>-47:00</span>
                       <input type="range" />
                       <button>⚙</button>
-                    </div>
+                    </div> */}
                     <div className="parts">
-                      {["Part 1", "Part 2", "Part 3", "Part 4", "Part 5", "Part 6", "Part 7"].map((part, idx) => (
-                        <div key={idx} className={`part-button ${idx === 4 ? "active" : ""}`}>
-                          {part}
+                      {parts.map((part) => (
+                        <div 
+                          key={part.id} 
+                          className={`part-button ${selectedPartId === part.id ? "active" : ""}`}
+                          onClick={() => handlePartSelect(part.id)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {part.name}
                         </div>
                       ))}
+                      {/* ✅ All Parts button */}
+                      <div 
+                        className={`part-button ${selectedPartId === null ? "active" : ""}`}
+                        onClick={() => setSelectedPartId(null)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        Tất cả
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -345,7 +352,7 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
 
               {/* ✅ Questions area */}
               <div className="test4">
-                {questionData.map((item, index) => (
+                {filteredQuestions.map((item, index) => (
                   <div id={`question-${index + 1}`} key={item.id}>
                     <CardQuestion
                       key={item.id}
@@ -386,6 +393,18 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
                     />
                   </div>
                 ))}
+                
+                {/* ✅ Show message when no questions in selected part */}
+                {filteredQuestions.length === 0 && selectedPartId !== null && (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '40px 20px',
+                    color: '#666',
+                    fontSize: '16px'
+                  }}>
+                    📝 Không có câu hỏi nào thuộc phần này
+                  </div>
+                )}
               </div>
             </div>
 

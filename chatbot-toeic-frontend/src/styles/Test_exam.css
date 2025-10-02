@@ -1,38 +1,28 @@
-/* ✅ FORCE override cho test-page component */
+/* ✅ FORCE override cho test-page component - ONLY affects this component */
 .test-page {
   width: 100%;
   min-height: 100vh;
   height: auto !important;
   box-sizing: border-box;
   position: relative;
-  overflow: visible !important;
+  overflow: auto !important;
+  /* ✅ Create independent scrolling context */
+  contain: layout style;
 }
 
-/* ✅ Force override parent containers */
+/* ✅ Force override for children inside test-page */
 .test-page,
 .test-page * {
   max-height: none !important;
 }
 
-/* ✅ FORCE global override khi có test-page */
-html:has(.test-page),
-body:has(.test-page),
-#root:has(.test-page) {
-  height: auto !important;
-  max-height: none !important;
-  overflow: visible !important;
-}
-
-/* ✅ Alternative fallback selectors */
-html,
-body,
-#root {
-  height: auto !important;
-  max-height: none !important;
-  overflow: auto !important;
-}
+/* ✅ Test container specific styles */
 .test-container {
-    width: 100%;
+  height: auto !important;
+  min-height: 100vh;
+  overflow: visible !important;
+  box-sizing: border-box;
+  width: 100%;
     min-height: 100vh;
     height: auto;
     display: flex;
@@ -164,11 +154,17 @@ body,
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s ease;
+  user-select: none;
+}
+
+.part-button:hover {
+  background: #e0e0e0;
+  transform: translateY(-1px);
 }
 
 .part-button.active {
-  background: #e0edff;
-  color: #2563eb;
+  background: #4caf50;
+  color: white;
 }
 
 
