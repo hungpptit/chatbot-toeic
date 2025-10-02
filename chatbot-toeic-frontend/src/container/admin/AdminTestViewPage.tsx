@@ -3,6 +3,8 @@ import { useLocation, useParams } from "react-router-dom";
 import {
   getQuestionsByTestIdAPI,
   updateQuestionAPI,
+  type QuestionWithMedia,
+  type MediaMapping,
 } from "../../services/question_test_services";
 import { FaEdit, FaSave, FaTimes } from "react-icons/fa";
 import "../../styles/AdminTestViewPage.css";
@@ -16,14 +18,51 @@ export default function AdminTestViewPage() {
     mode?: "view" | "edit";
   };
 
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<QuestionWithMedia[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>({});
+  const [globalAudio, setGlobalAudio] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         const data = await getQuestionsByTestIdAPI(Number(id));
+        console.log('📥 Frontend received questions:', data);
+        
+        // ✅ DEBUG: Check first question structure in detail
+        if (data.length > 0) {
+          console.log('🔍 First question detailed structure:', {
+            id: data[0].id,
+            question: data[0].question?.substring(0, 50) + '...',
+            hasMediaMappings: !!data[0].mediaMappings,
+            mediaMappingsLength: data[0].mediaMappings?.length || 0,
+            mediaMappingsStructure: data[0].mediaMappings,
+            allKeys: Object.keys(data[0])
+          });
+          
+          // Check each question for media
+          data.forEach((q, idx) => {
+            console.log(`Question ${idx + 1} media:`, {
+              hasMedia: !!q.mediaMappings,
+              mediaCount: q.mediaMappings?.length || 0,
+              mediaTypes: q.mediaMappings?.map(m => m.media?.type) || []
+            });
+          });
+        }
+        
+        // ✅ Extract global audio (same audio for all questions)
+        const audioMedia = data.find((q: QuestionWithMedia) => 
+          q.mediaMappings?.some((m: MediaMapping) => m.media?.type === 'audio')
+        );
+        
+        if (audioMedia) {
+          const audioUrl = audioMedia.mediaMappings?.find((m: MediaMapping) => 
+            m.media?.type === 'audio'
+          )?.media?.url;
+          setGlobalAudio(audioUrl || null);
+          console.log('🎵 Found global audio:', audioUrl);
+        }
+        
         setQuestions(data);
       } catch (error) {
         console.error("Lỗi khi lấy chi tiết đề thi:", error);
@@ -31,6 +70,14 @@ export default function AdminTestViewPage() {
     };
     fetchQuestions();
   }, [id]);
+
+  // ✅ Helper function to get image URL for a question
+  const getQuestionImage = (question: QuestionWithMedia): string | null => {
+    const imageMapping = question.mediaMappings?.find((m: MediaMapping) => 
+      m.media?.type === 'image'
+    );
+    return imageMapping?.media?.url || null;
+  };
 
   const handleEditQuestion = (q: any) => {
     if (mode !== "edit") return;
@@ -72,11 +119,36 @@ export default function AdminTestViewPage() {
       <h2>Đề thi: {title}</h2>
       <p>Tổng số câu: {questions.length}</p>
 
+      {/* ✅ Global Audio Player (if exists) */}
+      {globalAudio && (
+        <div className="global-audio-container">
+          <h4 className="global-audio-title">
+            🎵 Audio cho toàn bộ đề thi:
+          </h4>
+          <audio controls className="global-audio-player">
+            <source src={globalAudio} type="audio/mpeg" />
+            Trình duyệt không hỗ trợ audio.
+          </audio>
+        </div>
+      )}
+
       {questions.map((q, i) => {
         const isEditing = editingId === q.id;
+        const questionImage = getQuestionImage(q);
 
         return (
           <div key={q.id} className="card-container">
+            {/* ✅ Question Image (if exists) */}
+            {questionImage && (
+              <div className="question-image-container">
+                <img 
+                  src={questionImage} 
+                  alt={`Question ${i + 1} image`}
+                  className="question-image"
+                />
+              </div>
+            )}
+
             <h2 className="card-question">
               {i + 1}.{" "}
               {isEditing ? (
@@ -91,7 +163,7 @@ export default function AdminTestViewPage() {
 
             <div className="card-options">
               {["A", "B", "C", "D"].map((opt) => {
-                const optionKey = `option${opt}` as keyof typeof q;
+                const optionKey = `option${opt}` as 'optionA' | 'optionB' | 'optionC' | 'optionD';
                 const isCorrect =
                   (isEditing ? editData.correctAnswer : q.correctAnswer) === opt;
 

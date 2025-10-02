@@ -109,24 +109,57 @@ export default function AdminTestAddPage() {
         // ✅ Handle media for LISTENING mode only
         if (testMode === 'listening') {
           const mediaFiles: MediaInput[] = [];
+          const questionIndex = questions.indexOf(q);
+
+          // ✅ DEBUG: Check states
+          console.log(`🔍 Question ${questionIndex} debug:`, {
+            hasImageFile: !!q.imageFile,
+            hasImageUrl: !!q.imageUrl,
+            imageUrl: q.imageUrl,
+            hasGlobalAudioFile: !!globalAudioFile,
+            hasGlobalAudioUrl: !!globalAudioUrl,
+            globalAudioUrl: globalAudioUrl
+          });
 
           // Add image if exists (per question)
+          // Ưu tiên imageFile (File object), fallback sang imageUrl
           if (q.imageFile) {
             mediaFiles.push({
               type: 'image',
               file: q.imageFile,
               description: 'Question image',
             });
+            console.log(`✅ Added imageFile for question ${questionIndex}`);
+          } else if (q.imageUrl) {
+            // Batch upload đã có URL, gửi trực tiếp
+            mediaFiles.push({
+              type: 'image',
+              url: q.imageUrl,
+              description: 'Question image',
+            } as any);
+            console.log(`✅ Added imageUrl for question ${questionIndex}: ${q.imageUrl}`);
           }
 
           // Add global audio (for all questions)
+          // Ưu tiên globalAudioFile (File object), fallback sang globalAudioUrl
           if (globalAudioFile) {
             mediaFiles.push({
               type: 'audio',
               file: globalAudioFile,
               description: 'Test audio',
             });
+            console.log(`✅ Added globalAudioFile`);
+          } else if (globalAudioUrl) {
+            // Batch upload đã có URL, gửi trực tiếp
+            mediaFiles.push({
+              type: 'audio',
+              url: globalAudioUrl,
+              description: 'Test audio',
+            } as any);
+            console.log(`✅ Added globalAudioUrl: ${globalAudioUrl}`);
           }
+
+          console.log(`📦 Question ${questionIndex} mediaFiles count:`, mediaFiles.length);
 
           if (mediaFiles.length > 0) {
             questionInput.mediaFiles = mediaFiles;
@@ -142,8 +175,26 @@ export default function AdminTestAddPage() {
         questions: questionsInput,
       };
 
+      // ✅ LOG: Check data trước khi gửi
+      console.log('📤 Frontend sending to createNewTestAPI:');
+      console.log({
+        title: fullTestData.title,
+        courseId: fullTestData.courseId,
+        totalQuestions: fullTestData.questions.length,
+        testMode: testMode,
+        sampleQuestion: {
+          ...fullTestData.questions[0],
+          hasMediaFiles: fullTestData.questions[0].mediaFiles && fullTestData.questions[0].mediaFiles.length > 0,
+          mediaCount: fullTestData.questions[0].mediaFiles?.length || 0
+        }
+      });
+
       console.log("📤 Đang tạo test...");
       const result = await createNewTestAPI(fullTestData);
+      
+      // ✅ LOG: Check response từ backend
+      console.log('📥 Frontend received from createNewTestAPI:', result);
+      
       console.log("✅ Tạo đề thi thành công:", result);
       alert("✅ Đề thi đã được tạo!");
     } catch (error) {
@@ -271,6 +322,15 @@ export default function AdminTestAddPage() {
       // Gọi API batch upload
       const uploadedData = await batchUploadFromPathsAPI(testData);
       
+      // ✅ DEBUG: Check uploadedData structure
+      console.log('📥 Batch upload response:', {
+        hasAudioUrl: !!uploadedData.audioUrl,
+        audioUrl: uploadedData.audioUrl,
+        questionsCount: uploadedData.questions?.length,
+        firstQuestionImageUrl: uploadedData.questions?.[0]?.imageUrl,
+        sampleQuestion: uploadedData.questions?.[0]
+      });
+      
       // Load data với URLs vào form
       setTestTitle(uploadedData.title);
       setSelectedCourseId(uploadedData.courseId);
@@ -280,6 +340,7 @@ export default function AdminTestAddPage() {
       setTestMode('listening');
       if (uploadedData.audioUrl) {
         setGlobalAudioUrl(uploadedData.audioUrl);
+        console.log('✅ Set globalAudioUrl:', uploadedData.audioUrl);
       }
       
       const cleanedQuestions = uploadedData.questions.map((q: any) => ({

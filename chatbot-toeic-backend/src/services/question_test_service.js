@@ -46,7 +46,41 @@ export const RandomQuestionsByTestId = async (testId, limit = 40) => {
       return sortOrderMap.get(a.id) - sortOrderMap.get(b.id);
     });
 
-    return orderedQuestions;
+    // ✅ LOG: Check media data
+    console.log('📊 RandomQuestionsByTestId - Sample question with media:');
+    if (orderedQuestions.length > 0) {
+      const sample = orderedQuestions[0];
+      console.log({
+        id: sample.id,
+        partId: sample.partId,
+        hasMedia: sample.mediaMappings?.length > 0,
+        mediaCount: sample.mediaMappings?.length || 0,
+        mediaTypes: sample.mediaMappings?.map(m => m.media?.mediaType) || []
+      });
+    }
+
+    // ✅ Transform response to match frontend interface
+    const transformedQuestions = orderedQuestions.map(question => {
+      const questionData = question.toJSON();
+      
+      // Transform media mappings to match frontend interface
+      if (questionData.mediaMappings) {
+        questionData.mediaMappings = questionData.mediaMappings.map(mapping => ({
+          ...mapping,
+          media: mapping.media ? {
+            id: mapping.media.id,
+            type: mapping.media.mediaType, // ✅ mediaType → type
+            url: mapping.media.mediaUrl,   // ✅ mediaUrl → url
+            description: mapping.media.description
+          } : null
+        }));
+      }
+      
+      return questionData;
+    });
+
+    console.log('📤 Sending transformed questions with correct field names');
+    return transformedQuestions;
   } catch (error) {
     console.error("❌ Error in RandomQuestionsByTestId:", error);
     throw error;

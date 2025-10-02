@@ -116,8 +116,26 @@ const deleteQuestionTypeController = async (req, res) => {
 const createNewTestController = async (req, res) => {
   try {
     const { title, courseId, questions } = req.body;
+    
+    // ✅ DEBUG: Check what we actually received
     console.log("📥 Payload nhận được từ client:");
-    console.log(JSON.stringify({ title, courseId, questionsCount: questions?.length }, null, 2));
+    console.log(JSON.stringify({ 
+      title, 
+      courseId, 
+      questionsCount: questions?.length,
+      hasQuestionsArray: Array.isArray(questions),
+      firstQuestionKeys: questions?.[0] ? Object.keys(questions[0]) : 'NO_QUESTIONS',
+      firstQuestionHasMedia: questions?.[0]?.media !== undefined,
+      bodyKeys: Object.keys(req.body)
+    }, null, 2));
+    
+    // ✅ If questions exist, log first question structure
+    if (questions && questions.length > 0) {
+      console.log("🔍 First question structure:", {
+        ...questions[0],
+        mediaCount: questions[0].media?.length || 0
+      });
+    }
 
     // ✅ Validate basic fields
     if (!title || typeof title !== 'string') {

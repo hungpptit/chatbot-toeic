@@ -187,6 +187,19 @@ export const createNewTestAPI = async (
   try {
     console.log('📤 Starting test creation with file uploads...');
     
+    // ✅ LOG: Check input data
+    console.log('🔍 Input testData:', {
+      title: testData.title,
+      courseId: testData.courseId,
+      totalQuestions: testData.questions.length,
+      firstQuestion: {
+        question: testData.questions[0]?.question?.substring(0, 50),
+        hasMediaFiles: testData.questions[0]?.mediaFiles !== undefined,
+        mediaFilesLength: testData.questions[0]?.mediaFiles?.length || 0,
+        mediaFiles: testData.questions[0]?.mediaFiles
+      }
+    });
+    
     // ✅ STEP 1: Process each question and upload media files
     const processedQuestions: Question[] = await Promise.all(
       testData.questions.map(async (questionInput) => {
@@ -199,11 +212,21 @@ export const createNewTestAPI = async (
           uploadedMedia = await Promise.all(
             questionInput.mediaFiles.map(async (mediaInput) => {
               try {
-                // Upload file and get URL
-                const uploadedUrl = await uploadFileAPI(
-                  mediaInput.file,
-                  mediaInput.type
-                );
+                // ✅ Nếu đã có URL (từ batch upload), skip upload
+                let uploadedUrl: string;
+                
+                if ((mediaInput as any).url) {
+                  // Batch upload đã có URL rồi
+                  uploadedUrl = (mediaInput as any).url;
+                  console.log(`✅ Using existing URL: ${uploadedUrl}`);
+                } else {
+                  // Upload file mới lên Cloudinary
+                  uploadedUrl = await uploadFileAPI(
+                    mediaInput.file,
+                    mediaInput.type
+                  );
+                  console.log(`✅ Uploaded new file: ${uploadedUrl}`);
+                }
 
                 return {
                   type: mediaInput.type,
@@ -245,6 +268,16 @@ export const createNewTestAPI = async (
       courseId: testData.courseId,
       questions: processedQuestions,
     };
+
+    // ✅ DEBUG: Check final payload
+    console.log('🔍 Final payload check:', {
+      title: finalTestData.title,
+      courseId: finalTestData.courseId,
+      questionsCount: finalTestData.questions.length,
+      hasQuestions: Array.isArray(finalTestData.questions),
+      firstQuestionMedia: finalTestData.questions[0]?.media,
+      fullPayload: JSON.stringify(finalTestData, null, 2)
+    });
 
     console.log('📤 Sending test data to backend...');
     const response = await axios.post<CreateTestResponse>(

@@ -15,8 +15,26 @@ export interface Part {
   name: string;
 }
 
+// ✅ Media related interfaces
+export interface MediaFile {
+  id: number;
+  type: 'image' | 'audio';
+  url: string;
+  description?: string;
+}
+
+export interface MediaMapping {
+  id: number;
+  questionId: number;
+  mediaId: number;
+  startSecond?: number;
+  endSecond?: number;
+  media: MediaFile;
+}
+
+// ✅ Enhanced Question interface with media support
 export interface Question {
-  id: number ; // Use null if the question is new and doesn't have an ID yet
+  id: number; // Use null if the question is new and doesn't have an ID yet
   question: string;
   optionA: string;
   optionB: string;
@@ -26,10 +44,14 @@ export interface Question {
   explanation: string;
   typeId: number;
   partId: number;
-
+  skillId?: number;
+  mediaMappings?: MediaMapping[]; // ✅ Added media support
   // questionType: QuestionType;
   // part: Part;
 }
+
+// ✅ Alias for backward compatibility and clarity
+export interface QuestionWithMedia extends Question {}
 
 export interface Answer {
   questionId: number;
@@ -72,7 +94,7 @@ export interface UserTestDetailItem {
   optionC: string;
   optionD: string;
   typeId: number;
-  partId:number;
+  partId: number;
   selectedOption: string | null;
   isCorrect: boolean;
   correctAnswer: string;
@@ -88,14 +110,23 @@ export interface UserTestDetailResult {
   details: UserTestDetailItem[];
 }
 
-// ======================== APIS ========================
+// ======================== APIs ========================
 
-// Lấy danh sách câu hỏi theo testId
-export const getQuestionsByTestIdAPI = async (testId: number): Promise<Question[]> => {
-  const response = await axios.get<Question[]>(
+// Lấy danh sách câu hỏi theo testId với media support
+export const getQuestionsByTestIdAPI = async (testId: number): Promise<QuestionWithMedia[]> => {
+  const response = await axios.get<QuestionWithMedia[]>(
     `${API_BASE_URL}/Detail/${testId}`,
     { withCredentials: true }
   );
+  
+  // ✅ LOG: Check received data structure
+  console.log('📥 getQuestionsByTestIdAPI response:', {
+    total: response.data.length,
+    sample: response.data[0],
+    hasMediaMappings: 'mediaMappings' in (response.data[0] || {}),
+    sampleMediaCount: response.data[0]?.mediaMappings?.length || 0
+  });
+  
   return response.data;
 };
 

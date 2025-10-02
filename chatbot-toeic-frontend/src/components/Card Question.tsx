@@ -1,5 +1,5 @@
 import "../styles/cardQuestion.css";
-import type { Question as QuestionItem } from "../services/question_test_services";
+import type { QuestionWithMedia as QuestionItem } from "../services/question_test_services";
 
 export interface QuestionType {
   id: number;
@@ -36,6 +36,12 @@ export default function CardQuestion({
   showResult,
   incorrectAnswer
 }: CardQuestionProps) {
+  // ✅ Helper function to get image URL for this question
+  const getQuestionImage = (): string | null => {
+    const imageMapping = item.mediaMappings?.find(m => m.media?.type === 'image');
+    return imageMapping?.media?.url || null;
+  };
+
   const handleSelect = (option: string) => {
     if (showResult) return;
     onSelectAnswer(item.id, option);
@@ -47,10 +53,32 @@ export default function CardQuestion({
     return showResult ? 'not-allowed' : 'pointer';
   };
 
+  const questionImage = getQuestionImage();
+
   // const isCorrect = selectedAnswer === item.correctAnswer;
 
   return (
     <div className="card-container">
+      {/* ✅ Question Image (if exists) */}
+      {questionImage && (
+        <div className="question-image-container" style={{
+          marginBottom: '15px',
+          textAlign: 'center' as const
+        }}>
+          <img 
+            src={questionImage} 
+            alt={`Question ${index} image`}
+            style={{
+              maxWidth: '100%',
+              maxHeight: '250px',
+              borderRadius: '6px',
+              border: '1px solid #ddd',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}
+          />
+        </div>
+      )}
+
       <h2 className="card-question">
         {index}. {item.question}
       </h2>

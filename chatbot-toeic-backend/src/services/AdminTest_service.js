@@ -163,6 +163,21 @@ const updateQuestionType = async (typeId, newName, newDescription = null) => {
 
 const createNewTest = async (testData) => {
   try {
+    // ✅ LOG: Check data nhận được từ frontend
+    console.log('📥 Backend createNewTest received:');
+    console.log({
+      title: testData.title,
+      courseId: testData.courseId,
+      totalQuestions: testData.questions?.length || 0,
+      sampleQuestion: testData.questions?.[0] ? {
+        question: testData.questions[0].question?.substring(0, 50) + '...',
+        partId: testData.questions[0].partId,
+        skillId: testData.questions[0].skillId,
+        hasMediaFiles: testData.questions[0].media && testData.questions[0].media.length > 0,
+        mediaCount: testData.questions[0].media?.length || 0
+      } : null
+    });
+
     const { title, courseId, questions } = testData;
 
     // Create test
