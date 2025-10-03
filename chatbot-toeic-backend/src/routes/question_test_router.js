@@ -1,7 +1,6 @@
 // routes/questions_router.js
 import express from 'express';
 import { authMiddleware } from '../Middleware/authMiddleware.js';
-  checkUserTestDetailed
 import { getQuestionsByTest, updateQuestionController,submitTest, startTest, checkUserTestDetailed, getUserTestDetailId,checkHistoryUserTestDetailed,
   createQuestionController
  } from '../controllers/question_test_controller.js';
@@ -10,6 +9,7 @@ const router = express.Router();
 
 router.get('/Detail/:testId', authMiddleware, getQuestionsByTest);
 
+// ✅ No multer needed - frontend uploads files first, then sends URLs
 router.put('/update-question', authMiddleware, updateQuestionController);
 
 router.post('/create-question', authMiddleware, createQuestionController);

@@ -7,7 +7,8 @@ import {
   type MediaMapping,
 } from "../../services/question_test_services";
 import { getAllPartsAPI, type Part } from "../../services/adminTestService";
-import { FaEdit, FaSave, FaTimes } from "react-icons/fa";
+import { uploadImageAPI, uploadAudioAPI } from "../../services/uploadService";
+import { FaEdit, FaSave, FaTimes, FaUpload, FaTrash } from "react-icons/fa";
 import "../../styles/AdminTestViewPage.css";
 import "../../styles/cardQuestion.css";
 
@@ -23,6 +24,24 @@ export default function AdminTestViewPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>({});
   const [globalAudio, setGlobalAudio] = useState<string | null>(null);
+  
+  // ✅ Media editing states
+  const [uploadingMedia, setUploadingMedia] = useState<{ [key: string]: boolean }>({});
+  const [globalAudioFile, setGlobalAudioFile] = useState<File | null>(null);
+  const [questionImageFiles, setQuestionImageFiles] = useState<{ [questionId: number]: File }>({});
+  
+  // ✅ Image preview states
+  const [questionImagePreviews, setQuestionImagePreviews] = useState<{ [questionId: number]: string }>({});
+  
+  // ✅ Pending changes tracking
+  const [pendingAudioUrl, setPendingAudioUrl] = useState<string | null>(null);
+  const [pendingAudioDuration, setPendingAudioDuration] = useState<number | null>(null);
+  const [hasPendingChanges, setHasPendingChanges] = useState<boolean>(false);
+  const [savingChanges, setSavingChanges] = useState<boolean>(false);
+  
+  // ✅ Track original data for comparison
+  const [originalQuestions, setOriginalQuestions] = useState<QuestionWithMedia[]>([]);
+  const [changedImageQuestions, setChangedImageQuestions] = useState<Set<number>>(new Set());
   
   // ✅ Parts filtering
   const [parts, setParts] = useState<Part[]>([]);
@@ -76,12 +95,22 @@ export default function AdminTestViewPage() {
         }
         
         setQuestions(data);
+        setOriginalQuestions(JSON.parse(JSON.stringify(data))); // ✅ Store deep copy of original data
       } catch (error) {
         console.error("Lỗi khi lấy chi tiết đề thi:", error);
       }
     };
     fetchData();
   }, [id]);
+
+  // ✅ Cleanup preview URLs on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      Object.values(questionImagePreviews).forEach(url => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, [questionImagePreviews]);
 
   // ✅ Filter questions based on selected part
   useEffect(() => {
@@ -100,6 +129,266 @@ export default function AdminTestViewPage() {
       setSelectedPartId(null);
     } else {
       setSelectedPartId(partId);
+    }
+  };
+
+  // ✅ Handle global audio upload (only upload, don't save to DB)
+  const handleGlobalAudioUpload = async () => {
+    if (!globalAudioFile) {
+      alert("❌ Vui lòng chọn file audio!");
+      return;
+    }
+
+    try {
+      setUploadingMedia(prev => ({ ...prev, global: true }));
+      const response = await uploadAudioAPI(globalAudioFile);
+      // Handle response based on its type
+      const audioUrl = typeof response === 'string' ? response : response.url;
+      const audioDuration = typeof response === 'object' ? response.duration : undefined;
+      
+      console.log('🎵 Audio uploaded with duration:', audioDuration, 'seconds');
+      
+      // ✅ Store as pending changes (don't save to DB yet)
+      setPendingAudioUrl(audioUrl);
+      setPendingAudioDuration(audioDuration || null);
+      setGlobalAudio(audioUrl); // Update UI preview
+      setHasPendingChanges(true);
+      
+      setGlobalAudioFile(null);
+      alert("✅ Audio uploaded! Click 'Save All Changes' to apply to all questions.");
+      
+    } catch (error) {
+      console.error("❌ Lỗi upload audio:", error);
+      alert("❌ Upload audio thất bại!");
+    } finally {
+      setUploadingMedia(prev => ({ ...prev, global: false }));
+    }
+  };
+
+  // ✅ Handle question image upload (only upload, don't save to DB)
+  const handleQuestionImageUpload = async (questionId: number) => {
+    const imageFile = questionImageFiles[questionId];
+    if (!imageFile) {
+      alert("❌ Vui lòng chọn file hình ảnh!");
+      return;
+    }
+
+    try {
+      setUploadingMedia(prev => ({ ...prev, [questionId]: true }));
+      const response = await uploadImageAPI(imageFile);
+      // Handle response based on its type
+      const imageUrl = typeof response === 'string' ? response : (response as any).url;
+      
+      // Update question data with new image (UI only)
+      setQuestions(prev => prev.map(q => {
+        if (q.id === questionId) {
+          const newMediaMappings = q.mediaMappings || [];
+          const existingImageIndex = newMediaMappings.findIndex(m => m.media?.type === 'image');
+          
+          if (existingImageIndex >= 0) {
+            // Replace existing image
+            newMediaMappings[existingImageIndex] = {
+              ...newMediaMappings[existingImageIndex],
+              media: {
+                id: Date.now(),
+                type: 'image',
+                url: imageUrl,
+                description: 'Question image'
+              }
+            };
+          } else {
+            // Add new image
+            newMediaMappings.push({
+              id: Date.now(),
+              mediaId: Date.now(),
+              startSecond: undefined,
+              endSecond: undefined,
+              media: {
+                id: Date.now(),
+                type: 'image',
+                url: imageUrl,
+                description: 'Question image'
+              }
+            } as MediaMapping);
+          }
+          
+          return { ...q, mediaMappings: newMediaMappings };
+        }
+        return q;
+      }));
+      
+      // ✅ Clean up preview and files after successful upload
+      setQuestionImageFiles(prev => {
+        const newFiles = { ...prev };
+        delete newFiles[questionId];
+        return newFiles;
+      });
+      
+      setQuestionImagePreviews(prev => {
+        const newPreviews = { ...prev };
+        delete newPreviews[questionId];
+        return newPreviews;
+      });
+      
+      // ✅ Mark as having pending changes
+      setHasPendingChanges(true);
+      
+      // ✅ Track that this question's image was changed
+      setChangedImageQuestions(prev => new Set(prev).add(questionId));
+      
+      alert("✅ Image uploaded! Click 'Save All Changes' to save to database.");
+    } catch (error) {
+      console.error("❌ Lỗi upload hình ảnh:", error);
+      alert("❌ Upload hình ảnh thất bại!");
+    } finally {
+      setUploadingMedia(prev => ({ ...prev, [questionId]: false }));
+    }
+  };
+
+  // ✅ Handle file selection with preview
+  const handleImageFileSelect = (questionId: number, file: File) => {
+    setQuestionImageFiles(prev => ({
+      ...prev,
+      [questionId]: file
+    }));
+    
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setQuestionImagePreviews(prev => ({
+      ...prev,
+      [questionId]: previewUrl
+    }));
+  };
+
+  // ✅ Handle cancel image selection
+  const handleCancelImageSelection = (questionId: number) => {
+    // Clean up preview URL to prevent memory leak
+    const previewUrl = questionImagePreviews[questionId];
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    
+    setQuestionImageFiles(prev => {
+      const newFiles = { ...prev };
+      delete newFiles[questionId];
+      return newFiles;
+    });
+    
+    setQuestionImagePreviews(prev => {
+      const newPreviews = { ...prev };
+      delete newPreviews[questionId];
+      return newPreviews;
+    });
+  };
+
+  // ✅ Handle delete question image
+  const handleDeleteQuestionImage = (questionId: number) => {
+    if (!confirm("❓ Bạn có chắc muốn xóa hình ảnh này?")) return;
+    
+    setQuestions(prev => prev.map(q => {
+      if (q.id === questionId) {
+        const newMediaMappings = (q.mediaMappings || []).filter(m => m.media?.type !== 'image');
+        return { ...q, mediaMappings: newMediaMappings };
+      }
+      return q;
+    }));
+    
+    // Mark as having pending changes
+    setHasPendingChanges(true);
+    
+    // ✅ Track that this question's image was changed (deleted)
+    setChangedImageQuestions(prev => new Set(prev).add(questionId));
+  };
+
+  // ✅ Save all pending changes to database
+  const handleSaveAllChanges = async () => {
+    if (!hasPendingChanges) {
+      alert("📌 Không có thay đổi nào để lưu!");
+      return;
+    }
+
+    try {
+      setSavingChanges(true);
+      console.log('💾 Saving only changed media to database...');
+
+      const updatePromises = [];
+      
+      // ✅ Collect questions that need updating
+      for (const question of questions) {
+        let hasChangesForThisQuestion = false;
+        const mediaFiles = [];
+        
+        // ✅ Only add audio if it was actually changed (pendingAudioUrl exists)
+        if (pendingAudioUrl) {
+          mediaFiles.push({
+            type: 'audio',
+            url: pendingAudioUrl,
+            description: 'Global audio',
+            duration: pendingAudioDuration || undefined
+          });
+          hasChangesForThisQuestion = true;
+          console.log(`🎵 Will update audio for question ${question.id}`);
+        }
+        
+        // ✅ Only add images that were actually changed
+        const currentImage = question.mediaMappings?.find(m => m.media?.type === 'image');
+        if (currentImage?.media && changedImageQuestions.has(question.id)) {
+          // This image was changed, include it in update
+          mediaFiles.push({
+            type: 'image',
+            url: currentImage.media.url,
+            description: currentImage.media.description || 'Question image',
+            duration: undefined
+          });
+          hasChangesForThisQuestion = true;
+          console.log(`🖼️ Will update changed image for question ${question.id}`);
+        } else if (currentImage?.media) {
+          console.log(`⏭️ Skipping unchanged image for question ${question.id}`);
+        }
+        
+        // ✅ Only add to update list if this question actually has changes
+        if (hasChangesForThisQuestion && mediaFiles.length > 0) {
+          updatePromises.push({
+            questionId: question.id,
+            mediaFiles: mediaFiles
+          });
+        } else {
+          console.log(`⏭️ No changes for question ${question.id}, skipping API call`);
+        }
+      }
+      
+      // ✅ Update questions sequentially to avoid deadlocks
+      let successCount = 0;
+      for (const update of updatePromises) {
+        try {
+          console.log(`📤 Updating question ${update.questionId} with ${update.mediaFiles.length} changed media`);
+          await updateQuestionAPI(update.questionId, { mediaFiles: update.mediaFiles });
+          successCount++;
+          console.log(`✅ Updated question ${update.questionId} successfully`);
+        } catch (error) {
+          console.error(`❌ Failed to update question ${update.questionId}:`, error);
+          // Continue with other questions even if one fails
+        }
+      }
+      
+      // Clear pending changes
+      setPendingAudioUrl(null);
+      setPendingAudioDuration(null);
+      setHasPendingChanges(false);
+      setChangedImageQuestions(new Set()); // ✅ Clear changed images tracking
+      
+      if (successCount > 0) {
+        alert(`✅ Đã lưu thay đổi cho ${successCount}/${updatePromises.length} câu hỏi!`);
+        console.log(`✅ Successfully updated ${successCount} questions`);
+      } else {
+        alert("ℹ️ Không có thay đổi nào để lưu!");
+      }
+      
+    } catch (error) {
+      console.error("❌ Lỗi lưu thay đổi:", error);
+      alert("❌ Có lỗi khi lưu thay đổi!");
+    } finally {
+      setSavingChanges(false);
     }
   };
 
@@ -130,9 +419,40 @@ export default function AdminTestViewPage() {
   const handleSaveQuestion = async () => {
     if (mode === "edit") {
       try {
-        await updateQuestionAPI(editingId as number, editData);
+        // ✅ Prepare media files for update if any
+        const currentQuestion = questions.find(q => q.id === editingId);
+        const mediaFiles = [];
+        
+        // Include existing media mappings in update
+        if (currentQuestion?.mediaMappings) {
+          for (const mapping of currentQuestion.mediaMappings) {
+            if (mapping.media) {
+              mediaFiles.push({
+                type: mapping.media.type,
+                url: mapping.media.url,
+                description: mapping.media.description || 'Question media'
+              });
+            }
+          }
+        }
+        
+        // Prepare update data with media
+        const updateData = {
+          ...editData,
+          mediaFiles: mediaFiles.length > 0 ? mediaFiles : undefined
+        };
+        
+        console.log('📤 Updating question with media:', {
+          questionId: editingId,
+          hasMedia: mediaFiles.length > 0,
+          mediaCount: mediaFiles.length
+        });
+
+        await updateQuestionAPI(editingId as number, updateData);
+        
+        // Update local state
         setQuestions((prev) =>
-          prev.map((q) => (q.id === editingId ? { ...editData } : q))
+          prev.map((q) => (q.id === editingId ? { ...q, ...editData } : q))
         );
         setEditingId(null);
         setEditData({});
@@ -181,20 +501,65 @@ export default function AdminTestViewPage() {
         )}
       </div>
 
-      {/* ✅ Global Audio Player (if exists) */}
-      {globalAudio && (
-        <div className="global-audio-container">
-          <h4 className="global-audio-title">
-            🎵 Audio cho toàn bộ đề thi:
-          </h4>
-          <audio controls className="global-audio-player">
-            <source src={globalAudio} type="audio/mpeg" />
-            Trình duyệt không hỗ trợ audio.
-          </audio>
-        </div>
-      )}
+      {/* ✅ Global Audio Section */}
+      <div className="global-audio-container">
+        <h4 className="global-audio-title">
+          🎵 Audio cho toàn bộ đề thi:
+        </h4>
+        {globalAudio ? (
+          <div className="global-audio-display">
+            <audio controls className="global-audio-player">
+              <source src={globalAudio} type="audio/mpeg" />
+              Trình duyệt không hỗ trợ audio.
+            </audio>
+            {mode === "edit" && (
+              <div className="global-audio-edit" style={{ marginTop: "10px", padding: "10px", border: "1px solid #ddd", borderRadius: "4px" }}>
+                <p style={{ fontSize: "13px", color: "#666", margin: "0 0 8px 0" }}>Thay đổi audio:</p>
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={(e) => setGlobalAudioFile(e.target.files?.[0] || null)}
+                  style={{ marginRight: "10px", fontSize: "12px" }}
+                />
+                {globalAudioFile && (
+                  <button 
+                    className="save-btn"
+                    onClick={handleGlobalAudioUpload}
+                    disabled={uploadingMedia.global}
+                    style={{ fontSize: "12px", padding: "5px 10px" }}
+                  >
+                    <FaUpload /> {uploadingMedia.global ? "Uploading..." : "Upload Audio"}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          mode === "edit" && (
+            <div className="global-audio-upload" style={{ padding: "15px", border: "1px dashed #ccc", borderRadius: "4px", backgroundColor: "#f9f9f9" }}>
+              <p style={{ color: "#666", fontSize: "14px", margin: "0 0 10px 0" }}>Chưa có audio cho đề thi này</p>
+              <input
+                type="file"
+                accept="audio/*"
+                onChange={(e) => setGlobalAudioFile(e.target.files?.[0] || null)}
+                style={{ marginRight: "10px", fontSize: "12px" }}
+              />
+              {globalAudioFile && (
+                <button 
+                  className="save-btn"
+                  onClick={handleGlobalAudioUpload}
+                  disabled={uploadingMedia.global}
+                  style={{ fontSize: "12px", padding: "5px 10px" }}
+                >
+                  <FaUpload /> {uploadingMedia.global ? "Uploading..." : "Upload Audio"}
+                </button>
+              )}
+            </div>
+          )
+        )}
+      </div>
 
-      {filteredQuestions.map((q, i) => {
+      {filteredQuestions.map((q) => {
         const isEditing = editingId === q.id;
         const questionImage = getQuestionImage(q);
         
@@ -203,16 +568,126 @@ export default function AdminTestViewPage() {
 
         return (
           <div key={q.id} className="card-container">
-            {/* ✅ Question Image (if exists) */}
-            {questionImage && (
-              <div className="question-image-container">
-                <img 
-                  src={questionImage} 
-                  alt={`Question ${i + 1} image`}
-                  className="question-image"
-                />
-              </div>
-            )}
+            {/* ✅ Question Image Section */}
+            <div className="question-image-section">
+              {questionImage ? (
+                <div className="question-image-container">
+                  <img 
+                    src={questionImage} 
+                    alt={`Question ${actualIndex} image`}
+                    className="question-image"
+                  />
+                  {mode === "edit" && (
+                    <div className="image-edit-controls" style={{ marginTop: "8px", padding: "8px", border: "1px solid #ddd", borderRadius: "4px", backgroundColor: "#f8f8f8" }}>
+                      <p style={{ fontSize: "12px", color: "#666", margin: "0 0 5px 0" }}>Thay đổi hình ảnh:</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            handleImageFileSelect(q.id, e.target.files[0]);
+                          }
+                        }}
+                        style={{ fontSize: "12px", marginRight: "8px" }}
+                      />
+                      {/* ✅ Show preview if file selected */}
+                      {questionImagePreviews[q.id] && (
+                        <div className="image-preview-container">
+                          <img 
+                            src={questionImagePreviews[q.id]} 
+                            alt="Preview" 
+                            className="image-preview"
+                          />
+                          <div className="preview-actions">
+                            <button 
+                              className="save-btn"
+                              onClick={() => handleQuestionImageUpload(q.id)}
+                              disabled={uploadingMedia[q.id]}
+                            >
+                              <FaUpload /> {uploadingMedia[q.id] ? "Uploading..." : "Upload"}
+                            </button>
+                            <button 
+                              className="cancel-btn"
+                              onClick={() => handleCancelImageSelection(q.id)}
+                            >
+                              <FaTimes /> Hủy
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {questionImageFiles[q.id] && !questionImagePreviews[q.id] && (
+                        <button 
+                          className="save-btn"
+                          onClick={() => handleQuestionImageUpload(q.id)}
+                          disabled={uploadingMedia[q.id]}
+                          style={{ fontSize: "11px", padding: "4px 8px", marginRight: "5px" }}
+                        >
+                          <FaUpload /> {uploadingMedia[q.id] ? "Uploading..." : "Thay đổi"}
+                        </button>
+                      )}
+                      <button 
+                        className="cancel-btn"
+                        onClick={() => handleDeleteQuestionImage(q.id)}
+                        style={{ fontSize: "11px", padding: "4px 8px" }}
+                      >
+                        <FaTrash /> Xóa
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                mode === "edit" && (
+                  <div className="question-image-upload" style={{ marginBottom: "15px", padding: "10px", border: "1px dashed #ccc", borderRadius: "4px", backgroundColor: "#f9f9f9" }}>
+                    <p style={{ color: "#666", fontSize: "13px", margin: "0 0 8px 0" }}>Thêm hình ảnh cho câu hỏi này:</p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          handleImageFileSelect(q.id, e.target.files[0]);
+                        }
+                      }}
+                      style={{ fontSize: "12px", marginRight: "8px" }}
+                    />
+                    {/* ✅ Show preview if file selected */}
+                    {questionImagePreviews[q.id] && (
+                      <div className="image-preview-container">
+                        <img 
+                          src={questionImagePreviews[q.id]} 
+                          alt="Preview" 
+                          className="image-preview"
+                        />
+                        <div className="preview-actions">
+                          <button 
+                            className="save-btn"
+                            onClick={() => handleQuestionImageUpload(q.id)}
+                            disabled={uploadingMedia[q.id]}
+                          >
+                            <FaUpload /> {uploadingMedia[q.id] ? "Uploading..." : "Upload"}
+                          </button>
+                          <button 
+                            className="cancel-btn"
+                            onClick={() => handleCancelImageSelection(q.id)}
+                          >
+                            <FaTimes /> Hủy
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {questionImageFiles[q.id] && !questionImagePreviews[q.id] && (
+                      <button 
+                        className="save-btn"
+                        onClick={() => handleQuestionImageUpload(q.id)}
+                        disabled={uploadingMedia[q.id]}
+                        style={{ fontSize: "11px", padding: "4px 8px" }}
+                      >
+                        <FaUpload /> {uploadingMedia[q.id] ? "Uploading..." : "Upload"}
+                      </button>
+                    )}
+                  </div>
+                )
+              )}
+            </div>
 
             <h2 className="card-question">
               {actualIndex}.{" "}
@@ -309,6 +784,34 @@ export default function AdminTestViewPage() {
       {filteredQuestions.length === 0 && selectedPartId !== null && (
         <div className="no-questions-message">
           <p>📝 Không có câu hỏi nào thuộc phần này</p>
+        </div>
+      )}
+
+      {/* ✅ Save All Changes Button - Bottom of page */}
+      {mode === "edit" && hasPendingChanges && (
+        <div className="save-all-container" style={{ 
+          margin: "30px 0 20px 0", 
+          padding: "20px", 
+          backgroundColor: "#e8f5e8", 
+          border: "2px solid #4caf50", 
+          borderRadius: "8px",
+          textAlign: "center",
+          position: "sticky",
+          bottom: "20px",
+          zIndex: 10,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+        }}>
+          <p style={{ margin: "0 0 12px 0", color: "#2e7d32", fontWeight: "600", fontSize: "16px" }}>
+            📝 Bạn có thay đổi chưa được lưu
+          </p>
+          <button 
+            className="save-btn"
+            onClick={handleSaveAllChanges}
+            disabled={savingChanges}
+            style={{ fontSize: "18px", padding: "12px 30px", fontWeight: "600" }}
+          >
+            {savingChanges ? "🔄 Đang lưu..." : "💾 Save All Changes"}
+          </button>
         </div>
       )}
     </div>

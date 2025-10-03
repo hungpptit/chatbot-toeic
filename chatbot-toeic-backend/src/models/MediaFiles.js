@@ -33,6 +33,11 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      duration: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+        comment: 'Duration in seconds for audio/video files',
+      },
     },
     {
       sequelize,

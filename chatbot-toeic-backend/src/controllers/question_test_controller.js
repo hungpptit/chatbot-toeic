@@ -26,15 +26,30 @@ const updateQuestionController = async (req, res) => {
       return res.status(400).json({ message: "Invalid or missing question id" });
     }
 
+    console.log('🔄 Question update request:', {
+      questionId: id,
+      hasMediaFiles: !!updatedData.mediaFiles,
+      mediaCount: updatedData.mediaFiles?.length || 0,
+      fields: Object.keys(updatedData)
+    });
+
     const updatedQuestion = await updateQuestion(id, updatedData);
+    
+    console.log('✅ Question updated successfully:', {
+      questionId: id,
+      hasMedia: !!updatedQuestion.mediaMappings?.length
+    });
 
     res.status(200).json({
       message: "Question updated successfully",
       data: updatedQuestion,
     });
   } catch (err) {
-    console.error("Error updating question:", err);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("❌ Error updating question:", err);
+    res.status(500).json({ 
+      message: "Internal server error",
+      error: err.message
+    });
   }
 };
 

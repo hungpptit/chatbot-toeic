@@ -10,6 +10,8 @@ import {
   batchUploadFromPathsController, 
   validatePathsController 
 } from "../controllers/batchUpload_controller.js";
+import ffprobe from "ffprobe";
+import ffprobeStatic from "ffprobe-static";
 
 const router = express.Router();
 
@@ -103,7 +105,7 @@ router.post("/upload/image", authMiddleware, uploadImage.single("file"), (req, r
 });
 
 // ✅ API upload audio (protected by auth)
-router.post("/upload/audio", authMiddleware, uploadAudio.single("file"), (req, res) => {
+router.post("/upload/audio", authMiddleware, uploadAudio.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -114,6 +116,42 @@ router.post("/upload/audio", authMiddleware, uploadAudio.single("file"), (req, r
 
     console.log("✅ Audio uploaded:", req.file.path);
 
+    // ✅ Get audio duration - try multiple methods
+    let duration = null;
+    
+    // Method 1: Try to get duration from Cloudinary metadata
+    try {
+      const cloudinaryResult = await cloudinary.api.resource(req.file.filename, {
+        resource_type: "video" // Cloudinary uses "video" for audio files
+      });
+      duration = cloudinaryResult.duration || null;
+      console.log("🎵 Audio duration from Cloudinary:", duration, "seconds");
+    } catch (metadataError) {
+      console.warn("⚠️ Could not fetch audio metadata from Cloudinary:", metadataError.message);
+    }
+
+    // Method 2: If Cloudinary didn't provide duration, try ffprobe on uploaded file
+    if (!duration && req.file.buffer) {
+      try {
+        const probeData = await ffprobe(req.file.buffer, { path: ffprobeStatic.path });
+        duration = probeData?.streams?.[0]?.duration || null;
+        console.log("🎵 Audio duration from ffprobe:", duration, "seconds");
+      } catch (ffprobeError) {
+        console.warn("⚠️ Could not get duration with ffprobe:", ffprobeError.message);
+      }
+    }
+
+    // Method 3: If still no duration, try to fetch the file from Cloudinary URL and probe it
+    if (!duration) {
+      try {
+        const probeData = await ffprobe(req.file.path, { path: ffprobeStatic.path });
+        duration = probeData?.streams?.[0]?.duration || null;
+        console.log("🎵 Audio duration from URL probe:", duration, "seconds");
+      } catch (urlProbeError) {
+        console.warn("⚠️ Could not probe audio from URL:", urlProbeError.message);
+      }
+    }
+
     res.json({
       success: true,
       type: "audio",
@@ -121,7 +159,7 @@ router.post("/upload/audio", authMiddleware, uploadAudio.single("file"), (req, r
       publicId: req.file.filename, // Cloudinary public_id for deletion
       size: req.file.size,
       format: req.file.format,
-      duration: req.file.duration || null, // Cloudinary auto-detects duration
+      duration: duration ? parseFloat(duration) : null, // Duration in seconds
     });
   } catch (err) {
     console.error("❌ Upload audio failed:", err);

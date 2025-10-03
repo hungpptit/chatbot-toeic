@@ -34,7 +34,7 @@ export const RandomQuestionsByTestId = async (testId, limit = 40) => {
           include: [{
             model: db.MediaFiles,
             as: 'media',
-            attributes: ['id', 'mediaType', 'mediaUrl', 'description']
+            attributes: ['id', 'mediaType', 'mediaUrl', 'description', 'duration'] // ✅ Include duration
           }],
           attributes: ['id', 'mediaId', 'startSecond', 'endSecond', 'sortOrder']
         }
@@ -71,7 +71,8 @@ export const RandomQuestionsByTestId = async (testId, limit = 40) => {
             id: mapping.media.id,
             type: mapping.media.mediaType, // ✅ mediaType → type
             url: mapping.media.mediaUrl,   // ✅ mediaUrl → url
-            description: mapping.media.description
+            description: mapping.media.description,
+            duration: mapping.media.duration // ✅ Include duration
           } : null
         }));
       }
@@ -88,30 +89,129 @@ export const RandomQuestionsByTestId = async (testId, limit = 40) => {
 };
 
 
-// update câu hỏi
-export const updateQuestion = async (id, updatedData) => {
+// update câu hỏi with retry logic for deadlocks
+export const updateQuestion = async (id, updatedData, retryCount = 0) => {
+  const maxRetries = 3;
+  
   try {
-    // Tìm câu hỏi theo ID
-    const question = await db.Question.findByPk(id);
-    if (!question) {
-      throw new Error("Question not found");
-    }
+    return await db.sequelize.transaction(async (transaction) => {
+      try {
+        // Tìm câu hỏi theo ID
+        const question = await db.Question.findByPk(id, { transaction });
+        if (!question) {
+          throw new Error("Question not found");
+        }
 
-    // Cập nhật các trường
-    await question.update({
-      question: updatedData.question,
-      optionA: updatedData.optionA,
-      optionB: updatedData.optionB,
-      optionC: updatedData.optionC,
-      optionD: updatedData.optionD,
-      correctAnswer: updatedData.correctAnswer,
-      explanation: updatedData.explanation,
-      typeId: updatedData.typeId,
-      partId: updatedData.partId,
+        // Cập nhật các trường text
+        await question.update({
+          question: updatedData.question,
+          optionA: updatedData.optionA,
+          optionB: updatedData.optionB,
+          optionC: updatedData.optionC,
+          optionD: updatedData.optionD,
+          correctAnswer: updatedData.correctAnswer,
+          explanation: updatedData.explanation,
+          typeId: updatedData.typeId,
+          partId: updatedData.partId,
+        }, { transaction });
+
+        // ✅ Handle media updates if provided (URLs only, files already uploaded by frontend)
+        if (updatedData.mediaFiles && Array.isArray(updatedData.mediaFiles)) {
+          console.log(`🔄 Updating media for question ${id}:`, updatedData.mediaFiles.length, 'media items');
+          
+          // Get existing media mappings
+          const existingMappings = await db.QuestionMediaMap.findAll({
+            where: { questionId: id },
+            include: [{
+              model: db.MediaFiles, // ✅ Fixed: MediaFiles not MediaFile
+              as: 'media'
+            }],
+            transaction
+          });
+
+          // Process each media URL update
+          for (const mediaInput of updatedData.mediaFiles) {
+            console.log(`🔍 Processing media input:`, {
+              type: mediaInput.type,
+              url: mediaInput.url?.substring(0, 50) + '...',
+              duration: mediaInput.duration,
+              description: mediaInput.description
+            });
+            
+            if (mediaInput.url) {
+              // Direct URL provided (already uploaded by frontend)
+              console.log(`📎 Updating ${mediaInput.type} with URL:`, mediaInput.url);
+              
+              // Find existing media of same type
+              const existingMapping = existingMappings.find(mapping => 
+                mapping.media && mapping.media.mediaType === mediaInput.type
+              );
+
+              if (existingMapping) {
+                // Update existing media
+                await existingMapping.media.update({
+                  mediaUrl: mediaInput.url,
+                  description: mediaInput.description || 'Updated media',
+                  duration: mediaInput.duration || null // ✅ Update duration for existing media
+                }, { transaction });
+                console.log(`✅ Updated existing ${mediaInput.type} media with duration:`, mediaInput.duration);
+              } else {
+                // Create new media
+                const newMedia = await db.MediaFiles.create({ // ✅ Fixed: MediaFiles not MediaFile
+                  mediaType: mediaInput.type,
+                  mediaUrl: mediaInput.url,
+                  description: mediaInput.description || 'New media',
+                  duration: mediaInput.duration || null // ✅ Save duration if provided
+                }, { transaction });
+
+                await db.QuestionMediaMap.create({
+                  questionId: id,
+                  mediaId: newMedia.id,
+                  startSecond: mediaInput.startSecond || null,
+                  endSecond: mediaInput.endSecond || null
+                }, { transaction });
+                console.log(`✅ Created new ${mediaInput.type} media`);
+              }
+            }
+          }
+        }
+
+        // ✅ Return updated question with media
+        const updatedQuestion = await db.Question.findByPk(id, {
+          include: [{
+            model: db.QuestionMediaMap,
+            as: 'mediaMappings',
+            include: [{
+              model: db.MediaFiles, // ✅ Fixed: MediaFiles not MediaFile
+              as: 'media',
+              attributes: ['id', 'mediaType', 'mediaUrl', 'description', 'duration'] // ✅ Include duration
+            }]
+          }],
+          transaction
+        });
+
+        return updatedQuestion;
+      } catch (error) {
+        console.error('❌ Error updating question:', error);
+        throw error;
+      }
     });
-
-    return question; // Trả về câu hỏi đã update
   } catch (error) {
+    // ✅ Retry logic for deadlocks
+    if (error.name === 'SequelizeDatabaseError' && 
+        error.original?.number === 1205 && // SQL Server deadlock error code
+        retryCount < maxRetries) {
+      
+      console.warn(`⚠️ Deadlock detected for question ${id}, retrying... (${retryCount + 1}/${maxRetries})`);
+      
+      // Wait a random amount before retry to reduce collision probability
+      const delay = Math.random() * 1000 + 500; // 500-1500ms
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      return updateQuestion(id, updatedData, retryCount + 1);
+    }
+    
+    // If not a deadlock or max retries reached, throw the error
     throw error;
   }
 };

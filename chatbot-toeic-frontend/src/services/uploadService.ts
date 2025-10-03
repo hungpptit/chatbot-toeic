@@ -46,7 +46,7 @@ export const uploadImageAPI = async (file: File): Promise<string> => {
 /**
  * Upload audio file to Cloudinary via backend
  */
-export const uploadAudioAPI = async (file: File): Promise<string> => {
+export const uploadAudioAPI = async (file: File): Promise<{ url: string; duration?: number }> => {
   try {
     const formData = new FormData();
     formData.append('file', file);
@@ -65,7 +65,10 @@ export const uploadAudioAPI = async (file: File): Promise<string> => {
     if (response.data.success) {
       console.log('✅ Audio uploaded:', response.data.url);
       console.log('⏱️ Duration:', response.data.duration);
-      return response.data.url;
+      return {
+        url: response.data.url,
+        duration: response.data.duration
+      };
     } else {
       throw new Error('Upload failed');
     }
@@ -102,7 +105,7 @@ export const deleteFileAPI = async (
 export const uploadFileAPI = async (
   file: File,
   type: 'image' | 'audio' | 'video'
-): Promise<string> => {
+): Promise<string | { url: string; duration?: number }> => {
   if (type === 'audio' || type === 'video') {
     return uploadAudioAPI(file);
   } else {

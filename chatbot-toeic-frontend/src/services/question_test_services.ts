@@ -132,7 +132,7 @@ export const getQuestionsByTestIdAPI = async (testId: number): Promise<QuestionW
 
 export const updateQuestionAPI = async (
   id: number,
-  updatedData: Partial<Question>
+  updatedData: Partial<Question> & { mediaFiles?: Array<{ type: string; url: string; description?: string }> }
 ): Promise<Question> => {
   const response = await axios.put<Question>(
     `${API_BASE_URL}/update-question`,
