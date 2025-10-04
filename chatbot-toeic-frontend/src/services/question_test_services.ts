@@ -63,6 +63,8 @@ export interface IncorrectAnswer {
   correctAnswer: string;
   selectedAnswer: string;
   explanation: string;
+  startSecond?: number;  // ✅ Add timing info
+  endSecond?: number;    // ✅ Add timing info
 }
 
 export interface SubmitResult {
@@ -103,6 +105,15 @@ export interface UserTestDetailItem {
 }
 
 export interface UserTestDetailResult {
+  // ✅ Thông tin UserTest
+  userTestId: number;
+  userId: number;
+  testId: number;
+  score: number;           // ✅ Score từ UserTest table
+  startedAt: string;       // ✅ ISO Date string
+  completedAt: string;     // ✅ ISO Date string
+  status: string;          // ✅ 'completed', 'in_progress', etc.
+  // ✅ Thống kê từ UserResults
   totalQuestions: number;
   correctCount: number;
   incorrectCount: number;

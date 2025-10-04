@@ -354,17 +354,24 @@ console.log('🔍 First question detailed structure:', {
 - ✅ Parts filtering
 - ✅ Better upload status indicators
 
+### v1.5 - Audio Timing Support:
+- ✅ Added startSecond/endSecond UI controls in AddTestForm.tsx
+- ✅ Audio segment timing for precise audio playback
+- ✅ Enhanced JSON loading to handle timing data
+- ✅ Real-time duration calculation display
+
 ---
 
 ## 🚀 FUTURE ENHANCEMENTS
 
 ### Planned Features:
 1. **Bulk Image Upload**: Upload multiple images at once
-2. **Audio Trimming**: Edit audio start/end times  
+2. **Audio Trimming**: Edit audio start/end times - ✅ COMPLETED
 3. **Image Editing**: Basic crop/resize functionality
 4. **Media Library**: Reuse uploaded media across questions
 5. **Progress Indicators**: Show upload progress percentage
 6. **Drag & Drop**: Drag files to upload areas
+7. **Audio Preview**: Preview audio segments with timing controls
 
 ### Technical Improvements:
 1. **WebSocket**: Real-time upload progress

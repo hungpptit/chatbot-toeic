@@ -230,8 +230,8 @@ const createNewTest = async (testData) => {
           await QuestionMediaMap.create({
             questionId: question.id,
             mediaId: mediaFile.id,
-            startSecond: m.startSecond || null,
-            endSecond: m.endSecond || null,
+            startSecond: m.startSecond !== undefined && m.startSecond !== null ? m.startSecond : null,
+            endSecond: m.endSecond !== undefined && m.endSecond !== null ? m.endSecond : null,
             sortOrder: idx + 1,
           });
         }));

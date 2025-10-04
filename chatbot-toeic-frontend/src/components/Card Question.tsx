@@ -24,7 +24,11 @@ type CardQuestionProps = {
     correctAnswer: string;
     selectedAnswer: string;
     explanation: string;
+    startSecond?: number;  // ✅ Add timing info
+    endSecond?: number;    // ✅ Add timing info
   } | null;
+  onAudioReplay?: (startSecond?: number, endSecond?: number) => void; // ✅ Audio replay function
+  hasGlobalAudio?: boolean; // ✅ Whether global audio is available
 };
 
 export default function CardQuestion({
@@ -34,12 +38,51 @@ export default function CardQuestion({
   onAnswer,
   onSelectAnswer,
   showResult,
-  incorrectAnswer
+  incorrectAnswer,
+  onAudioReplay,
+  hasGlobalAudio
 }: CardQuestionProps) {
   // ✅ Helper function to get image URL for this question
   const getQuestionImage = (): string | null => {
     const imageMapping = item.mediaMappings?.find(m => m.media?.type === 'image');
     return imageMapping?.media?.url || null;
+  };
+
+  // ✅ Helper function to get audio timing for this question
+  const getAudioTiming = (): { startSecond?: number, endSecond?: number } => {
+    const audioMapping = item.mediaMappings?.find(m => m.media?.type === 'audio');
+    return {
+      startSecond: audioMapping?.startSecond,
+      endSecond: audioMapping?.endSecond
+    };
+  };
+
+  // ✅ Handle replay audio for this specific question
+  const handleReplayClick = () => {
+    if (!onAudioReplay || !hasGlobalAudio) return;
+    
+    // Priority: incorrectAnswer timing > question media timing
+    let startSecond = incorrectAnswer?.startSecond;
+    let endSecond = incorrectAnswer?.endSecond;
+    
+    if (startSecond === undefined || endSecond === undefined) {
+      const timing = getAudioTiming();
+      startSecond = startSecond || timing.startSecond;
+      endSecond = endSecond || timing.endSecond;
+    }
+    
+    // ✅ Visual feedback - temporarily disable button
+    const button = document.activeElement as HTMLButtonElement;
+    if (button && button.classList.contains('audio-replay-btn')) {
+      button.style.opacity = '0.6';
+      button.disabled = true;
+      setTimeout(() => {
+        button.style.opacity = '1';
+        button.disabled = false;
+      }, 500);
+    }
+    
+    onAudioReplay(startSecond, endSecond);
   };
 
   const handleSelect = (option: string) => {
@@ -125,9 +168,21 @@ export default function CardQuestion({
 
       {showResult && incorrectAnswer && (
         <div className="card-explanation">
-          <p>
-            Correct Answer: <span className="card-correct">{incorrectAnswer.correctAnswer}</span>
-          </p>
+          <div className="explanation-header">
+            <p>
+              Correct Answer: <span className="card-correct">{incorrectAnswer.correctAnswer}</span>
+            </p>
+            {/* ✅ Audio Replay Button */}
+            {hasGlobalAudio && (incorrectAnswer.startSecond !== undefined || getAudioTiming().startSecond !== undefined) && (
+              <button 
+                className="audio-replay-btn"
+                onClick={handleReplayClick}
+                title={`Nghe lại đoạn audio từ ${incorrectAnswer.startSecond || getAudioTiming().startSecond}s đến ${incorrectAnswer.endSecond || getAudioTiming().endSecond}s`}
+              >
+                🎵 Nghe lại câu này
+              </button>
+            )}
+          </div>
           <p>Explanation: {incorrectAnswer.explanation}</p>
         </div>
       )}

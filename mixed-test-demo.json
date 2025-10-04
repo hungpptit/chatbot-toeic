@@ -1,0 +1,63 @@
+{
+  "title": "Mixed Test Demo - Reading + Listening",
+  "courseId": 1,
+  "globalAudioUrl": "https://example.com/audio/mixed-test.mp3",
+  "readingQuestions": [
+    {
+      "question": "What is the main topic of the passage?",
+      "optionA": "Business development",
+      "optionB": "Technology trends", 
+      "optionC": "Marketing strategies",
+      "optionD": "Economic policies",
+      "correctAnswer": "B",
+      "explanation": "The passage discusses technology trends in modern business.",
+      "typeId": 1,
+      "skillId": 1,
+      "partId": 5
+    },
+    {
+      "question": "According to the text, what is the most important factor?",
+      "optionA": "Cost efficiency",
+      "optionB": "Customer satisfaction",
+      "optionC": "Innovation",
+      "optionD": "Market share",
+      "correctAnswer": "C",
+      "explanation": "The text emphasizes innovation as the key factor.",
+      "typeId": 1,
+      "skillId": 1,
+      "partId": 5
+    }
+  ],
+  "listeningQuestions": [
+    {
+      "question": "What does the speaker say about the meeting?",
+      "optionA": "It was postponed",
+      "optionB": "It was successful",
+      "optionC": "It was cancelled",
+      "optionD": "It was rescheduled",
+      "correctAnswer": "B",
+      "explanation": "The speaker mentions the meeting went well.",
+      "typeId": 2,
+      "skillId": 2,
+      "partId": 1,
+      "startSecond": 5.0,
+      "endSecond": 15.5,
+      "imagePath": "D:\\Downloads\\download (5).jpg"
+    },
+    {
+      "question": "Where will the next conference be held?",
+      "optionA": "New York",
+      "optionB": "London",
+      "optionC": "Tokyo", 
+      "optionD": "Paris",
+      "correctAnswer": "A",
+      "explanation": "The speaker clearly states New York as the location.",
+      "typeId": 2,
+      "skillId": 2,
+      "partId": 1,
+      "startSecond": 20.0,
+      "endSecond": 30.0,
+      "imagePath": "D:\\Downloads\\download (5).jpg"
+    }
+  ]
+}

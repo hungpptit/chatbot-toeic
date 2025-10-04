@@ -1,7 +1,7 @@
 import "../styles/Test_exam.css";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import CardQuestion from "../components/Card Question";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   getQuestionsByTestIdAPI,
   getUserTestDetailByIdAPI,
@@ -36,6 +36,9 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
   const [parts, setParts] = useState<Part[]>([]);
   const [selectedPartId, setSelectedPartId] = useState<number | null>(null);
   const [filteredQuestions, setFilteredQuestions] = useState<QuestionWithMedia[]>([]);
+
+  // ✅ Ref to track current audio pause listener
+  const currentAudioListenerRef = useRef<(() => void) | null>(null);
 
   const { userTestId, id } = useParams();
   const userTestIdNum = Number(userTestId);
@@ -118,9 +121,23 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
                 correctAnswer: d.correctAnswer,
                 selectedAnswer: d.selectedOption || "",
                 explanation: d.explanation,
+                // ✅ Extract audio timing for replay
+                startSecond: (d as any).mediaFiles?.find((f: any) => f.mediaType === 'audio')?.startSecond,
+                endSecond: (d as any).mediaFiles?.find((f: any) => f.mediaType === 'audio')?.endSecond,
               }))
           );
           setCorrectCount(data.correctCount);
+
+          // ✅ Set score và totalQuestions từ backend data
+          setScore(data.score || 0);
+          setTotalQuestions(data.totalQuestions || formattedQuestions.length);
+
+          console.log('📊 Review mode - Set state from backend:', {
+            correctCount: data.correctCount,
+            score: data.score,
+            totalQuestions: data.totalQuestions,
+            formattedQuestionsLength: formattedQuestions.length
+          });
 
           // set answered
           setAnsweredQuestions(
@@ -154,6 +171,19 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
 
     fetchData();
   }, [mode, id, userTestId]);
+
+  // ✅ Cleanup audio listener on unmount
+  useEffect(() => {
+    return () => {
+      if (currentAudioListenerRef.current) {
+        const audioElement = document.querySelector('.global-audio-player') as HTMLAudioElement;
+        if (audioElement) {
+          audioElement.removeEventListener('timeupdate', currentAudioListenerRef.current);
+        }
+        currentAudioListenerRef.current = null;
+      }
+    };
+  }, []);
 
   // ✅ Filter questions based on selected part
   useEffect(() => {
@@ -201,6 +231,53 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
   const handleJumpToQuestion = (num: number) => {
     const target = document.getElementById(`question-${num}`);
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // ✅ Audio replay function for specific time segments
+  const handleAudioReplay = (startSecond?: number, endSecond?: number) => {
+    const audioElement = document.querySelector('.global-audio-player') as HTMLAudioElement;
+    if (!audioElement || !globalAudio) {
+      console.warn('🎵 No audio player found');
+      return;
+    }
+
+    // ✅ Clear previous listener if exists
+    if (currentAudioListenerRef.current) {
+      audioElement.removeEventListener('timeupdate', currentAudioListenerRef.current);
+      currentAudioListenerRef.current = null;
+      console.log('🎵 Cleared previous audio listener');
+    }
+
+    // ✅ Stop current playback and switch immediately
+    audioElement.pause();
+
+    if (startSecond !== undefined) {
+      audioElement.currentTime = startSecond;
+      audioElement.play();
+      
+      // ✅ Auto pause at endSecond if specified
+      if (endSecond !== undefined) {
+        const checkTime = () => {
+          if (audioElement.currentTime >= endSecond) {
+            audioElement.pause();
+            audioElement.removeEventListener('timeupdate', checkTime);
+            currentAudioListenerRef.current = null;
+            console.log(`🎵 Auto-paused at ${endSecond}s`);
+          }
+        };
+        
+        // ✅ Store listener reference for cleanup
+        currentAudioListenerRef.current = checkTime;
+        audioElement.addEventListener('timeupdate', checkTime);
+      }
+      
+      console.log(`🎵 ▶️ Playing audio segment: ${startSecond}s - ${endSecond || 'end'}s`);
+    } else {
+      // Fallback: play from beginning
+      audioElement.currentTime = 0;
+      audioElement.play();
+      console.log('🎵 ▶️ Playing from beginning (no timing specified)');
+    }
   };
 
   // Submit
@@ -390,6 +467,8 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
                       }
                       showResult={showResult}
                       incorrectAnswer={incorrectAnswers.find(ans => ans.questionId === item.id) || null}
+                      onAudioReplay={handleAudioReplay} // ✅ Pass audio replay function
+                      hasGlobalAudio={!!globalAudio}    // ✅ Indicate if global audio exists
                     />
                   </div>
                 ))}

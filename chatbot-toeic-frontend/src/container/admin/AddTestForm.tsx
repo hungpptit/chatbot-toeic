@@ -140,23 +140,27 @@ export default function AdminTestAddPage() {
             console.log(`✅ Added imageUrl for question ${questionIndex}: ${q.imageUrl}`);
           }
 
-          // Add global audio (for all questions)
+          // Add global audio (for all questions) with timing
           // Ưu tiên globalAudioFile (File object), fallback sang globalAudioUrl
           if (globalAudioFile) {
             mediaFiles.push({
               type: 'audio',
               file: globalAudioFile,
               description: 'Test audio',
+              startSecond: q.startSecond !== null ? q.startSecond : undefined,
+              endSecond: q.endSecond !== null ? q.endSecond : undefined,
             });
-            console.log(`✅ Added globalAudioFile`);
+            console.log(`✅ Added globalAudioFile with timing: ${q.startSecond}-${q.endSecond}`);
           } else if (globalAudioUrl) {
             // Batch upload đã có URL, gửi trực tiếp
             mediaFiles.push({
               type: 'audio',
               url: globalAudioUrl,
               description: 'Test audio',
+              startSecond: q.startSecond !== null ? q.startSecond : undefined,
+              endSecond: q.endSecond !== null ? q.endSecond : undefined,
             } as any);
-            console.log(`✅ Added globalAudioUrl: ${globalAudioUrl}`);
+            console.log(`✅ Added globalAudioUrl with timing: ${globalAudioUrl} (${q.startSecond}-${q.endSecond})`);
           }
 
           console.log(`📦 Question ${questionIndex} mediaFiles count:`, mediaFiles.length);
@@ -267,6 +271,8 @@ export default function AdminTestAddPage() {
           explanation: q.explanation || "",
           typeId: q.typeId || null, // có thể null, sẽ chỉnh tay sau
           skillId: q.skillId || null, // có thể null, sẽ chỉnh tay sau
+          startSecond: q.startSecond || null,
+          endSecond: q.endSecond || null,
         }));
 
         setQuestions(cleanedQuestions);
@@ -354,6 +360,8 @@ export default function AdminTestAddPage() {
         typeId: q.typeId || null,
         skillId: q.skillId || null,
         imageUrl: q.imageUrl || '',
+        startSecond: q.startSecond || null,
+        endSecond: q.endSecond || null,
       }));
       
       setQuestions(cleanedQuestions);
@@ -386,10 +394,10 @@ export default function AdminTestAddPage() {
       </div>
 
       {/* ✅ Test Mode Selection: Reading or Listening */}
-      <div style={{ marginTop: "20px", marginBottom: "20px", padding: "15px", border: "2px solid #2196F3", borderRadius: "8px", backgroundColor: "#E3F2FD" }}>
-        <h3 style={{ marginBottom: "15px", color: "#1565C0" }}>🎯 Chọn loại đề thi:</h3>
-        <div style={{ display: "flex", gap: "30px" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "16px" }}>
+      <div className="test-mode-selection">
+        <h3 className="test-mode-title">🎯 Chọn loại đề thi:</h3>
+        <div className="test-mode-options">
+          <label className="test-mode-option">
             <input
               type="radio"
               name="testMode"
@@ -397,9 +405,9 @@ export default function AdminTestAddPage() {
               onChange={() => setTestMode('reading')}
             />
             <strong>📖 Reading</strong>
-            <span style={{ fontSize: "14px", color: "#666" }}>(Không cần audio/image)</span>
+            <span className="test-mode-description">(Không cần audio/image)</span>
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "16px" }}>
+          <label className="test-mode-option">
             <input
               type="radio"
               name="testMode"
@@ -407,31 +415,30 @@ export default function AdminTestAddPage() {
               onChange={() => setTestMode('listening')}
             />
             <strong>🎧 Listening</strong>
-            <span style={{ fontSize: "14px", color: "#666" }}>(Có audio/image)</span>
+            <span className="test-mode-description">(Có audio/image)</span>
           </label>
         </div>
       </div>
 
-      <div className="upload-section" style={{ marginBottom: "20px" }}>
+      <div className="upload-section">
         <h3>Hoặc tải lên file JSON/CSV</h3>
         <input type="file" accept=".json,.csv" onChange={handleUploadFile} />
-        <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+        <div className="upload-buttons">
           <button className="save-btn" onClick={handleSubmitFile}>
             <FaUpload /> Load File lên form
           </button>
           {testMode === 'listening' && (
             <button 
-              className="save-btn" 
+              className="save-btn upload-btn-green" 
               onClick={handleBatchUploadFromPaths}
               disabled={isBatchProcessing}
-              style={{ backgroundColor: "#4CAF50" }}
             >
               <FaUpload /> {isBatchProcessing ? "Đang upload..." : "Upload từ paths (JSON có paths)"}
             </button>
           )}
         </div>
         {testMode === 'listening' && (
-          <p style={{ fontSize: "13px", color: "#666", marginTop: "10px" }}>
+          <p className="upload-tip">
             💡 <strong>Tip:</strong> Nếu JSON có <code>audioPath</code>/<code>imagePath</code>, dùng button "Upload từ paths". 
             Nếu không có paths, dùng "Load File" rồi chọn files bên dưới.
           </p>
@@ -440,23 +447,22 @@ export default function AdminTestAddPage() {
 
       {/* ✅ Global Audio Input - Chỉ hiện khi Listening mode */}
       {testMode === 'listening' && (
-        <div style={{ marginBottom: "20px", padding: "15px", border: "1px solid #4CAF50", borderRadius: "8px", backgroundColor: "#E8F5E9" }}>
-          <h4 style={{ marginBottom: "10px", color: "#2E7D32" }}>🎵 Audio chung cho toàn bộ đề thi</h4>
+        <div className="global-audio-section">
+          <h4>🎵 Audio chung cho toàn bộ đề thi</h4>
           {globalAudioUrl ? (
-            <div style={{ padding: "10px", backgroundColor: "#FFF", borderRadius: "4px", marginBottom: "10px" }}>
+            <div className="audio-url-display">
               <strong>URL đã upload:</strong> <a href={globalAudioUrl} target="_blank" rel="noopener noreferrer">{globalAudioUrl}</a>
             </div>
           ) : (
-            <div>
-              <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Chọn audio file từ máy:</label>
+            <div className="audio-file-input">
+              <label>Chọn audio file từ máy:</label>
               <input
                 type="file"
                 accept="audio/*"
                 onChange={(e) => setGlobalAudioFile(e.target.files?.[0] || null)}
-                style={{ padding: "5px" }}
               />
               {globalAudioFile && (
-                <p style={{ marginTop: "5px", color: "#2E7D32", fontSize: "14px" }}>
+                <p className="audio-file-selected">
                   ✅ Đã chọn: <strong>{globalAudioFile.name}</strong>
                 </p>
               )}
@@ -494,14 +500,14 @@ export default function AdminTestAddPage() {
 
         {/* ✅ Image input cho Listening mode */}
         {testMode === 'listening' && (
-          <div style={{ marginTop: "10px", marginBottom: "15px", padding: "10px", border: "1px solid #2196F3", borderRadius: "8px", backgroundColor: "#E3F2FD" }}>
-            <h4 style={{ marginBottom: "8px", color: "#1565C0" }}>🖼️ Hình ảnh cho câu hỏi này (tùy chọn)</h4>
+          <div className="question-media-section">
+            <h4 className="question-media-title">🖼️ Hình ảnh cho câu hỏi này (tùy chọn)</h4>
             {q.imageUrl ? (
-              <div style={{ padding: "10px", backgroundColor: "#FFF", borderRadius: "4px" }}>
+              <div className="audio-url-display">
                 <strong>URL đã upload:</strong> <a href={q.imageUrl} target="_blank" rel="noopener noreferrer">{q.imageUrl}</a>
               </div>
             ) : (
-              <div>
+              <div className="question-image-input">
                 <input
                   type="file"
                   accept="image/*"
@@ -511,15 +517,64 @@ export default function AdminTestAddPage() {
                       handleChange(i, 'imageFile', file);
                     }
                   }}
-                  style={{ fontSize: "13px" }}
                 />
                 {q.imageFile && (
-                  <p style={{ marginTop: "5px", color: "#1565C0", fontSize: "12px" }}>
+                  <p className="question-image-selected">
                     ✅ Đã chọn: <strong>{(q.imageFile as File).name}</strong>
                   </p>
                 )}
               </div>
             )}
+            
+            {/* ✅ Audio timing controls */}
+            <div className="audio-timing-section">
+              <h5 className="audio-timing-title">🎵 Timing cho audio (giây)</h5>
+              <div className="audio-timing-controls">
+                <div className="timing-input-group">
+                  <label className="timing-input-label">Bắt đầu:</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    placeholder="0"
+                    value={q.startSecond || ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? null : parseFloat(e.target.value);
+                      handleChange(i, 'startSecond', value);
+                    }}
+                    className="timing-input"
+                  />
+                </div>
+                <div className="timing-input-group">
+                  <label className="timing-input-label">Kết thúc:</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    placeholder="auto"
+                    value={q.endSecond || ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? null : parseFloat(e.target.value);
+                      handleChange(i, 'endSecond', value);
+                    }}
+                    className="timing-input"
+                  />
+                </div>
+                <div className="timing-duration-display">
+                  <span className="timing-duration-label">Thời lượng:</span>
+                  <span className="timing-duration-value">
+                    {q.startSecond !== null && q.startSecond !== undefined && 
+                     q.endSecond !== null && q.endSecond !== undefined
+                      ? `${(q.endSecond - q.startSecond).toFixed(1)}s`
+                      : 'N/A'
+                    }
+                  </span>
+                </div>
+              </div>
+              <p className="audio-timing-tip">
+                💡 <strong>Tip:</strong> Để trống = toàn bộ audio. VD: 10-15 = phát từ giây 10 đến 15.
+              </p>
+            </div>
           </div>
         )}
 
@@ -592,6 +647,9 @@ type Question = {
   // ✅ Media fields for listening mode
   imageFile?: File | null;
   imageUrl?: string;
+  // ✅ Audio timing fields
+  startSecond?: number | null;
+  endSecond?: number | null;
 };
 
 // Init câu hỏi trống
@@ -608,6 +666,8 @@ function createEmptyQuestion(): Question {
     skillId: null,
     imageFile: null,
     imageUrl: '',
+    startSecond: null,
+    endSecond: null,
   };
 }
 

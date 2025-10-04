@@ -4,7 +4,7 @@ import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
 
 
-export const RandomQuestionsByTestId = async (testId, limit = 40) => {
+export const RandomQuestionsByTestId = async (testId, limit = null) => {
   try {
     // Bước 1: Lấy tất cả questionId và sortOrder từ TestQuestion
     const testQuestionRows = await db.TestQuestion.findAll({
@@ -12,10 +12,16 @@ export const RandomQuestionsByTestId = async (testId, limit = 40) => {
       attributes: ['questionId', 'sortOrder'],
     });
 
-    // Bước 2: Shuffle toàn bộ danh sách
-    const shuffled = testQuestionRows
-      .sort(() => Math.random() - 0.5)
-      .slice(0, limit);
+    // Bước 2: Shuffle toàn bộ danh sách và áp dụng limit nếu có
+    let shuffled = testQuestionRows.sort(() => Math.random() - 0.5);
+    
+    // ✅ Chỉ slice nếu có limit được specify
+    if (limit && limit > 0) {
+      shuffled = shuffled.slice(0, limit);
+      console.log(`📊 Applied limit: ${limit} questions out of ${testQuestionRows.length} total`);
+    } else {
+      console.log(`📊 No limit applied: using all ${testQuestionRows.length} questions`);
+    }
 
     // Bước 3: Lấy danh sách questionId được chọn và ánh xạ sortOrder
     const selectedIds = shuffled.map(row => row.questionId);
@@ -280,6 +286,14 @@ export const SubmitTestResult = async ({ userId, testId, answers }) => {
     const validQuestionIds = validQuestions.map(q => q.questionId);
     const filteredAnswers = answers.filter(a => validQuestionIds.includes(a.questionId));
 
+    console.log(`📊 SubmitTestResult Debug:`, {
+      testId,
+      totalQuestionsInTest: validQuestionIds.length,
+      answersReceived: answers.length,
+      validAnswersAfterFilter: filteredAnswers.length,
+      skippedAnswers: validQuestionIds.length - filteredAnswers.length
+    });
+
     // 3. Xử lý từng câu trả lời
     const resultsToSave = [];
 
@@ -316,10 +330,17 @@ export const SubmitTestResult = async ({ userId, testId, answers }) => {
     }
 
     // 5. Tính score thang điểm 10
-    const totalQuestions = filteredAnswers.length || 1;
+    // ✅ Dùng tổng số câu hỏi trong test, không phải số câu được trả lời
+    const totalQuestions = validQuestionIds.length || 1;
     const score = Math.round((correctCount / totalQuestions) * 10 * 10) / 10;
 
-    console.log("DEBUG:", { correctCount, totalQuestions, score });
+    console.log("📊 Score Calculation:", { 
+      correctCount, 
+      totalQuestionsInTest: totalQuestions,
+      answeredQuestions: filteredAnswers.length,
+      unansweredQuestions: totalQuestions - filteredAnswers.length,
+      score 
+    });
 
     // 6. Update UserTest: chỉ cập nhật completedAt + score + status
     await userTest.update({
@@ -350,7 +371,7 @@ export const SubmitTestResult = async ({ userId, testId, answers }) => {
     return {
       userTestId: userTest.id,
       correctCount,
-      total: totalQuestions,
+      total: totalQuestions, // ✅ Tổng số câu hỏi trong test
       score,
       incorrectAnswers,
     };
@@ -413,9 +434,18 @@ export const CheckUserHasDoneTestDetailed = async ({ userId, testId }) => {
   }
 };
 
-
+// lấy chi tiết lịch sử làm bài của user với 1 bài test cụ thể
 export const GetUserTestDetailById = async (userTestId) => {
   try {
+    // ✅ Lấy thông tin UserTest để có score
+    const userTest = await db.UserTest.findByPk(userTestId, {
+      attributes: ['id', 'userId', 'testId', 'score', 'startedAt', 'completedAt', 'status'],
+    });
+
+    if (!userTest) {
+      return { message: 'UserTest not found', details: [] };
+    }
+
     // Lấy tất cả kết quả user theo userTestId
     const userResults = await db.UserResult.findAll({
       where: { userTestId },
@@ -479,7 +509,25 @@ export const GetUserTestDetailById = async (userTestId) => {
       });
     }
 
+    console.log(`📊 GetUserTestDetailById result:`, {
+      userTestId: userTest.id,
+      score: userTest.score,
+      totalQuestions: userResults.length,
+      correctCount,
+      incorrectCount,
+      skippedCount
+    });
+
     return {
+      // ✅ Thêm thông tin UserTest
+      userTestId: userTest.id,
+      userId: userTest.userId,
+      testId: userTest.testId,
+      score: userTest.score, // ✅ Score từ UserTest table
+      startedAt: userTest.startedAt,
+      completedAt: userTest.completedAt,
+      status: userTest.status,
+      // ✅ Thống kê từ UserResults
       totalQuestions: userResults.length,
       correctCount,
       incorrectCount,

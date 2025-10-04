@@ -46,11 +46,11 @@ export default (sequelize, DataTypes) => {
         },
       },
       startSecond: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.FLOAT,
         allowNull: true,
       },
       endSecond: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.FLOAT,
         allowNull: true,
       },
       sortOrder: {

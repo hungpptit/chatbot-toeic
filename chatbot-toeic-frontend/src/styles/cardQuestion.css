@@ -55,6 +55,72 @@
   color: #555;
 }
 
+/* ✅ Explanation header with replay button */
+.explanation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+/* ✅ Audio Replay Button */
+.audio-replay-btn {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.audio-replay-btn:hover {
+  background: linear-gradient(135deg, #218838, #1c7d6b);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+  filter: brightness(1.1);
+}
+
+.audio-replay-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+  filter: brightness(0.95);
+}
+
+/* ✅ Pulsing animation to attract attention */
+@keyframes pulse-audio {
+  0% { box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3); }
+  50% { box-shadow: 0 4px 8px rgba(40, 167, 69, 0.6); }
+  100% { box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3); }
+}
+
+.audio-replay-btn {
+  animation: pulse-audio 2s infinite;
+}
+
+/* ✅ Mobile responsive */
+@media (max-width: 576px) {
+  .explanation-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .audio-replay-btn {
+    align-self: flex-end;
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+}
+
 .card-correct {
   font-weight: 700;
   color: #dc2626;
