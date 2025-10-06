@@ -25,7 +25,7 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
   const [showResult, setShowResult] = useState(mode === "review");
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectAnswers, setIncorrectAnswers] = useState<SubmitResult["incorrectAnswers"]>([]);
-  const [answeredQuestions, setAnsweredQuestions] = useState<number[]>([]);
+  const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set());
   const [showStartPopup, setShowStartPopup] = useState(mode === "exam");
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [score, setScore] = useState<number>(0);
@@ -141,7 +141,7 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
 
           // set answered
           setAnsweredQuestions(
-            data.details.map((_, idx) => idx + 1)
+            new Set(data.details.map(d => d.questionId))
           );
 
         } else if (mode === "exam" && id) {
@@ -208,6 +208,13 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
     }
   };
 
+  // ✅ Calculate answered questions for sidebar (based on all questions, not filtered)
+  const getAnsweredQuestionsForSidebar = (): number[] => {
+    return questionData
+      .map((q, index) => answeredQuestions.has(q.id) ? index + 1 : null)
+      .filter((idx): idx is number => idx !== null);
+  };
+
   // Start test
   const handleStartTest = async () => {
     try {
@@ -229,6 +236,19 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
 
   // Sidebar jump
   const handleJumpToQuestion = (num: number) => {
+    // ✅ Check if question exists in current filtered view
+    const questionIndex = num - 1;
+    const targetQuestion = questionData[questionIndex];
+    
+    if (targetQuestion && selectedPartId !== null) {
+      // If question doesn't belong to current part, switch to "All"
+      if (targetQuestion.partId !== selectedPartId) {
+        setSelectedPartId(null);
+        console.log(`🔄 Switched to "All" to show question ${num}`);
+      }
+    }
+    
+    // Jump to question
     const target = document.getElementById(`question-${num}`);
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -443,24 +463,23 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
                                 ...prev,
                                 [questionId]: selected
                               }));
-                              const alreadyAnswered = Object.keys(userAnswers).map(Number);
-                              if (!alreadyAnswered.includes(questionId)) {
-                                setAnsweredQuestions([...answeredQuestions, index + 1]);
-                              }
+                              // Add to answered questions set
+                              setAnsweredQuestions(prev => new Set([...prev, questionId]));
                             }
                           : () => {}
                       }
                       onAnswer={
                         mode === "exam"
-                          ? (questionNumber, isAnswered) => {
+                          ? (_questionNumber, isAnswered) => {
+                              const questionId = item.id;
                               if (isAnswered) {
-                                if (!answeredQuestions.includes(questionNumber)) {
-                                  setAnsweredQuestions([...answeredQuestions, questionNumber]);
-                                }
+                                setAnsweredQuestions(prev => new Set([...prev, questionId]));
                               } else {
-                                setAnsweredQuestions(
-                                  answeredQuestions.filter(q => q !== questionNumber)
-                                );
+                                setAnsweredQuestions(prev => {
+                                  const newSet = new Set(prev);
+                                  newSet.delete(questionId);
+                                  return newSet;
+                                });
                               }
                             }
                           : () => {}
@@ -491,7 +510,7 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
             <div className="test-right">
               <div className="test2">
                 <ExamSidebar
-                  answeredQuestions={answeredQuestions}
+                  answeredQuestions={getAnsweredQuestionsForSidebar()}
                   onJumpToQuestion={handleJumpToQuestion}
                   onSubmit={mode === "exam" ? handleSubmitTest : () => {}}
                   showResult={showResult}

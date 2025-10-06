@@ -1,4 +1,4 @@
-import './AdminTestAnalyticsPage.css';
+import '../../styles/AdminTestAnalyticsPage.css';
 import { useEffect } from 'react';
 import { useState } from 'react';
 import { Line } from 'react-chartjs-2';

@@ -4,6 +4,7 @@ import { FaSave, FaPlus, FaUpload } from "react-icons/fa";
 import Select from "react-select";
 import "../../styles/AdminTestViewPage.css";
 import "../../styles/cardQuestion.css";
+import AdminMixTestForm from "./AdminMixTestForm";
 import {
   getAllCourseNamesAPI,
   type Course,
@@ -43,8 +44,11 @@ export default function AdminTestAddPage() {
 
   const [skills, setSkills] = useState<Skill[]>([]);
 
-  // ✅ Test mode: 'reading' hoặc 'listening'
-  const [testMode, setTestMode] = useState<'reading' | 'listening'>('reading');
+  // ✅ Test mode: 'reading', 'listening', hoặc 'mixed'
+  const [testMode, setTestMode] = useState<'reading' | 'listening' | 'mixed'>('reading');
+  
+  // ✅ State để hiện/ẩn Mixed Test Form
+  const [showMixedForm, setShowMixedForm] = useState(false);
   
   // ✅ Global audio (cho listening mode)
   const [globalAudioFile, setGlobalAudioFile] = useState<File | null>(null);
@@ -390,7 +394,10 @@ export default function AdminTestAddPage() {
 
       <div className="box-items">
         <Dropdown label="Chọn Course" options={courses} onChange={setSelectedCourseId}  value={selectedCourseId}/>
-        <Dropdown label="Chọn Part" options={parts} onChange={setSelectedPartId}  value={selectedPartId}/>
+        {/* Only show Part selection for Reading and Listening modes, not Mixed */}
+        {testMode !== 'mixed' && (
+          <Dropdown label="Chọn Part" options={parts} onChange={setSelectedPartId}  value={selectedPartId}/>
+        )}
       </div>
 
       {/* ✅ Test Mode Selection: Reading or Listening */}
@@ -402,7 +409,10 @@ export default function AdminTestAddPage() {
               type="radio"
               name="testMode"
               checked={testMode === 'reading'}
-              onChange={() => setTestMode('reading')}
+              onChange={() => {
+                setTestMode('reading');
+                setShowMixedForm(false);
+              }}
             />
             <strong>📖 Reading</strong>
             <span className="test-mode-description">(Không cần audio/image)</span>
@@ -412,14 +422,44 @@ export default function AdminTestAddPage() {
               type="radio"
               name="testMode"
               checked={testMode === 'listening'}
-              onChange={() => setTestMode('listening')}
+              onChange={() => {
+                setTestMode('listening');
+                setShowMixedForm(false);
+              }}
             />
             <strong>🎧 Listening</strong>
             <span className="test-mode-description">(Có audio/image)</span>
           </label>
+          <label className="test-mode-option">
+            <input
+              type="radio"
+              name="testMode"
+              checked={testMode === 'mixed'}
+              onChange={() => {
+                setTestMode('mixed');
+                setShowMixedForm(true);
+              }}
+            />
+            <strong>📚 Mixed (Reading + Listening)</strong>
+            <span className="test-mode-description">(Kết hợp cả 2 loại)</span>
+          </label>
         </div>
+
       </div>
 
+      {/* ✅ Show Mixed Form when selected */}
+      {showMixedForm && (
+        <AdminMixTestForm 
+          onBack={() => setShowMixedForm(false)} 
+          testTitle={testTitle}
+          setTestTitle={setTestTitle}
+          selectedCourseId={selectedCourseId}
+        />
+      )}
+
+      {/* ✅ Hide normal form when showing mixed form */}
+      {!showMixedForm && (
+        <>
       <div className="upload-section">
         <h3>Hoặc tải lên file JSON/CSV</h3>
         <input type="file" accept=".json,.csv" onChange={handleUploadFile} />
@@ -629,6 +669,8 @@ export default function AdminTestAddPage() {
       </div>
     ))}
 
+        </>
+      )}
     </div>
   );
 }

@@ -126,45 +126,39 @@ export default function CardQuestion({
         {index}. {item.question}
       </h2>
 
-      {item.typeId === 1 ? (
-        <div className="card-options">
-          {["A", "B", "C", "D"].map((opt) => {
-          let className = "card-option";
+      <div className="card-options">
+        {["A", "B", "C", "D"].map((opt) => {
+        let className = "card-option";
 
-          if (showResult) {
-            if (opt === item.correctAnswer) {
-              if (opt === selectedAnswer) {
-                className += " correct"; // Bạn chọn đúng → xanh lá
-              } else {
-                className += " correct-answer"; // Không chọn nhưng là đáp án đúng → xanh dương
-              }
-            } else if (opt === selectedAnswer) {
-              className += " incorrect"; // Bạn chọn sai → đỏ
-            }
-          } else {
+        if (showResult) {
+          if (opt === item.correctAnswer) {
             if (opt === selectedAnswer) {
-              className += " selected"; // Khi chưa submit
+              className += " correct"; // Bạn chọn đúng → xanh lá
+            } else {
+              className += " correct-answer"; // Không chọn nhưng là đáp án đúng → xanh dương
             }
+          } else if (opt === selectedAnswer) {
+            className += " incorrect"; // Bạn chọn sai → đỏ
           }
+        } else {
+          if (opt === selectedAnswer) {
+            className += " selected"; // Khi chưa submit
+          }
+        }
 
-          return (
-            <button
-              key={opt}
-              className={className}
-              onClick={() => handleSelect(opt)}
-              disabled={showResult}
-              style={{ cursor: getCursorStyle() }}
-            >
-              {opt}. {item[`option${opt}` as "optionA" | "optionB" | "optionC" | "optionD"]}
-            </button>
-          );
-          })}
-        </div>
-      ) : (
-        <div className="card-input">
-          <input type="text" placeholder="Your answer..." disabled />
-        </div>
-      )}
+        return (
+          <button
+            key={opt}
+            className={className}
+            onClick={() => handleSelect(opt)}
+            disabled={showResult}
+            style={{ cursor: getCursorStyle() }}
+          >
+            {opt}. {item[`option${opt}` as "optionA" | "optionB" | "optionC" | "optionD"]}
+          </button>
+        );
+        })}
+      </div>
 
       {showResult && incorrectAnswer && (
         <div className="card-explanation">

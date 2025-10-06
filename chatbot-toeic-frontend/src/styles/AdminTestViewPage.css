@@ -592,6 +592,42 @@
   margin-left: 5px;
 }
 
+/* Mixed Mode Styles */
+.mixed-mode-action {
+  margin-top: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  text-align: center;
+}
+
+.mixed-form-btn {
+  background: white;
+  color: #667eea;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mixed-form-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  background: #f8f9ff;
+}
+
+.mixed-mode-tip {
+  color: white;
+  font-size: 14px;
+  margin-top: 12px;
+  opacity: 0.9;
+}
+
 /* Upload Section */
 .upload-section {
   margin-bottom: 20px;
