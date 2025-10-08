@@ -1,0 +1,76 @@
+Chương 4: Xây dựng hệ thống
+1. Hệ thống đề xuất sản phẩm cho người dùng dựa trên hành vi của một người dùng khác.
+Thu thập và xử lý dữ liệu (LSTM cho gợi ý bài hát cá nhân hóa)
+-	ListeningHistory(HistoryID, UserID, TrackID, listenCount, createdAt, …): dữ liệu chuỗi nghe theo thời gian – lõi để huấn luyện LSTM.
+-	Tracks(TrackID, trackUrl, imageUrl, uploaderId, Status, Privacy, …): kho bài hát làm tập mục tiêu dự đoán; chỉ lấy Track có Status=Active và Privacy=Public.
+-	Users(UserID, …): dùng để gắn chuỗi nghe với người dùng; có thể rút user embedding nếu cần.
+-	Likes(LikeID, UserID, TrackID, …): tín hiệu dương tính để tăng trọng số mẫu (optional).
+-	Metadata(Track_id, …): đặc trưng nội dung (tempo, valence, energy…) dùng làm side features để cải thiện cold-start.
+-	Playlists / PlaylistTrack: có thể gom thành phiên nghe (session) bổ sung.
+-	SearchHistory: dùng để bias theo ý định gần đây (optional).
+Dạng dữ liệu đầu vào cho model (sequence):
+•	Hàng (rows): mỗi hàng là một chuỗi nghe của một User (hoặc một phiên nghe).
+•	Cột (timesteps): thứ tự TrackID theo createdAt (gần → xa hoặc ngược lại).
+•	Giá trị: là mã Track (đã ánh xạ sang chỉ số), có thể kèm vector đặc trưng bài từ Metadata.
+•	Nhãn (label): bài kế tiếp trong chuỗi (next-item).
+•	Với mỗi chuỗi [t₁, t₂, t₃, …, tₙ], sinh các mẫu trượt:
+o	Input: [t₁, t₂] → Label: t₃
+o	Input: [t₁, t₂, t₃] → Label: t₄, …
+Ví dụ (rút gọn) cho User U1:
+ListeningHistory theo thời gian: [A, B, C, D]
+Sinh mẫu: ( [A]→B ), ( [A,B]→C ), ( [A,B,C]→D ).
+Nếu có Metadata, tại mỗi timestep nối embedding bài từ Metadata vào embedding TrackID.
+Tiền xử lý quan trọng:
+•	Lọc mục tiêu: loại Track không hợp lệ (Status≠Active hoặc Privacy≠Public).
+•	Reindex: ánh xạ TrackID → index liên tục [0..V-1].
+•	Cắt/đệm: chuẩn hoá độ dài chuỗi (padding/truncation).
+•	Sampling: bỏ bớt lặp lại quá dày; negative sampling (lấy vài track không phải nhãn) cho huấn luyện sampled-softmax.
+•	Tách tập theo thời gian: Train ≤ T-1, Validate/Test = (T).
+Mô hình LSTM cho gợi ý bài hát
+Ý tưởng: LSTM học phụ thuộc theo trình tự để dự đoán bài tiếp theo mà người dùng có khả năng nghe.
+Kiến trúc điển hình:
+1.	Embedding Track: ma trận E ∈ ℝ^(V×d), ánh xạ TrackIndex → vector d-chiều.
+2.	(Tuỳ chọn) Embedding User: nếu muốn cá nhân hoá sâu hơn.
+3.	(Tuỳ chọn) Side features: đặc trưng từ Metadata (tempo, valence, energy, …) → qua MLP nhỏ rồi concatenate với track embedding tại mỗi bước.
+4.	LSTM/GRU (1–2 lớp): nhận chuỗi embedding, trả hidden state.
+5.	Projection + Softmax: cho phân phối xác suất trên tập bài hát; dùng sampled softmax/candidate softmax nếu V lớn.
+6.	Loss: cross-entropy với nhãn là track kế tiếp.
+7.	Regularization: dropout, weight decay; time-decay tăng trọng số cho sự kiện mới.
+Công thức tóm tắt:
+•	Input tại bước t: xₜ = concat(Emb(trackₜ), SideFeatₜ).
+•	hₜ = LSTM(xₜ, hₜ₋₁).
+•	p(next = j | hₜ) = softmax(W·hₜ + b)[j].
+•	Tối ưu: −∑logp(trackt+1|ht)
+Suy luận (dự đoán)
+Bài toán thực tế: dự đoán Top-K bài cho User U tại thời điểm t.
+•	Lấy chuỗi gần nhất của U từ ListeningHistory (ví dụ 50 bản ghi mới nhất).
+•	Biến đổi → tensor, đưa vào LSTM lấy hₜ.
+•	Sinh ứng viên (candidate generation): 500–2000 bài (mới phổ biến, cùng nghệ sĩ/genre, bài từ Playlists người dùng tương tự, hoặc từ Likes).
+•	Chấm điểm: p(j | hₜ) với j thuộc tập ứng viên (nhanh, giảm độ trễ).
+•	Trả kết quả: Top-K (songId, score) chỉ gồm Track hợp lệ (Active/Public).
+Định dạng API gợi ý (ví dụ):
+•	Input: GET /api/recommend?user_id=U1&k=10
+•	Output:
+{
+  "user_id": "U1",
+  "items": [
+    {"track_id":"C","score":0.82},
+    {"track_id":"E","score":0.77},
+    ...
+  ]
+}
+Đánh giá (trên dữ liệu hệ thống)
+•	Tập test: tách theo mốc thời gian (giữ tuần/tháng gần nhất).
+•	Chỉ số: Recall@K, NDCG@K, HitRate@K, MRR.
+•	Baseline: Top-popular theo thời gian, hoặc Item-CF.
+•	Online: theo dõi CTR thẻ gợi ý, thời lượng nghe sau click, skip rate.
+Ví dụ “dự đoán bài kế tiếp” (minh họa)
+Giả sử chuỗi gần nhất của U1: [A, B, C].
+Model LSTM cho p(next | [A,B,C]) trên tập ứng viên {C, D, E, F…}:
+•	p(D) = 0.41, p(E) = 0.33, p(F) = 0.17, p(C) = 0.09 → Top-3: D, E, F.
+Nếu U1 Like nghệ sĩ của E gần đây (từ Likes), có thể re-rank:
+•	final_score = 0.8·p + 0.2·bonus_like → E có thể nhảy lên Top-1.
+Kết luận
+•	LSTM tận dụng trật tự thời gian trong ListeningHistory để học gu ngắn hạn lẫn dài hạn, từ đó gợi ý bài kế tiếp phù hợp hơn so với ma trận tĩnh.
+•	Việc kết hợp Metadata (tempo, valence, energy, …) làm side features giúp giải quyết cold-start và tăng khả năng giải thích.
+•	Triển khai thực tế cần candidate generation để bảo đảm độ trễ thấp, cùng cơ chế fine-tune định kỳ để thích ứng thói quen nghe mới.

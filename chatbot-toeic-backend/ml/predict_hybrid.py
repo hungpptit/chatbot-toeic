@@ -7,15 +7,15 @@ import json
 from sklearn.naive_bayes import GaussianNB
 from dotenv import load_dotenv
 
-# Load .env
-load_dotenv(dotenv_path="./.env")
+# Load .env (từ parent directory)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # chatbot-toeic-backend
+load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"))
 
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT")
 DB_USERNAME = os.getenv("DB_USERNAME")
 DB_PASS = os.getenv("DB_PASS")
 DB_NAME = os.getenv("DB_NAME")
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # chatbot-toeic-backend
 FIND_SIMILAR_PATH = os.path.join(BASE_DIR, "findSimilar.js")
 
 conn_str = (
@@ -59,7 +59,7 @@ def train_personal_model(userId: int):
     model = GaussianNB()
     model.fit(X, y)
 
-    path = f"ml/user_{userId}_model.pkl"
+    path = os.path.join(os.path.dirname(__file__), f"user_{userId}_model.pkl")
     joblib.dump(model, path)
     return path
 
@@ -86,7 +86,8 @@ def predict_hybrid(userId: int):
         return {}
 
     results = {}
-    global_model = joblib.load("ml/weak_skill_model.pkl")
+    global_model_path = os.path.join(os.path.dirname(__file__), "weak_skill_model.pkl")
+    global_model = joblib.load(global_model_path)
 
     for _, row in df.iterrows():
         skillName = row['skillName']
@@ -101,7 +102,7 @@ def predict_hybrid(userId: int):
             y_pred = global_model.predict(X_new)[0]
             results[skillName] = "Weak (global)" if y_pred == 1 else "Strong (global)"
         else:
-            model_path = f"ml/user_{userId}_model.pkl"
+            model_path = os.path.join(os.path.dirname(__file__), f"user_{userId}_model.pkl")
             if not os.path.exists(model_path):
                 train_personal_model(userId)
             personal_model = joblib.load(model_path)

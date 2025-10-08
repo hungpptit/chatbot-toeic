@@ -1,0 +1,882 @@
+================================================================================
+📄 NỘI DUNG FILE: BaoCaoHT.docx
+================================================================================
+
+CHƯƠNG 1: GIỚI THIỆU ĐỀ TÀI
+1.1 Lý do chọn đề tài
+Trong bối cảnh toàn cầu hóa, tiếng Anh ngày càng trở thành kỹ năng thiết yếu cho học tập, nghiên cứu và công việc. Tuy nhiên, đa số người học tiếng Anh tại Việt Nam gặp khó khăn trong việc xác định kỹ năng nào cần ôn luyện nhiều hơn (nghe, nói, đọc, viết, ngữ pháp, từ vựng...). Phương pháp học truyền thống thường dàn trải, không cá nhân hóa, dẫn đến hiệu quả chưa cao.
+Với sự phát triển của trí tuệ nhân tạo và học máy (Machine Learning), có thể xây dựng những hệ thống thông minh hỗ trợ người học phân tích dữ liệu kết quả làm bài, từ đó gợi ý các kỹ năng trọng tâm cần rèn luyện. Do đó, nhóm chọn đề tài “Xây dựng hệ thống hỗ trợ học tiếng Anh có chức năng gợi ý các kỹ năng cần ôn luyện dựa trên Naïve Bayes và kNN” nhằm mang lại giải pháp học tập cá nhân hóa, hiệu quả và thực tiễn.
+1.2 Mục tiêu
+Xây dựng hệ thống web hỗ trợ học tiếng Anh.
+Áp dụng các giải thuật học máy Naïve Bayes và k-Nearest Neighbors (kNN) để phân tích dữ liệu kết quả học tập.
+Gợi ý cho người học các kỹ năng tiếng Anh cần ôn luyện thêm, dựa trên kết quả làm bài và lịch sử học.
+Đảm bảo giao diện trực quan, dễ sử dụng cho người dùng.
+1.3 Phạm vi nghiên cứu
+Nghiên cứu và áp dụng hai giải thuật Naïve Bayes và kNN trong việc phân tích dữ liệu học tập.
+Xây dựng hệ thống ở mức thử nghiệm (prototype) cho học viên trình độ cơ bản và trung cấp.
+Gói gọn trong 2 kỹ năng chính: Nghe, Đọc.
+Không đi sâu vào xây dựng kho bài tập hoàn chỉnh, mà chủ yếu tập trung vào chức năng gợi ý ôn luyện kỹ năng.
+1.4 Đối tượng áp dụng
+Sinh viên, học sinh có nhu cầu cải thiện kỹ năng tiếng Anh.
+Giáo viên tiếng Anh có thể sử dụng hệ thống để theo dõi mức độ tiến bộ của học viên.
+Các trung tâm ngoại ngữ muốn tích hợp hệ thống gợi ý ôn luyện.
+1.5 Phương pháp nghiên cứu
+Nghiên cứu lý thuyết: tìm hiểu các giải thuật Naïve Bayes và kNN, cơ chế phân loại và dự đoán.
+Phân tích yêu cầu: khảo sát nhu cầu của người học, các dạng dữ liệu kết quả học tập.
+Thiết kế hệ thống: sử dụng UML để mô hình hóa (Use case, Activity, Sequence).
+Xây dựng và thử nghiệm hệ thống: cài đặt, chạy thử và đánh giá hiệu quả.
+1.6 Ý nghĩa khoa học và thực tiễn
+Ý nghĩa khoa học: Góp phần ứng dụng các giải thuật học máy vào lĩnh vực giáo dục, đặc biệt trong bài toán hỗ trợ cá nhân hóa quá trình học ngoại ngữ.
+Ý nghĩa thực tiễn: Giúp người học tiết kiệm thời gian, tập trung vào những kỹ năng còn yếu, từ đó nâng cao hiệu quả học tiếng Anh. Đồng thời, cung cấp công cụ hữu ích cho giáo viên và trung tâm ngoại ngữ trong việc quản lý, định hướng học tập
+CHƯƠNG 2: CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ SỬ DỤNG
+2.1. Giải thuật học máy
+2.1.1. Tổng quan
+Trong bối cảnh giáo dục hiện nay, các hệ thống gợi ý thông minh thường dựa vào các kỹ thuật học máy để phân tích dữ liệu đầu vào và đưa ra dự đoán. Học máy (Machine Learning) là một nhánh của trí tuệ nhân tạo, trong đó các mô hình có khả năng tự học từ dữ liệu quá khứ để dự đoán hoặc phân loại các tình huống mới.
+Các thuật toán học máy được phân loại thành ba nhóm chính: học có giám sát (supervised learning), học không giám sát (unsupervised learning) và học tăng cường (reinforcement learning). Trong đề tài này, nhóm tập trung vào học có giám sát, vì dữ liệu đầu vào (kết quả bài thi, kỹ năng cần cải thiện) đã được gán nhãn, phù hợp cho các mô hình phân loại.
+2.1.2. Giải thuật Naïve Bayes
+Naïve Bayes thuộc lĩnh vực xác suất thống kê, dựa trên định lý Bayes và giả định các đặc trưng đầu vào là độc lập có điều kiện. Thuật toán này được gọi là “naïve” (ngây thơ) bởi vì giả định độc lập thường không chính xác trong thực tế, song trên thực tế, mô hình vẫn đạt hiệu quả cao nhờ tính đơn giản và khả năng xử lý nhanh với dữ liệu có nhiều chiều.
+Ưu điểm: tốc độ tính toán nhanh, ít yêu cầu dữ liệu, dễ triển khai, hoạt động tốt ngay cả khi tập dữ liệu huấn luyện nhỏ.
+Hạn chế: giả định độc lập giữa các đặc trưng có thể làm giảm độ chính xác nếu dữ liệu có mối quan hệ phức tạp.
+Trong hệ thống này, Naïve Bayes được dùng để tính xác suất một học viên yếu ở kỹ năng nào (Nghe, Nói, Đọc, Viết) dựa trên kết quả làm bài. Ví dụ, nếu một học viên sai nhiều câu ở phần Listening, thuật toán sẽ dự đoán xác suất cao rằng kỹ năng nghe cần được cải thiện.
+2.1.3. Giải thuật k-Nearest Neighbors (kNN)
+kNN là một thuật toán phân loại dựa trên khoảng cách. Khi có một điểm dữ liệu mới, thuật toán sẽ tìm k điểm gần nhất trong tập dữ liệu huấn luyện và gán nhãn dựa trên đa số. Đây là một trong những thuật toán trực quan, dễ hiểu và không yêu cầu mô hình hóa phức tạp.
+Ưu điểm: đơn giản, dễ cài đặt, độ chính xác cao khi dữ liệu có cấu trúc phân cụm rõ ràng.
+Hạn chế: chi phí tính toán lớn khi tập dữ liệu huấn luyện quá lớn, độ chính xác phụ thuộc vào cách chọn giá trị k và độ đo khoảng cách.
+Trong hệ thống, kNN được áp dụng để so sánh kết quả của học viên mới với dữ liệu của các học viên đã có trước đó. Nếu học viên mới có điểm số tương tự một nhóm học viên, hệ thống sẽ gợi ý những kỹ năng mà nhóm đó thường yếu, từ đó đưa ra khuyến nghị chính xác hơn.
+2.2. Công nghệ sử dụng
+2.2.1. Frontend
+Ở tầng giao diện, hệ thống được xây dựng trên nền tảng ReactJS và Next.js.
+ReactJS là thư viện JavaScript mã nguồn mở, được phát triển bởi Meta (Facebook) và hiện đang là một trong những công nghệ frontend phổ biến nhất thế giới. Phiên bản được sử dụng trong hệ thống là React 18, mang lại khả năng xây dựng giao diện theo hướng component-based, cho phép tái sử dụng và mở rộng dễ dàng. Điều này giúp việc phát triển cũng như bảo trì hệ thống thuận lợi hơn.
+Kết hợp với ReactJS, hệ thống sử dụng Next.js, một framework do Vercel phát triển, phiên bản Next.js 14. Next.js bổ sung các cơ chế Server-Side Rendering (SSR) và Static Site Generation (SSG), tối ưu hiệu năng hiển thị, cải thiện tốc độ tải trang và nâng cao khả năng tối ưu hóa công cụ tìm kiếm (SEO). Nhờ đặc tính đa nền tảng, cả ReactJS và Next.js đều vận hành tốt trên Windows, Linux và macOS, mang lại sự linh hoạt trong quá trình phát triển và triển khai.
+2.2.2. Backend
+Phần xử lý nghiệp vụ của hệ thống được triển khai bằng Node.js kết hợp với ExpressJS.
+Node.js là môi trường thực thi JavaScript phía server, được phát triển bởi OpenJS Foundation, phiên bản sử dụng trong hệ thống là Node.js 20 LTS. Điểm mạnh của Node.js nằm ở khả năng xử lý bất đồng bộ (asynchronous) và khả năng mở rộng, giúp ứng dụng có thể đáp ứng hàng nghìn kết nối đồng thời.
+Để xây dựng API, hệ thống sử dụng ExpressJS, một framework web nhẹ cũng thuộc OpenJS Foundation. ExpressJS cho phép phát triển RESTful API nhanh chóng và linh hoạt, tạo cầu nối giữa frontend, cơ sở dữ liệu và các mô-đun trí tuệ nhân tạo. Bộ đôi Node.js và ExpressJS đảm bảo backend của hệ thống vừa mạnh mẽ, vừa tối ưu cho việc mở rộng trong tương lai. Các công nghệ này hỗ trợ triển khai trên nhiều hệ điều hành, hoạt động ổn định trên Ubuntu Server 22.04, Windows 10/11 và macOS.
+2.2.3. AI và NLP
+Trong lĩnh vực trí tuệ nhân tạo, hệ thống sử dụng Python 3.12, ngôn ngữ lập trình do Python Software Foundation phát triển. Python được lựa chọn nhờ cú pháp ngắn gọn, dễ đọc và hệ sinh thái thư viện mạnh mẽ, đặc biệt phù hợp cho học máy. Phiên bản 3.12 mới nhất đảm bảo hiệu năng và tính tương thích, được sử dụng để hiện thực hai giải thuật Naïve Bayes và k-Nearest Neighbors (kNN), phục vụ chức năng phân tích dữ liệu và gợi ý kỹ năng học tập.
+Ngoài ra, hệ thống có thể mở rộng để tích hợp các dịch vụ NLP hiện đại: Gemini API của Google DeepMind, nổi bật với khả năng phân tích ngôn ngữ ngữ cảnh; và OpenAI API, dịch vụ nổi bật trong xây dựng chatbot và trợ lý học tập. Nhờ tính đa nền tảng, Python 3.12 cũng như các API này đều có thể hoạt động trên Linux, Windows và macOS, đảm bảo tính linh hoạt khi triển khai.
+2.2.4. Authentication
+Để đảm bảo an toàn và phân quyền người dùng, hệ thống sử dụng JSON Web Token (JWT). Đây là một chuẩn mở do IETF (Internet Engineering Task Force) phát triển, hiện nay đã trở thành tiêu chuẩn phổ biến trong xác thực và quản lý phiên đăng nhập.
+JWT mã hóa thông tin người dùng dưới dạng token an toàn, giúp hệ thống dễ dàng phân biệt quyền truy cập giữa học viên và quản trị viên. Ưu điểm nổi bật của JWT là tính nhẹ, an toàn và dễ tích hợp, đồng thời có thể triển khai linh hoạt trên tất cả các môi trường có hỗ trợ Node.js, bao gồm Windows, Linux và macOS.
+2.2.5 Giới thiệu hệ quản trị cơ sở dữ liệu SQL Server
+SQL Server là một hệ quản trị cơ sở dữ liệu quan hệ (Relational Database Management System – RDBMS) do Microsoft phát triển. Phiên bản đầu tiên của SQL Server ra mắt vào năm 1989, được xây dựng với sự hợp tác giữa Microsoft, Sybase và Ashton-Tate. Ban đầu, SQL Server chỉ hoạt động trên hệ điều hành OS/2, sau này được phát triển để hỗ trợ Windows NT và dần trở thành một trong những hệ quản trị cơ sở dữ liệu phổ biến nhất thế giới.
+SQL Server được thiết kế với mục tiêu cung cấp một nền tảng cơ sở dữ liệu an toàn, tin cậy và dễ quản lý. Nó hỗ trợ đầy đủ ngôn ngữ truy vấn có cấu trúc SQL (Structured Query Language) và bổ sung nhiều tính năng nâng cao nhằm đáp ứng yêu cầu của các hệ thống ứng dụng quy mô lớn. Một trong những đặc điểm quan trọng của SQL Server là khả năng tích hợp chặt chẽ với các công nghệ khác trong hệ sinh thái Microsoft, như .NET Framework, Azure Cloud hay Power BI.
+Các phiên bản mới nhất như SQL Server 2019 và SQL Server 2022 mang đến nhiều cải tiến về hiệu năng, bảo mật, khả năng mở rộng và hỗ trợ phân tích dữ liệu lớn. SQL Server có thể chạy trên Windows Server và hiện nay cũng hỗ trợ Linux (Ubuntu, Red Hat, SUSE), giúp tăng tính linh hoạt trong triển khai.
+Một số tính năng nổi bật của SQL Server:
+Stored Procedure: cho phép lập trình các đoạn mã SQL có thể tái sử dụng, tối ưu hóa hiệu suất và giảm tải cho tầng ứng dụng.
+Trigger: tự động kích hoạt khi có sự kiện thay đổi dữ liệu (INSERT, UPDATE, DELETE), đảm bảo dữ liệu luôn nhất quán.
+Transaction: hỗ trợ xử lý giao dịch với bốn tính chất ACID (Atomicity, Consistency, Isolation, Durability), bảo đảm tính toàn vẹn dữ liệu.
+Khả năng lưu trữ: SQL Server có thể quản lý hàng triệu bản ghi, hỗ trợ hệ thống quy mô lớn với yêu cầu xử lý đồng thời cao.
+Trong hệ thống hỗ trợ học tiếng Anh, SQL Server đóng vai trò trung tâm lưu trữ và quản lý dữ liệu: từ thông tin người dùng, khóa học, kết quả làm bài cho đến dữ liệu huấn luyện phục vụ các mô hình học máy. Nhờ sự ổn định và tính năng bảo mật cao, SQL Server đảm bảo rằng dữ liệu luôn được xử lý nhanh chóng, chính xác và an toàn.
+2.3.1 Giới thiệu ngôn ngữ lập trình JavaScript
+JavaScript là một trong những ngôn ngữ lập trình kịch bản phổ biến nhất trên thế giới, chủ yếu được sử dụng trong phát triển ứng dụng web. Ban đầu, JavaScript được Brendan Eich phát triển tại Netscape Communications vào năm 1995 với tên gọi Mocha, sau đó đổi thành LiveScript và cuối cùng được đặt tên là JavaScript.
+Ngôn ngữ này ra đời nhằm mục đích bổ sung khả năng tương tác động cho các trang web tĩnh thời bấy giờ, cho phép lập trình viên viết code phía client để xử lý sự kiện, kiểm tra dữ liệu nhập và cải thiện trải nghiệm người dùng. Trải qua nhiều năm phát triển, JavaScript hiện được chuẩn hóa bởi ECMA International với tên gọi ECMAScript.
+Đặc điểm nổi bật của JavaScript là tính linh hoạt, cú pháp đơn giản và khả năng chạy trên hầu hết các trình duyệt hiện nay. Với sự ra đời của Node.js, JavaScript không chỉ giới hạn ở phía client mà còn có thể chạy ở phía server, biến nó thành một ngôn ngữ lập trình toàn diện “full-stack”. Trong hệ thống này, JavaScript được kết hợp cùng TypeScript để phát triển giao diện (ReactJS, Next.js) và xử lý nghiệp vụ phía backend (Node.js, ExpressJS).
+2.3.2 Giới thiệu ngôn ngữ lập trình Python
+Python là một ngôn ngữ lập trình bậc cao, hướng đối tượng, được phát triển bởi Guido van Rossum và phát hành lần đầu tiên vào năm 1991 tại Centrum Wiskunde & Informatica (CWI) ở Hà Lan. Tên gọi Python được lấy cảm hứng từ nhóm hài kịch “Monty Python”, thể hiện triết lý thiết kế của ngôn ngữ: dễ đọc, dễ viết và mang lại sự thoải mái cho lập trình viên.
+Python nhanh chóng trở thành một trong những ngôn ngữ lập trình phổ biến nhất nhờ cú pháp đơn giản, gần gũi với ngôn ngữ tự nhiên và hệ sinh thái thư viện phong phú. Đặc biệt, Python nổi bật trong các lĩnh vực khoa học dữ liệu (Data Science), học máy (Machine Learning) và trí tuệ nhân tạo (Artificial Intelligence) nhờ khả năng tích hợp mạnh mẽ với các công cụ tính toán và phân tích dữ liệu.
+Phiên bản được sử dụng trong hệ thống là Python 3.12, phát hành bởi Python Software Foundation. Đây là phiên bản mới nhất, được tối ưu hiệu năng và bổ sung nhiều tính năng hiện đại, phù hợp cho việc triển khai các giải thuật học máy như Naïve Bayes và k-Nearest Neighbors (kNN). Trong hệ thống, Python 3.12 đảm nhiệm vai trò xử lý dữ liệu, huấn luyện mô hình và đưa ra kết quả gợi ý kỹ năng cần ôn luyện cho học viên.
+
+# CHƯƠNG 3. PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG
+
+## Sơ đồ phân cấp chức năng
+Hình 1
+Hình 1. Sơ đồ phân cấp chức năng mức đỉnh
+
+### Sơ đồ phân cấp chức năng mức đỉnh
+Hệ thống website chatbot toeic được xem xét gồm các chức năng chính: chức năng dành cho học viên, chức năng dành cho người quản trị (admin) và các chức năng quan trọng khác. Mỗi chức này được phân rã thành một số chức năng nhỏ hơn mà thao tác thực hiện nó đủ đơn giản cho việc lập trình.
+
+### Sơ đồ phân rã chức năng
+
+#### Chức năng dành cho học viên:
+Hình 2. Sơ đồ phân rã chức năng học viên
+Mô tả chi tiết các chức năng:
+- Đăng nhập và đăng ký: học viên đăng ký tài khoản với hệ thống (có thể dùng email hoặc các tài khoản mạng xã hội phổ biến hiện nay). Hỗ trợ chức năng đăng nhập an toàn (bao gồm xác thực 2 lớp – 2FA). Hỗ trợ lấy lại mật khẩu khi quên mật khẩu qua email.
+- Làm bài thi thử TOEIC: học viên chọn các đề thi TOEIC theo từng phần (Listening, Reading) hoặc theo toàn bộ bài thi (Full Test). Hệ thống giới hạn thời gian theo đúng quy định của TOEIC. Hệ thống tự động chấm điểm ngay sau khi nộp bài.
+- Xem kết quả thi, thống kê điểm, tiến độ học tập: hệ thống sẽ hiển thị điểm số chi tiết của bài thi. Hệ thống sẽ hiển thị biểu đồ thống kê sự tiến bộ theo thời gian. Hệ thống đưa ra gợi ý khóa học phù hợp dưa trên kết quả.
+- Xem và mua khóa học: Học viên xem thông tin chi tiết khóa học (mô tả, nội dung, học phí, giảng viên). Tích hợp cổng thanh toán (VNPay, Momo, PayPal). Sau khi thanh toán thành công, học viên được cấp quyền truy cập khóa học.
+- Quản lý tài khoản cá nhân: học viên có thể thay đổi thông tin cá nhân (họ tên, ảnh đại diện, mật khẩu, số điện thoại, email,…), đổi mật khẩu, xem lịch sử mua khóa học và lịch sử làm bài.
+
+#### Chức năng dành cho quản trị viên (admin):
+Hình 4. Sơ đồ phân rã chức năng quản trị viên
+Mô tả chi tiết các chức năng:
+- Quản lý học viên: người quản trị có thể xem danh sách toàn bộ học viên, giảng viên. Phân quyền (User, Teacher, Admin). Khóa/mở tài khoản vi phạm.
+- Quản lý khóa học và bài thi: người quản trị có thể duyệt nội dung khóa học, đề thi trước khi xuất bản. Xóa khóa học hoặc đề thi nếu vi phạm chính sách.
+- Quản lý thanh toán: người quản trị có thể xem lịch sử giao dịch. Hỗ trợ hoàn tiền khi cần thiết. Quản lý doanh thu theo tháng/năm.
+- Thống kê và báo cáo: người quản trị có thể xem báo cáo số lượng người dùng, số khóa học, số bài thi. Thống kê doanh thu, tỷ lệ mua khóa học. Báo cáo kết quả học tập của học viên.
+- Quản lý cấu hình hệ thống: người quản trị viên có thể quản lý giao diện website (logo, màu sắc, bố cục). Cấu hình bảo mật (SSL/HTTPS, backup dữ liệu).
+
+#### Chức năng khác:
+Hình 5. Sơ đồ phân rã chức năng khác
+Mô tả chi tiết các chức năng:
+- Tìm kiếm nâng cao: Tìm kiếm khóa học theo tên, giảng viên, giá tiền, mức độ. Bộ lọc theo danh mục: TOEIC Listening, TOEIC Reading, Full Test, Lộ trình luyện thi.
+- Tích hợp mạng xã hội: Hỗ trợ đăng nhập nhanh bằng Google/Facebook. Chia sẻ kết quả thi hoặc khóa học lên mạng xã hội.
+- Hỗ trợ học viên: Tích hợp chatbot trả lời câu hỏi thường gặp. Hệ thống FAQ và mục liên hệ để giải đáp thắc mắc.
+- Cơ chế bảo mật: Sử dụng giao thức HTTPS để bảo vệ dữ liệu. Chống tấn công SQL Injection, XSS. Tự động sao lưu dữ liệu định kỳ.
+
+## Mô hình luồng dữ liệu DFD (Data Flow Diagram)
+
+### Biểu đồ DFD mức ngữ cảnh
+Hình 6. Biểu đồ luồng dữ liệu mức ngữ cảnh
+
+## Mô hình usecase
+
+### Xác định actor
+Dựa vào yêu cầu của bài toán, ta có các actor: học viên và quản trị viên.
+
+### Xác định Use Case
+Từ yêu cầu chức năng với từng actor ta có thể xác định được các use case như sau:
+Bảng 1 Xác định các use case
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Actor | Use Case
+Học viên | Đăng ký tài khoản
+Mô tả: Học viên tạo tài khoản mới với email/số điện thoại.
+Đăng nhập
+Mô tả: Học viên đăng nhập bằng tài khoản đã có.
+Làm bài thi TOEIC
+Mô tả: Học viên chọn đề thi (Listening, Reading hoặc Full Test) để làm.
+Xem kết quả thi & thống kê
+Mô tả: Sau khi làm bài, hệ thống tự động chấm điểm và hiển thị kết quả, tiến độ học tập.
+Xem & mua khóa học
+Mô tả: Học viên xem thông tin khóa học, thanh toán và truy cập nội dung.
+Quản lý tài khoản cá nhân
+Mô tả: Cập nhật thông tin cá nhân, đổi mật khẩu.
+Quản trị viên | Đăng nhập quản trị
+Mô tả: Admin đăng nhập để vào trang quản trị.
+Quản lý người dùng
+Mô tả: Xem danh sách học viên, khóa/mở tài khoản.
+Quản lý khóa học & đề thi
+Mô tả: Thêm, chỉnh sửa, xóa khóa học hoặc đề thi.
+Thống kê & báo cáo
+Mô tả: Xem báo cáo về số lượng người dùng, doanh thu, kết quả thi.
+Quản lý hệ thống
+Mô tả: Cấu hình giao diện, bảo mật, backup dữ liệu.
+--------------------------------------------------------------------------------
+
+### Xây dựng biểu đồ Use Case tổng quát
+Biểu đồ Use Case tổng quát dành cho học viên:
+Hình 7. Biểu đồ use case tổng quát dành cho học viên
+Biểu đồ Use Case tổng quát dành cho quản trị viên:
+Hình 9. Biểu đồ use case tổng quát dành cho quản trị viên
+
+## Xác định thực thể
+Antonyms (id, vocabId, antonym)
+Conversations (id, userId, title, createdAt, updatedAt, deletedAt)
+Courses (id, name)
+Logs (id, userId, message, response, timestamp)
+Meanings (id, vocabId, partOfSpeech, definition, example)
+MediaFiles (id, mediaType, mediaUrl, description, duration)
+Messages (id, conversationId, role, content, createdAt, updatedAt)
+Part (id, name)
+Pronunciations (id, vocabId, accent, phoneticText, audioUrl)
+QuestionEmbeddings (questionId, model, dim, vector, updatedAt)
+QuestionMediaMap (id, questionId, mediaId, startSecond, endSecond, sortOrder)
+Question (id, question, optionA, optionB, optionC, optionD, correctAnswer, explanation, typeId, partId)
+QuestionSkills (questionId, skillId, weight)
+QuestionStats (questionId, attempts, correct, globalCorrectRate, medianTimeSeconds)
+QuestionType (id, name, description)
+Skills (id, name, description, parentId)
+Synonyms (id, vocabId, synonym)
+Test_Courses (testId, courseId)
+TestQuestions (id, testId, questionId, sortOrder)
+Tests (id, title, duration, participants, comments, questions)
+UserResults (id, userId, questionId, isCorrect, answeredAt, selectedOption, userTestId)
+Users (id, username, email, password, role_id, avatar, status)
+UserTests (id, userId, testId, score, startedAt, completeAt, status)
+UserVocabulary (id, userId, vocabId, reviewCount, lastReviewed, isMastered)
+Vocabulary (id, word, definition, example, topic)
+
+## Mô hình ERD
+Hình 2. Mô hình ERD
+
+## Mô hình cơ sở dữ liệu quan hệ
+Quy ước:
+Primary key: (gạch chân) MABP
+Foreign key : (in đậm) MABP
+PK_FK: (vừa thuộc khóa chính, vừa là khóa ngoại, gạch chân) MAPD, MAHP
+Antonyms (id, vocabId, antonym)
+Conversations (id, userId, title, createdAt, updatedAt, deletedAt)
+Courses (id, name)
+Logs (id, userId, message, response, timestamp)
+Meanings (id, vocabId, partOfSpeech, definition, example)
+MediaFiles (id, mediaType, mediaUrl, description)
+Messages (id, conversationId, role, content, createdAt, updatedAt)
+Part (id, name)
+Pronunciations (id, vocabId, accent, phoneticText, audioUrl)
+QuestionEmbeddings (questionId, model, dim, vector, updatedAt)
+QuestionMediaMap (id, questionId, mediaId, startSecond, endSecond, sortOrder)
+Question (id, question, optionA, optionB, optionC, optionD, correctAnswer, explanation, typeId, partId)
+QuestionSkills (questionId, skillId, weight)
+QuestionStats (questionId, attempts, correct, globalCorrectRate, medianTimeSeconds)
+QuestionType (id, name, description)
+Skills (id, name, description, parentId)
+Synonyms (id, vocabId, synonym)
+Test_Courses (testId, courseId)
+TestQuestions (id, testId, questionId, sortOrder)
+Tests (id, title, duration, participants, comments, questions)
+UserResults (id, userId, questionId, isCorrect, answeredAt, selectedOption, userTestId)
+Users (id, username, email, password, role_id, avatar, status)
+UserTests (id, userId, testId, score, startedAt, completeAt, status)
+UserVocabulary (id, userId, vocabId, reviewCount, lastReviewed, isMastered)
+Vocabulary (id, word, definition, example, topic)
+-Thực thể Antonyms:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | vocabId | Từ vựng | int |  | 
+3 | antonyms |  | nvarchar(100) |  | 
+--------------------------------------------------------------------------------
+Bảng 3. Bảng thực thể Antonyms
+-Thực thể Conversations:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | userId | ID học viên | int |  | 
+3 | Title | Tiêu đề | nvarchar(255) |  | x
+4 | createdAt | Ngày tạo | datetimeoffset(7) |  | 
+5 | updatedAt | Ngày cập nhật | datetimeoffset(7) |  | 
+6 | deletedAt | Ngày xóa | datetimeoffset(7) |  | 
+--------------------------------------------------------------------------------
+Bảng 4. Bảng thực thể Conversations
+-Thực thể Courses:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | name | Tên | nvarchar(100) |  | 
+--------------------------------------------------------------------------------
+Bảng 5. Bảng thực thể Courses
+-Thực thể Logs:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | userId | ID học viên | int |  | x
+3 | mesage | Tin nhắn | nvarchar(max) |  | x
+4 | response |  | nvarchar(max) |  | x
+5 | timestamp |  | datetime |  | x
+--------------------------------------------------------------------------------
+Bảng 6. Bảng thực thể Logs
+-Thực thể Meanings:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | vocabId | Từ vựng | int |  | 
+3 | partOfSpeech |  | nvarchar(30) |  | x
+4 | definition |  | nvarchar(max) |  | 
+5 | example | Ví dụ | nvarchar(max) |  | x
+--------------------------------------------------------------------------------
+Bảng 7. Bảng thực thể Meanings
+-Thực thể MediaFiles:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | mediaType | Loại | varchar(10) |  | 
+3 | mediaUrl | Url | nvarchar(255) |  | 
+4 | description | Mô tả | nvarchar(255) |  | x
+--------------------------------------------------------------------------------
+Bảng 8. Bảng thực thể MediaFiles
+-Thực thể Messages:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | conversationId |  | int |  | 
+3 | role | Vai trò | nvarchar(100) |  | x
+4 | [content] | Nội dung | nvarchar(max) |  | 
+5 | createdAt | Ngày tạo | datetimeoffset(7) |  | x
+6 | updatedAt | Ngày cập nhật | datetimeoffset(7) |  | x
+--------------------------------------------------------------------------------
+Bảng 9. Bảng thực thể Message
+-Thực thể Part:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | name | Tên | nvarchar(20) |  | 
+--------------------------------------------------------------------------------
+Bảng 10. Bảng thực thể Part
+-Thực thể Pronunciations:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | vocabId | Từ vựng | int |  | 
+3 | accent |  | varchar(10) |  | x
+4 | phoneticText |  |  |  | x
+5 | audioUrl |  | text |  | x
+--------------------------------------------------------------------------------
+Bảng 11. Bảng thực thể Pronunciations
+-Thực thể QuestionEmbeddings:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | questionId | ID câu hỏi | int | Khóa chính | 
+2 | model |  | nvarchar(100) |  | 
+3 | dim |  | int |  | 
+4 | vector |  | nvarchar(MAX) |  | 
+5 | updatedAt | Ngày cập nhật | datetime |  | x
+--------------------------------------------------------------------------------
+Bảng 12. Bảng thực thể QuestionEmbeddings
+-Thực thể QuestionMediaMap:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | questionId | ID câu hỏi | int |  | 
+3 | mediaId |  | int |  | 
+4 | startSecond |  | int |  | x
+5 | endSecond |  | int |  | x
+6 | sortOrder |  | int |  | x
+--------------------------------------------------------------------------------
+Bảng 13. Bảng thực thể QuestionMesiaMap
+-Thực thể Question:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | question | Câu hỏi | nvarchar(MAX) |  | x
+3 | optionA | Lựa chọn A | nvarchar(MAX) |  | x
+4 | optionB | Lựa chọn B | nvarchar(MAX) |  | x
+5 | optionC | Lựa chọn C | nvarchar(MAX) |  | x
+6 | optionD | Lựa chọn D | nvarchar(MAX) |  | x
+7 | correctAnswer |  | nvarchar(500) |  | x
+8 | explanation |  | nvarchar(MAX) |  | x
+9 | typeId |  | int |  | x
+10 | partId |  | int |  | x
+--------------------------------------------------------------------------------
+Bảng 14. Bảng thực thể Question
+-Thực thể QuestionSkills:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | questionId | ID câu hỏi | int | Khóa chính | 
+2 | skillId | Kỹ năng | int |  | 
+3 | weight |  | decimal(3,2) |  | x
+--------------------------------------------------------------------------------
+Bảng 15. Bảng thực thể QuestionSkills
+-Thực thể QuestionStats:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | questionId | ID câu hỏi | int | Khóa chính | 
+2 | attempts |  | int |  | 
+3 | correct |  | int |  | 
+4 | globalCorrectRate |  |  |  | x
+5 | medianTimeSeconds |  | decimal(6,2) |  | x
+--------------------------------------------------------------------------------
+Bảng 16. Bảng thực thể QuestionStats
+-Thực thể QuestionType:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | name | Tên | nvarchar(50) |  | 
+3 | description | Mô tả | nvarchar(255) |  | x
+--------------------------------------------------------------------------------
+Bảng 17. Bảng thực thể QuestionType
+-Thực thể Skills:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | name | Tên | nvarchar(100) |  | 
+3 | description | Mô tả | nvarchar(255) |  | x
+4 | parentId |  | int |  | x
+--------------------------------------------------------------------------------
+Bảng 18. Bảng thực thể Skills
+-Thực thể Synonyms:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | vocabId | Từ vựng | int |  | 
+3 | synonym |  | nvarchar(100) |  | 
+--------------------------------------------------------------------------------
+Bảng 19. Bảng thực thể Synonyms
+-Thực thể Test_Courses:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | testId | ID | int | Khóa chính | 
+2 | courseId |  | int |  | 
+--------------------------------------------------------------------------------
+Bảng 20. Bảng thực thể Test_Courses
+-Thực thể TestQuestions:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | testId | ID | int |  | 
+3 | questionId | ID câu hỏi | int |  | 
+4 | sortOrder |  | int |  | x
+--------------------------------------------------------------------------------
+Bảng 21. Bảng thực thể TestQuestions
+-Thực thể Tests:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | title | Tiêu đề | nvarchar(255) |  | 
+3 | duration |  | nvarchar(50) |  | x
+4 | participants |  | int |  | x
+5 | comments |  | int |  | x
+6 | questions | Câu hỏi | int |  | x
+--------------------------------------------------------------------------------
+Bảng 22. Bảng thực thể Tests
+-Thực thể UserResults:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | userId | ID học viên | int |  | 
+3 | questionId | ID câu hỏi | int |  | x
+4 | isCorrect |  | bit |  | x
+5 | answeredAt |  | datetimeoffset(7) |  | x
+6 | selectedOption |  | nvarchar(100) |  | x
+7 | userTestId |  | int |  | x
+--------------------------------------------------------------------------------
+Bảng 23. Bảng thực thể UserResults
+-Thực thể Users:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | username | Tên học viên | nvarchar(100) |  | 
+3 | email | Email | nvarchar(255) |  | 
+4 | password | Mật khẩu | nvarchar(255) |  | 
+5 | role_id | Vai trò | int |  | x
+6 | avatar | Ảnh đại diện | nvarchar(255) |  | x
+7 | status | Trạng thái | bit |  | 
+--------------------------------------------------------------------------------
+Bảng 24. Bảng thực thể Users
+-Thực thể UserTests:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | userId | ID học viên | int |  | 
+3 | testId | ID | int |  | 
+4 | score | Điểm | float |  | x
+5 | startedAt | Bắt đầu | datetimeoffset(7) |  | x
+6 | completeAt | Hoàn thành | datetimeoffset(7) |  | x
+7 | status | Trạng thái | varchar(20) |  | x
+--------------------------------------------------------------------------------
+Bảng 25. Bảng thực thể UserTests
+-Thực thể UserVocabulary:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | userId | ID học viên | int |  | x
+3 | vocabId | Từ vựng | int |  | x
+4 | reviewCount | Lượt làm | int |  | x
+5 | lastReviewed |  | int |  | x
+6 | isMastered |  | bit |  | x
+--------------------------------------------------------------------------------
+Bảng 26. Bảng thực thể UserVocabulary
+-Thực thể Vocabulary:
+
+📊 TABLE:
+--------------------------------------------------------------------------------
+Stt | Thuộc tính | Mô tả | Kiểu dữ liệu | Khóa | Alow Nulls
+1 | id | ID | int | Khóa chính | 
+2 | word |  | nvarchar(100) |  | 
+3 | definition |  | nvarchar(MAX) |  | x
+4 | example | Ví dụ | nvarchar(MAX) |  | x
+5 | topic |  | nvarchar(100) |  | x
+--------------------------------------------------------------------------------
+Bảng 27. Bảng thực thể Vocabulary
+CHƯƠNG 4: XÂY DỰNG HỆ THỐNG
+4.1 Tổng quan
+Hệ thống “Chatbot TOEIC” được thiết kế với giao diện trực quan, thân thiện, đảm bảo người học và quản trị viên có thể thao tác dễ dàng. Các giao diện được chia thành hai nhóm chính:
+Giao diện người học: gồm Trang chủ, Làm bài thi, Kết quả, Tra từ vựng, Chatbot, Lịch sử, Trang cá nhân.
+Giao diện quản trị (Admin): gồm Tạo đề thi, Quản lý đề thi, Quản lý khóa học, Thêm khóa học, Quản lý người dùng, Chỉnh sửa thông tin người dùng.
+Dưới đây là mô tả chi tiết từng giao diện, thao tác và phản hồi của hệ thống.
+4.2 Giao diện người học
+4.2.1 Trang chủ người dùng (Home)
+Sau khi đăng nhập thành công, hệ thống hiển thị giao diện Trang chủ.
+Danh sách đề thi: liệt kê các đề TOEIC có sẵn, phân loại theo Part (Listening, Reading) hoặc Full Test.
+Thanh tìm kiếm: cho phép tìm nhanh đề thi theo từ khóa.
+Thanh menu: gồm các chức năng chính: Làm bài thi, Lịch sử kết quả, Tra từ vựng, Chatbot, Trang cá nhân.
+Thông báo hệ thống: hiển thị tin nhắn khi có cập nhật mới (ví dụ: đề thi vừa được thêm).
+Người dùng có thể chọn một đề thi để bắt đầu làm bài hoặc chuyển đến các chức năng khác.
+Hình 4.1 Giao diện Trang chủ
+Mô tả:
+Trang chủ là giao diện đầu tiên của người học khi truy cập hệ thống. Giao diện hiển thị danh sách các đề thi TOEIC, thông báo hệ thống, menu điều hướng và thanh tìm kiếm đề thi. Người dùng có thể bắt đầu làm bài, tra từ vựng hoặc truy cập chatbot ngay tại đây.
+Đặc tả:
+Pre-condition:
+Người học đã truy cập trang web của hệ thống.
+Hệ thống đã tải dữ liệu danh sách đề thi từ cơ sở dữ liệu.
+Dòng sự kiện chính:
+Hệ thống hiển thị danh sách đề thi TOEIC có sẵn (phân loại theo Listening, Reading, Full Test).
+Người học có thể nhập từ khóa vào thanh tìm kiếm để lọc đề thi.
+Khi chọn một đề cụ thể, hệ thống điều hướng sang giao diện làm bài.
+Nếu người học chưa đăng nhập, hệ thống hiển thị thông báo “Vui lòng đăng nhập để lưu kết quả làm bài.”
+Người học có thể chọn các mục khác trong menu như Tra từ vựng hoặc Chatbot TOEIC.
+Dòng sự kiện khác:
+Nếu không có đề thi khả dụng, hệ thống hiển thị thông báo: “Hiện chưa có đề thi phù hợp.”
+Nếu xảy ra lỗi kết nối đến CSDL, giao diện sẽ hiển thị “Không thể tải dữ liệu, vui lòng thử lại sau.”
+Post-condition:
+Người học chọn được đề thi mong muốn hoặc được điều hướng đến tính năng khác.
+4.2.2 Chức năng làm bài thi TOEIC
+Sau khi chọn đề, hệ thống hiển thị màn hình làm bài thi với cấu trúc mô phỏng đề thi thật.
+Thanh tiêu đề: hiển thị tên đề, tổng số câu hỏi, đồng hồ đếm ngược thời gian.
+Danh sách câu hỏi: hiển thị theo từng Part.
+Với Listening: có audio đi kèm.
+Với Reading: hiển thị đoạn văn, câu hỏi, 4 đáp án lựa chọn.
+Thanh điều hướng: cho phép nhảy nhanh đến một câu bất kỳ.
+Nút đánh dấu (flag): dùng để ghi nhớ câu chưa chắc chắn.
+Nút nộp bài: kết thúc bài làm và gửi toàn bộ đáp án lên server.
+Trạng thái câu hỏi hiển thị bằng màu sắc:
+Xanh lá: đã trả lời.
+Vàng: đã đánh dấu.
+Xám: chưa trả lời.
+Nếu nộp bài khi chưa làm hết câu, hệ thống cảnh báo “Bạn còn câu chưa làm, có chắc chắn nộp không?”.
+Hình 4.2 Giao diện làm bài thi TOEIC
+Mô tả:
+Chức năng cho phép người học làm bài thi TOEIC trực tuyến với cấu trúc, định dạng và thời lượng giống đề thi thật, hỗ trợ đồng hồ đếm ngược, đánh dấu câu và tự động lưu kết quả.
+Đặc tả:
+Pre-condition:
+Người học đã chọn một đề thi từ Trang chủ.
+Hệ thống đã tải thành công dữ liệu đề thi và câu hỏi từ cơ sở dữ liệu.
+Dòng sự kiện chính:
+Hệ thống hiển thị toàn bộ câu hỏi của đề thi theo Part (Listening hoặc Reading).
+Người học chọn đáp án cho từng câu hỏi.
+Khi chọn đáp án, hệ thống tự động lưu trạng thái tạm.
+Người học có thể đánh dấu (flag) những câu chưa chắc chắn.
+Khi nhấn “Nộp bài”, hệ thống xác nhận lại hành động và cảnh báo nếu có câu chưa làm.
+Sau khi xác nhận, toàn bộ kết quả được gửi lên backend để lưu trữ và phân tích.
+Hệ thống chuyển hướng sang trang “Kết quả chi tiết”.
+Dòng sự kiện khác:
+Nếu hết thời gian, hệ thống tự động nộp bài.
+Nếu mất kết nối trong khi làm bài, dữ liệu tạm được lưu cục bộ (localStorage) và đồng bộ lại khi có mạng.
+Post-condition:
+Bài thi được lưu vào cơ sở dữ liệu.
+Hệ thống hiển thị kết quả và gợi ý kỹ năng yếu.
+4.2.3 Kết quả chi tiết
+Sau khi nộp bài, giao diện Kết quả chi tiết hiển thị:
+Điểm tổng TOEIC quy đổi.
+Danh sách câu hỏi: câu đúng/sai, đáp án chính xác, đáp án người dùng chọn.
+Phân tích theo kỹ năng: sử dụng Naïve Bayes và kNN để xác định kỹ năng yếu.
+Khuyến nghị học tập: gợi ý kỹ năng cần luyện tập và bài tập phù hợp.
+Người học có thể xem lại bài làm, tải kết quả (PDF) hoặc quay lại Trang chủ.
+Hình 4.3 Giao diện kết quả chi tiết
+Mô tả:
+Giao diện hiển thị kết quả sau khi người học hoàn thành bài thi TOEIC, bao gồm điểm tổng, thống kê câu đúng/sai, phân tích kỹ năng yếu và gợi ý luyện tập.
+Đặc tả:
+Pre-condition:
+Người học đã hoàn thành bài thi và hệ thống đã xử lý xong dữ liệu kết quả.
+Dòng sự kiện chính:
+Hệ thống nhận dữ liệu kết quả từ backend.
+Hiển thị tổng điểm, số câu đúng, sai.
+Phân tích kỹ năng yếu dựa trên Naïve Bayes và kNN.
+Hiển thị khuyến nghị rèn luyện: Listening, Reading, Grammar, Vocabulary...
+Cho phép người học tải kết quả (PDF) hoặc quay lại Trang chủ.
+Dòng sự kiện khác:
+Nếu quá trình tính điểm bị lỗi, hiển thị “Không thể tải kết quả, vui lòng thử lại.”
+Nếu người học chưa hoàn thành bài thi, không thể truy cập giao diện này.
+Post-condition:
+Kết quả được lưu trữ và gắn với tài khoản người học trong CSDL.
+4.2.4 Tra từ vựng TOEIC
+Giao diện này cho phép người học tra cứu nghĩa của từ vựng TOEIC.
+Thanh nhập từ khóa: nhập từ cần tra.
+Kết quả tra cứu: gồm phát âm, nghĩa tiếng Việt, loại từ, ví dụ minh họa.
+Gợi ý mở rộng: các từ liên quan hoặc đồng nghĩa.
+Nếu từ chưa có trong hệ thống, chatbot có thể hỗ trợ tra cứu bằng API ngôn ngữ.
+Hình 4.4 Giao diện tra từ vựng TOEIC
+Mô tả:
+Chức năng giúp người học tra nghĩa, loại từ, ví dụ và phát âm của các từ vựng TOEIC. Hệ thống có thể gọi API NLP (Gemini hoặc OpenAI) khi từ chưa có trong cơ sở dữ liệu.
+Đặc tả:
+Pre-condition:
+Hệ thống đã khởi động mô-đun từ điển hoặc kết nối API NLP.
+Dòng sự kiện chính:
+Người học nhập từ cần tra vào thanh tìm kiếm.
+Hệ thống kiểm tra trong CSDL nội bộ:
+Nếu có, hiển thị nghĩa, loại từ, ví dụ minh họa.
+Nếu không, gửi yêu cầu đến Gemini hoặc OpenAI API.
+Hiển thị phát âm (IPA), ví dụ tiếng Anh – Việt.
+Gợi ý từ đồng nghĩa, trái nghĩa hoặc từ vựng cùng chủ đề.
+Dòng sự kiện khác:
+Nếu nhập từ rỗng → hiển thị “Vui lòng nhập từ cần tra.”
+Nếu API NLP không phản hồi → hiển thị “Không thể kết nối máy chủ ngôn ngữ.”
+Post-condition:
+Từ vựng được hiển thị và lưu tạm trong lịch sử tra cứu.
+4.2.5 Chatbot TOEIC
+Người học có thể đặt câu hỏi trực tiếp cho Chatbot.
+Khung hội thoại: hiển thị lịch sử câu hỏi – trả lời.
+Ô nhập văn bản: để người học nhập câu hỏi hoặc yêu cầu giải thích.
+Kết quả chatbot trả lời: gồm giải thích ngữ pháp, nghĩa từ, phân tích đáp án.
+Ví dụ: nhập câu hỏi “Tại sao đáp án B đúng mà không phải C?”, Chatbot sẽ phân tích ngữ pháp, highlight từ khóa bẫy.
+Hình 4.5 Giao diện Chatbot TOEIC
+Mô tả:
+Chatbot TOEIC là mô-đun tương tác thông minh giúp người học giải đáp thắc mắc ngữ pháp, nghĩa từ, và lý do chọn đáp án trong bài thi.
+Đặc tả:
+Pre-condition:
+Hệ thống chatbot đã kết nối API (Gemini hoặc OpenAI).
+Người học có thể sử dụng mà không cần đăng nhập.
+Dòng sự kiện chính:
+Người học nhập câu hỏi vào khung hội thoại.
+Hệ thống gửi dữ liệu đến API NLP để xử lý.
+Nhận kết quả phân tích, hiển thị câu trả lời chi tiết (ngữ pháp, từ vựng, giải thích đáp án).
+Lưu lịch sử hội thoại để người học xem lại.
+Dòng sự kiện khác:
+Nếu câu hỏi quá dài hoặc không hợp lệ → hiển thị “Vui lòng rút gọn câu hỏi.”
+Nếu mất kết nối API → hiển thị “Chatbot hiện không khả dụng.”
+Post-condition:
+Câu hỏi và phản hồi được lưu lại trong cơ sở dữ liệu hoặc localStorage để theo dõi lịch sử.
+4.2.6 Lịch sử kết quả
+Người học có thể xem toàn bộ kết quả thi trước đó.
+Danh sách bài thi: hiển thị ngày thi, điểm số, trạng thái.
+Xem chi tiết: truy cập lại kết quả và phân tích bài thi trước đó.
+Biểu đồ thống kê: trực quan hóa tiến bộ theo thời gian.
+Hình 4.6 Giao diện lịch sử kết quả
+Mô tả:
+Chức năng giúp người học xem lại các bài thi TOEIC đã làm, bao gồm ngày thi, điểm số, và chi tiết phân tích kỹ năng. Giao diện còn hiển thị biểu đồ tiến bộ theo thời gian để theo dõi quá trình học tập.
+Đặc tả:
+Pre-condition:
+Người học đã đăng nhập vào hệ thống.
+Hệ thống đã có dữ liệu kết quả thi của người dùng.
+Dòng sự kiện chính:
+Hệ thống truy vấn cơ sở dữ liệu để lấy danh sách các bài thi của người học.
+Hiển thị danh sách theo thứ tự thời gian (gần nhất đến cũ nhất).
+Người học chọn một bài cụ thể → hệ thống mở giao diện Kết quả chi tiết.
+Hệ thống vẽ biểu đồ tiến bộ (line chart hoặc bar chart) thể hiện điểm số theo thời gian.
+Dòng sự kiện khác:
+Nếu chưa có kết quả thi nào → hiển thị “Bạn chưa thực hiện bài thi nào.”
+Nếu lỗi kết nối đến cơ sở dữ liệu → thông báo “Không thể tải dữ liệu, vui lòng thử lại.”
+Post-condition:
+Người học xem lại và phân tích được các kết quả thi trước đó.
+4.2.7 Trang cá nhân người dùng
+Hiển thị thông tin tài khoản cá nhân.
+Thông tin cá nhân: họ tên, email, trạng thái tài khoản.
+Chỉnh sửa thông tin: người dùng có thể đổi mật khẩu, cập nhật ảnh đại diện.
+Hoạt động gần đây: danh sách bài thi vừa làm.
+Hình 4.7 Giao diện trang cá nhân
+Mô tả:
+Trang cá nhân hiển thị thông tin của người học bao gồm họ tên, email, trạng thái tài khoản, ảnh đại diện và hoạt động gần đây. Cho phép người dùng chỉnh sửa thông tin hoặc đổi mật khẩu.
+Đặc tả:
+Pre-condition:
+Người học đã đăng nhập hợp lệ.
+Dòng sự kiện chính:
+Hệ thống hiển thị thông tin cá nhân từ cơ sở dữ liệu.
+Người học có thể chọn “Chỉnh sửa thông tin” → nhập lại tên hoặc cập nhật ảnh đại diện.
+Người học có thể chọn “Đổi mật khẩu” → nhập mật khẩu cũ và mới.
+Hệ thống kiểm tra hợp lệ, lưu thông tin mới vào cơ sở dữ liệu.
+Hiển thị thông báo “Cập nhật thành công.”
+Dòng sự kiện khác:
+Nếu nhập mật khẩu cũ sai → thông báo “Mật khẩu không chính xác.”
+Nếu ảnh đại diện không đúng định dạng → thông báo “Vui lòng chọn tệp hình hợp lệ.”
+Post-condition:
+Thông tin cá nhân được cập nhật thành công trong cơ sở dữ liệu.
+4.3 Giao diện quản trị (Admin)
+4.3.1 Tạo đề thi mới
+Admin có thể tạo đề thi mới.
+Chọn khóa học, Part (Listening/Reading).
+Thêm câu hỏi thủ công hoặc import CSV/JSON.
+Thêm media: ảnh, audio.
+Hình 4.8 Giao diện tạo đề thi mới
+Mô tả:
+Chức năng cho phép quản trị viên thêm mới một đề thi TOEIC, gồm các Part (Listening, Reading), thêm câu hỏi, file âm thanh hoặc hình ảnh minh họa.
+Đặc tả:
+Pre-condition:
+Quản trị viên đã đăng nhập hệ thống với quyền Admin.
+Dòng sự kiện chính:
+Admin truy cập mục “Tạo đề thi”.
+Hệ thống hiển thị form nhập thông tin: tên đề, loại Part, mô tả.
+Admin thêm câu hỏi thủ công hoặc import từ file CSV/JSON.
+Thêm media (audio/hình ảnh) nếu có.
+Nhấn “Lưu” → hệ thống kiểm tra tính hợp lệ và lưu vào cơ sở dữ liệu.
+Dòng sự kiện khác:
+Nếu file CSV bị lỗi định dạng → hiển thị “Không thể đọc tệp, vui lòng kiểm tra lại.”
+Nếu thiếu thông tin bắt buộc → cảnh báo “Vui lòng điền đầy đủ thông tin.”
+Post-condition:
+Đề thi mới được thêm thành công vào danh sách đề thi.
+4.3.2 Quản lý đề thi
+Danh sách toàn bộ đề thi.
+Thông tin đề: số lượng câu, số người đã làm, trạng thái (đang hoạt động/ẩn).
+Các thao tác: chỉnh sửa, xóa, xem chi tiết.
+Hình 4.9 Giao diện quản lý đề thi
+Mô tả:
+Giao diện cho phép admin xem, chỉnh sửa hoặc xóa các đề thi hiện có, đồng thời theo dõi số người đã làm và trạng thái hoạt động của từng đề.
+Đặc tả:
+Pre-condition:
+Admin đã đăng nhập hợp lệ.
+Hệ thống đã có dữ liệu đề thi.
+Dòng sự kiện chính:
+Hệ thống tải danh sách đề thi từ cơ sở dữ liệu.
+Admin có thể chọn một đề để xem chi tiết hoặc nhấn “Chỉnh sửa”.
+Có thể ẩn/hiện đề bằng cách thay đổi trạng thái hoạt động.
+Hệ thống cập nhật thay đổi vào cơ sở dữ liệu.
+Dòng sự kiện khác:
+Nếu admin chọn “Xóa” → hiển thị xác nhận “Bạn có chắc chắn muốn xóa đề thi này?”.
+Nếu lỗi kết nối → hiển thị “Không thể tải danh sách đề thi.”
+Post-condition:
+Danh sách đề thi được cập nhật đúng trạng thái trong cơ sở dữ liệu.
+4.3.3 Quản lý khóa học
+Danh sách khóa học hiện có.
+Hiển thị số đề thi trong mỗi khóa.
+Chức năng: thêm/sửa/xóa khóa học.
+Hình 4.10 Giao diện quản lý khóa học
+Mô tả:
+Cho phép admin xem, tạo mới, chỉnh sửa hoặc xóa các khóa học TOEIC (Listening, Reading, Full Test).
+Đặc tả:
+Pre-condition:
+Admin đã đăng nhập.
+Dòng sự kiện chính:
+Hệ thống tải danh sách khóa học.
+Admin nhấn “Thêm khóa học” → nhập tên, mô tả, kỹ năng.
+Nhấn “Lưu” → hệ thống kiểm tra dữ liệu và lưu vào cơ sở dữ liệu.
+Admin có thể chọn “Chỉnh sửa” hoặc “Xóa” khóa học khi cần.
+Dòng sự kiện khác:
+Nếu tên khóa học bị trùng → thông báo “Khóa học đã tồn tại.”
+Nếu lỗi kết nối cơ sở dữ liệu → “Không thể thực hiện thao tác.”
+Post-condition:
+Danh sách khóa học được cập nhật đầy đủ trong hệ thống.
+4.3.4 Thêm khóa học
+Admin nhập tên khóa học, mô tả.
+Chọn loại kỹ năng (Listening, Reading, Full Test).
+Lưu và hiển thị trong danh sách khóa học.
+Hình 4.11 Giao diện thêm khóa học
+Mô tả:
+Chức năng hỗ trợ admin thêm một khóa học mới để quản lý các đề thi thuộc cùng chủ đề hoặc kỹ năng.
+Đặc tả:
+Pre-condition:
+Admin đang ở giao diện quản lý khóa học.
+Dòng sự kiện chính:
+Admin chọn “Thêm khóa học mới”.
+Nhập thông tin: tên khóa, mô tả, kỹ năng (Listening, Reading, Full Test).
+Nhấn “Lưu” → hệ thống lưu thông tin vào cơ sở dữ liệu.
+Dòng sự kiện khác:
+Nếu tên bị bỏ trống → cảnh báo “Tên khóa học không được để trống.”
+Nếu nhập mô tả quá dài → hiển thị “Giới hạn ký tự vượt mức cho phép.”
+Post-condition:
+Khóa học mới được hiển thị trong danh sách khóa học.
+4.3.5 Quản lý người dùng
+Danh sách tài khoản: họ tên, email, vai trò (user/admin), trạng thái.
+Chức năng: khóa/mở tài khoản, phân quyền.
+Hình 4.12 Giao diện quản lý người dùng
+Mô tả:
+Giao diện cho phép admin quản lý tài khoản người dùng (user, admin) bao gồm phân quyền, khóa/mở tài khoản hoặc chỉnh sửa thông tin cơ bản.
+Đặc tả:
+Pre-condition:
+Admin đăng nhập thành công.
+Dòng sự kiện chính:
+Hệ thống hiển thị danh sách người dùng gồm: họ tên, email, vai trò, trạng thái.
+Admin chọn người dùng cần thao tác.
+Có thể đổi quyền (user ↔ admin), khóa tài khoản, hoặc mở lại.
+Thông tin thay đổi được lưu ngay vào cơ sở dữ liệu.
+Dòng sự kiện khác:
+Nếu cố gắng xóa tài khoản admin chính → hiển thị “Không thể xóa tài khoản hệ thống.”
+Nếu dữ liệu người dùng lỗi → hiển thị “Không thể tải thông tin người dùng.”
+Post-condition:
+Dữ liệu người dùng được cập nhật chính xác trong hệ thống.
+4.3.6 Chỉnh sửa thông tin người dùng
+Chỉnh sửa vai trò (user → admin).
+Cập nhật thông tin cơ bản.
+Khóa tài khoản khi cần.
+Hình 4.13 Giao diện chỉnh sửa thông tin người dùng
+Mô tả:
+Chức năng cho phép admin hoặc chính người dùng chỉnh sửa thông tin cá nhân (họ tên, ảnh đại diện, mật khẩu, vai trò).
+Đặc tả:
+Pre-condition:
+Người dùng hoặc admin đã đăng nhập hợp lệ.
+Dòng sự kiện chính:
+Hệ thống tải thông tin người dùng hiện tại.
+Người dùng nhập lại thông tin cần thay đổi.
+Nhấn “Lưu” → hệ thống kiểm tra hợp lệ (email, mật khẩu...).
+Lưu dữ liệu mới vào cơ sở dữ liệu và hiển thị thông báo “Cập nhật thành công.”
+Dòng sự kiện khác:
+Nếu nhập email trùng → hiển thị “Email đã tồn tại.”
+Nếu mật khẩu yếu → cảnh báo “Mật khẩu phải có ít nhất 8 ký tự và 1 ký tự đặc biệt.”
+Post-condition:
+Thông tin người dùng được cập nhật trong cơ sở dữ liệu.
+CHƯƠNG 5: KẾT LUẬN
+5.1. Kết quả đạt được
+Đề tài “Xây dựng hệ thống hỗ trợ học tiếng Anh có chức năng gợi ý kỹ năng cần ôn luyện dựa trên Naïve Bayes và kNN” đã cơ bản hoàn thành các mục tiêu đặt ra trong phạm vi nghiên cứu. Hệ thống được xây dựng theo hướng ứng dụng các thuật toán học máy nhằm hỗ trợ quá trình học tiếng Anh một cách thông minh và cá nhân hóa.
+Cụ thể, hệ thống đã đạt được các kết quả sau:
+Xây dựng thành công một nền tảng web học TOEIC với các chức năng chính: làm bài thi, xem kết quả, tra từ vựng, tương tác với chatbot và theo dõi lịch sử học tập.
+Ứng dụng hai giải thuật Naïve Bayes và k-Nearest Neighbors (kNN) để phân tích kết quả học tập, xác định kỹ năng yếu và đề xuất nội dung ôn luyện phù hợp cho từng người học.
+Phát triển mô-đun Chatbot TOEIC sử dụng API ngôn ngữ tự nhiên (Gemini hoặc OpenAI) có khả năng giải thích ngữ pháp, phân tích câu hỏi và cung cấp phản hồi theo ngữ cảnh.
+Hoàn thiện hệ thống quản trị (Admin Dashboard) cho phép quản lý người dùng, đề thi, khóa học và dữ liệu học tập.
+Thiết kế và triển khai cơ sở dữ liệu SQL Server bảo đảm tính ổn định, toàn vẹn và an toàn thông tin.
+Xây dựng hệ thống đa tầng gồm Frontend (ReactJS/Next.js), Backend (Node.js/Express) và AI Service (Python 3.12), đảm bảo tính mở rộng và khả năng vận hành ổn định trên nhiều nền tảng.
+Nhìn chung, hệ thống “Chatbot TOEIC” là một giải pháp hiệu quả giúp người học tiếng Anh rèn luyện và cải thiện kỹ năng thông qua việc kết hợp công nghệ trí tuệ nhân tạo với phương pháp học tập trực tuyến.
+5.2. Ưu điểm của hệ thống
+Qua quá trình triển khai và thử nghiệm, hệ thống thể hiện nhiều ưu điểm nổi bật:
+Ứng dụng trí tuệ nhân tạo vào giáo dục: Các thuật toán học máy được tích hợp thành công, mang lại khả năng phân tích và gợi ý cá nhân hóa cho người học.
+Kiến trúc hệ thống linh hoạt: Các thành phần Frontend – Backend – AI – Cơ sở dữ liệu được tách biệt rõ ràng, dễ dàng nâng cấp và mở rộng.
+Giao diện thân thiện, dễ sử dụng: Thiết kế hiện đại, bố cục hợp lý, phù hợp với cả người dùng phổ thông và người học ở nhiều trình độ khác nhau.
+Chatbot thông minh: Có khả năng phản hồi nhanh, hỗ trợ người học trong việc giải thích từ vựng và ngữ pháp theo ngữ cảnh thực tế.
+Đảm bảo tính bảo mật và phân quyền: Áp dụng cơ chế xác thực bằng JSON Web Token (JWT), phân quyền rõ ràng giữa người học và quản trị viên.
+Hiệu năng và khả năng tương thích tốt: Hệ thống hoạt động ổn định trên các trình duyệt và nền tảng phổ biến, có thể triển khai trên máy chủ thật hoặc cloud server.
+5.3. Hạn chế của hệ thống
+Bên cạnh những ưu điểm đạt được, hệ thống vẫn tồn tại một số hạn chế nhất định:
+Độ chính xác của mô hình AI còn phụ thuộc vào dữ liệu huấn luyện: Số lượng mẫu dữ liệu thực tế chưa nhiều, dẫn đến kết quả gợi ý kỹ năng chưa đạt độ tin cậy tuyệt đối.
+Phạm vi chức năng còn giới hạn: Hệ thống hiện mới hỗ trợ hai kỹ năng Listening và Reading, chưa bao gồm Speaking và Writing.
+Hiệu suất xử lý chatbot còn phụ thuộc vào đường truyền và API bên thứ ba: Khi số lượng truy cập lớn, tốc độ phản hồi có thể bị chậm.
+Chưa có chức năng quản lý bài học theo lộ trình: Việc gợi ý kỹ năng mới dừng ở mức bài thi riêng lẻ, chưa tạo được lộ trình học cá nhân hóa dài hạn.
+Giao diện di động chưa được tối ưu hoàn toàn: Một số thành phần hiển thị trên điện thoại còn hạn chế về bố cục.
+5.4. Hướng phát triển trong tương lai
+Trong tương lai, nhóm định hướng mở rộng và nâng cấp hệ thống theo các hướng sau:
+Nâng cao mô hình học máy:
+Bổ sung và thử nghiệm các mô hình tiên tiến hơn như Random Forest, XGBoost hoặc Deep Neural Network để cải thiện độ chính xác khi dự đoán kỹ năng yếu.
+Phát triển lộ trình học tập thông minh:
+Dựa trên kết quả phân tích kỹ năng, hệ thống có thể tự động đề xuất kế hoạch học tập, bài luyện và nhắc nhở theo thời gian thực.
+Hoàn thiện bộ đề TOEIC đầy đủ 7 phần:
+Mở rộng phạm vi đề thi, đặc biệt là hai kỹ năng Speaking và Writing, giúp người học có thể luyện tập toàn diện.
+Xây dựng ứng dụng di động:
+Phát triển phiên bản ứng dụng trên Android và iOS hoặc dạng Progressive Web App (PWA), giúp người học dễ dàng truy cập mọi lúc, mọi nơi.
+Tăng cường khả năng phân tích dữ liệu học tập:
+Bổ sung dashboard phân tích chuyên sâu cho giáo viên và trung tâm ngoại ngữ nhằm theo dõi tiến độ, điểm mạnh – yếu của học viên.
+Cải thiện bảo mật và sao lưu dữ liệu:
+Áp dụng các biện pháp xác thực nâng cao (như 2FA), sao lưu định kỳ trên nền tảng đám mây (Azure, AWS) nhằm đảm bảo an toàn và toàn vẹn dữ liệu.
+TÀI LIỆU THAM KHẢO
+[1] T. M. Mitchell, Machine Learning, New York: McGraw-Hill, 1997.
+[2] C. M. Bishop, Pattern Recognition and Machine Learning, Springer, 2006.
+[3] J. Han, M. Kamber and J. Pei, Data Mining: Concepts and Techniques, 3rd ed., Morgan Kaufmann, 2011.
+[4] S. Raschka and V. Mirjalili, Python Machine Learning, 3rd ed., Packt Publishing, 2019.
+[5] Wikipedia, “Naïve Bayes classifier,” [Online]. Available: https://en.wikipedia.org/wiki/Naive_Bayes_classifier. [Accessed: Oct. 2025].
+[6] Wikipedia, “k-nearest neighbors algorithm,” [Online]. Available: https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm. [Accessed: Oct. 2025].
+[7] Microsoft, “Microsoft SQL Server Overview,” [Online]. Available: https://learn.microsoft.com/en-us/sql/sql-server. [Accessed: Oct. 2025].
+[8] OpenAI, “ChatGPT API Documentation,” [Online]. Available: https://platform.openai.com/docs. [Accessed: Oct. 2025].
+[9] Google DeepMind, “Gemini AI Overview,” [Online]. Available: https://deepmind.google/technologies/gemini/. [Accessed: Oct. 2025].
+[10] Meta Platforms, “React Developer Guide,” [Online]. Available: https://react.dev/learn. [Accessed: Oct. 2025].
+[11] Vercel, “Next.js 14 Documentation,” [Online]. Available: https://nextjs.org/docs. [Accessed: Oct. 2025].
+[12] Node.js Foundation, “Node.js 20 LTS Documentation,” [Online]. Available: https://nodejs.org/en/docs. [Accessed: Oct. 2025].
+[13] Express.js Team, “Express Framework Documentation,” [Online]. Available: https://expressjs.com/. [Accessed: Oct. 2025].
+[14] Python Software Foundation, “Python 3.12 Documentation,” [Online]. Available: https://docs.python.org/3.12/. [Accessed: Oct. 2025].
+[15] IETF, “JSON Web Token (JWT),” [Online]. Available: https://jwt.io/introduction/. [Accessed: Oct. 2025].
+[16] GitHub Repository, “Chatbot TOEIC Project,” [Online]. Available: https://github.com/hungpptit/chatbot-toeic. [Accessed: Oct. 2025].
+[17] IBM Developer, “Understanding RESTful APIs,” [Online]. Available: https://developer.ibm.com/articles/ws-restful/. [Accessed: Oct. 2025].
+[18] Microsoft Azure, “Best Practices for Cloud Data Backup and Security,” [Online]. Available: https://learn.microsoft.com/en-us/azure/. [Accessed: Oct. 2025].

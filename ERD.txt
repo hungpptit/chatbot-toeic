@@ -1,0 +1,84 @@
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                         🎯 CHATBOT TOEIC - ENTITY RELATIONSHIP DIAGRAM                            │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
+│     Users       │         │  Conversations  │         │    Messages     │         │      Logs       │
+├─────────────────┤    1:M  ├─────────────────┤    1:M  ├─────────────────┤         ├─────────────────┤
+│ id (PK)         │◄────────┤ id (PK)         │◄────────┤ id (PK)         │         │ id (PK)         │
+│ username        │         │ userId (FK)     │         │ conversationId  │    ┌────┤ userId (FK)     │
+│ email           │         │ title           │         │ content         │    │    │ action          │
+│ password        │         │ createdAt       │         │ role            │    │    │ timestamp       │
+│ role_id         │         │ updatedAt       │         │ timestamp       │    │    │ details         │
+│ status          │         │ deletedAt       │         │ isDeleted       │    │    └─────────────────┘
+└─────────────────┘         └─────────────────┘         └─────────────────┘    │
+        │                                                                       │
+        │ 1:M                                                                   │ 1:M
+        ▼                                                                       │
+┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐    │
+│  UserVocabulary │         │   UserResults   │         │   UserTests     │    │
+├─────────────────┤         ├─────────────────┤         ├─────────────────┤    │
+│ id (PK)         │         │ id (PK)         │         │ id (PK)         │    │
+│ userId (FK)     │         │ userId (FK)     │         │ userId (FK)     │◄───┘
+│ vocabId (FK)    │         │ questionId (FK) │         │ testId (FK)     │
+│ isLearned       │         │ selectedAnswer  │         │ score           │
+│ learnedAt       │         │ isCorrect       │         │ totalQuestions  │
+└─────────────────┘         │ timeSpent       │         │ completedAt     │
+        │                   │ answeredAt      │         │ timeSpent       │
+        │ M:1               └─────────────────┘         └─────────────────┘
+        ▼                           │ M:1                         │ M:1
+┌─────────────────┐                 ▼                           ▼
+│   Vocabulary    │         ┌─────────────────┐         ┌─────────────────┐
+├─────────────────┤         │   Questions     │         │     Tests       │
+│ id (PK)         │         ├─────────────────┤         ├─────────────────┤
+│ word            │         │ id (PK)         │         │ id (PK)         │
+│ definition      │         │ question        │         │ title           │
+│ example         │         │ optionA         │         │ duration        │
+│ topic           │         │ optionB         │         │ participants    │
+└─────────────────┘         │ optionC         │         │ comments        │
+        │ 1:M               │ optionD         │         └─────────────────┘
+        ├─────────────────┐ │ correctAnswer   │                 │ M:M
+        │                 │ │ explanation     │                 ▼
+        ▼                 ▼ │ typeId (FK)     │         ┌─────────────────┐
+┌─────────────────┐ ┌─────────────────┐ │ partId (FK)     │         │  Test_Courses   │
+│ Pronunciations  │ │    Synonyms     │ └─────────────────┘         ├─────────────────┤
+├─────────────────┤ ├─────────────────┤         │ M:1               │ testId (FK)     │
+│ id (PK)         │ │ id (PK)         │         ▼                   │ courseId (FK)   │
+│ vocabId (FK)    │ │ vocabId (FK)    │ ┌─────────────────┐         └─────────────────┘
+│ phonetic        │ │ synonym         │ │ QuestionType    │                 │ M:1
+│ audioUrl        │ └─────────────────┘ ├─────────────────┤                 ▼
+└─────────────────┘                   │ id (PK)         │         ┌─────────────────┐
+        │ 1:M                         │ name            │         │    Courses      │
+        ▼                             │ description     │         ├─────────────────┤
+┌─────────────────┐ ┌─────────────────┐ └─────────────────┘         │ id (PK)         │
+│    Antonyms     │ │    Meanings     │         │ 1:M               │ name            │
+├─────────────────┤ ├─────────────────┤         ▼                   │ description     │
+│ id (PK)         │ │ id (PK)         │ ┌─────────────────┐         │ level           │
+│ vocabId (FK)    │ │ vocabId (FK)    │ │     Parts       │         └─────────────────┘
+│ antonym         │ │ meaning         │ ├─────────────────┤
+└─────────────────┘ │ partOfSpeech    │ │ id (PK)         │
+                    │ example         │ │ name            │
+                    └─────────────────┘ │ description     │
+                                        └─────────────────┘
+                                                │ 1:M
+                                                ▼
+                    ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+                    │ TestQuestions   │ │   MediaFiles    │ │QuestionMediaMap │
+                    ├─────────────────┤ ├─────────────────┤ ├─────────────────┤
+                    │ id (PK)         │ │ id (PK)         │ │ id (PK)         │
+                    │ testId (FK)     │ │ mediaType       │ │ questionId (FK) │
+                    │ questionId (FK) │ │ mediaUrl        │ │ mediaId (FK)    │
+                    │ order           │ │ description     │ │ startSecond     │
+                    └─────────────────┘ │ duration        │ │ endSecond       │
+                                        └─────────────────┘ └─────────────────┘
+                                                │ 1:M
+                                                ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│   Skills        │ │ QuestionSkills  │ │ QuestionStats   │ │QuestionEmbedding│
+├─────────────────┤ ├─────────────────┤ ├─────────────────┤ ├─────────────────┤
+│ id (PK)         │ │ id (PK)         │ │ id (PK)         │ │ id (PK)         │
+│ name            │ │ questionId (FK) │ │ questionId (FK) │ │ questionId (FK) │
+│ description     │ │ skillId (FK)    │ │ attempts        │ │ embedding       │
+└─────────────────┘ └─────────────────┘ │ correct         │ │ model_version   │
+                                        │ medianTimeSecond│ │ created_at      │
+                                        └─────────────────┘ └─────────────────┘
