@@ -1,7 +1,38 @@
-# script để query SQL, train Naive Bayes, lưu model .pkls
-# phải làm sao cho chạy lại định kì để có data mới để train
+"""
+================================================================================
+TRAIN GLOBAL MODEL (WEAK SKILL DETECTION)
+================================================================================
 
+📌 MỤC ĐÍCH:
+   Train GLOBAL MODEL để detect weak skills từ TẤT CẢ users trong database.
+   Model này dùng cho users có ÍT DATA (<10 attempts per skill).
 
+🎯 OUTPUT:
+   - weak_skill_model.pkl: Global Naive Bayes model
+
+📊 INPUT FEATURES (3 features):
+   - attempts: Số lần thử skill
+   - correct: Số câu đúng
+   - accuracy: Tỷ lệ đúng (correct/attempts)
+
+📈 TARGET:
+   - isWeak: 1 nếu accuracy < 60%, 0 nếu accuracy >= 60%
+
+🔄 KHI NÀO RETRAIN:
+   - Định kỳ (mỗi tuần/tháng) khi có thêm users mới
+   - Setup cron job hoặc scheduled task
+   - Hoặc manual khi thấy accuracy giảm
+
+📝 SỬ DỤNG:
+   python train_model.py
+
+📅 Created: Original
+👤 Author: Backend Team
+🔗 Related files:
+   - predict_hybrid.py (sử dụng model này cho attempts < 10)
+   - predict_hybrid_unified.py (sử dụng model này cho attempts < 10)
+================================================================================
+"""
 
 import os
 import pyodbc

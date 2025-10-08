@@ -1,3 +1,31 @@
+"""
+================================================================================
+PREDICT (DEPRECATED - KHÔNG DÙNG)
+================================================================================
+
+📌 MỤC ĐÍCH:
+   Load global model và predict weak skill đơn giản.
+   Dự định để Node.js gọi, nhưng KHÔNG DÙNG NỮA.
+
+⚠️ DEPRECATED: File này KHÔNG còn được sử dụng!
+   → Đã được thay thế bởi predict_hybrid.py hoặc predict_hybrid_unified.py
+   → Giữ lại chỉ để tham khảo
+
+🎯 CHỨC NĂNG (cũ):
+   - Load weak_skill_model.pkl
+   - Predict từ attempts, correct
+   - Return "Weak" hoặc "Strong"
+
+📝 THAY THẾ BỞI:
+   - predict_hybrid.py (version 1.0 với personal model)
+   - predict_hybrid_unified.py (version 2.0 với unified model)
+
+📅 Created: Original
+👤 Author: Backend Team
+🔗 Status: DEPRECATED - DO NOT USE
+================================================================================
+"""
+
 # script để load model và dự đoán (cho Node.js gọi).
 # ko dùng tới
 

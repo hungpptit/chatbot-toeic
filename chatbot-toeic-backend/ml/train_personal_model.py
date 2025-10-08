@@ -1,3 +1,40 @@
+"""
+================================================================================
+TRAIN PERSONAL MODEL (1 MODEL PER USER)
+================================================================================
+
+📌 MỤC ĐÍCH:
+   Train model riêng cho TỪNG USER cụ thể.
+   Model cá nhân hóa 100% dựa trên data của chính user đó.
+
+⚠️ DEPRECATED: File này dùng cho PERSONAL MODEL approach (cũ)
+   → Với 10,000 users = 10,000 files model
+   → Không scale tốt, khó maintain
+   → KHUYẾN NGHỊ: Dùng train_unified_model.py thay thế!
+
+🎯 OUTPUT:
+   - user_{userId}_model.pkl: Personal Naive Bayes model cho user cụ thể
+
+📊 INPUT FEATURES (3 features):
+   - attempts: Số lần thử skill
+   - correct: Số câu đúng
+   - accuracy: Tỷ lệ đúng (correct/attempts)
+
+📈 TARGET:
+   - isWeak: 1 nếu accuracy < 60%, 0 nếu accuracy >= 60%
+
+📝 SỬ DỤNG:
+   python train_personal_model.py
+   # Sẽ train cho userId=3 (hardcoded ở cuối file)
+
+📅 Created: Original
+👤 Author: Backend Team
+🔗 Related files:
+   - predict_hybrid.py (version cũ, sử dụng personal model)
+   - train_unified_model.py (version mới, thay thế file này)
+================================================================================
+"""
+
 import os
 import pyodbc
 import pandas as pd
@@ -5,8 +42,9 @@ from sklearn.naive_bayes import GaussianNB
 import joblib
 from dotenv import load_dotenv
 
-# Load biến môi trường
-load_dotenv(dotenv_path="./.env")
+# Load biến môi trường từ parent directory
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"))
 
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT")
@@ -53,7 +91,7 @@ def train_personal_model(userId: int):
     model.fit(X, y)
 
     # Lưu model riêng theo userId
-    path = f"ml/user_{userId}_model.pkl"
+    path = os.path.join(os.path.dirname(__file__), f"user_{userId}_model.pkl")
     joblib.dump(model, path)
     print(f"✅ Đã train và lưu model cho user {userId} tại {path}")
     return path
