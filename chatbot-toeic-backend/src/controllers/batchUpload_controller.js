@@ -8,16 +8,34 @@ export const batchUploadFromPathsController = async (req, res) => {
   try {
     const testData = req.body;
 
-    // Validate input
-    if (!testData || !testData.questions || !Array.isArray(testData.questions)) {
+    // ✅ Validate input - Support both formats
+    if (!testData) {
       return res.status(400).json({
         success: false,
-        message: '❌ Invalid test data format',
+        message: '❌ No test data provided',
+      });
+    }
+
+    // Check if it's Mixed Test format or Regular Test format
+    const isMixedTest = testData.readingQuestions || testData.listeningQuestions;
+    const isRegularTest = testData.questions && Array.isArray(testData.questions);
+
+    if (!isMixedTest && !isRegularTest) {
+      return res.status(400).json({
+        success: false,
+        message: '❌ Invalid test data format. Must have either "questions" or "readingQuestions/listeningQuestions"',
       });
     }
 
     console.log('📥 Received test data with paths');
-    console.log(`📊 Total questions: ${testData.questions.length}`);
+    
+    if (isMixedTest) {
+      const readingCount = testData.readingQuestions?.length || 0;
+      const listeningCount = testData.listeningQuestions?.length || 0;
+      console.log(`📊 Mixed Test - Reading: ${readingCount}, Listening: ${listeningCount}`);
+    } else {
+      console.log(`📊 Regular Test - Total questions: ${testData.questions.length}`);
+    }
 
     // Validate tất cả paths trước khi upload
     console.log('🔍 Validating file paths...');

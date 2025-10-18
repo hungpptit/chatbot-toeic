@@ -52,11 +52,13 @@ export const batchUploadFromPaths = async (testData) => {
       delete testData.audioPath; // Remove path sau khi upload
     }
 
-    // Upload media cho từng câu hỏi
-    if (testData.questions && Array.isArray(testData.questions)) {
-      for (let i = 0; i < testData.questions.length; i++) {
-        const question = testData.questions[i];
-        console.log(`\n📝 Processing question ${i + 1}/${testData.questions.length}...`);
+    // ✅ Helper function to process questions array
+    const processQuestionsArray = async (questions, label) => {
+      if (!questions || !Array.isArray(questions)) return;
+      
+      for (let i = 0; i < questions.length; i++) {
+        const question = questions[i];
+        console.log(`\n📝 Processing ${label} question ${i + 1}/${questions.length}...`);
 
         // Upload image nếu có
         if (question.imagePath) {
@@ -72,6 +74,26 @@ export const batchUploadFromPaths = async (testData) => {
           delete question.audioPath;
         }
       }
+    };
+
+    // ✅ Support Mixed Test format (readingQuestions + listeningQuestions)
+    if (testData.readingQuestions || testData.listeningQuestions) {
+      console.log('📚 Detected Mixed Test format');
+      
+      // Process reading questions
+      if (testData.readingQuestions) {
+        await processQuestionsArray(testData.readingQuestions, 'Reading');
+      }
+      
+      // Process listening questions
+      if (testData.listeningQuestions) {
+        await processQuestionsArray(testData.listeningQuestions, 'Listening');
+      }
+    }
+    // ✅ Support Regular Test format (questions)
+    else if (testData.questions && Array.isArray(testData.questions)) {
+      console.log('📝 Detected Regular Test format');
+      await processQuestionsArray(testData.questions, 'Regular');
     }
 
     console.log('✅ Batch upload completed successfully!');
@@ -97,9 +119,11 @@ export const validatePaths = async (testData) => {
     }
   }
 
-  // Check questions
-  if (testData.questions) {
-    for (const question of testData.questions) {
+  // ✅ Helper function to validate questions array
+  const validateQuestionsArray = async (questions) => {
+    if (!questions || !Array.isArray(questions)) return;
+    
+    for (const question of questions) {
       if (question.imagePath) {
         try {
           await fs.access(question.imagePath);
@@ -115,6 +139,20 @@ export const validatePaths = async (testData) => {
         }
       }
     }
+  };
+
+  // ✅ Support Mixed Test format
+  if (testData.readingQuestions || testData.listeningQuestions) {
+    if (testData.readingQuestions) {
+      await validateQuestionsArray(testData.readingQuestions);
+    }
+    if (testData.listeningQuestions) {
+      await validateQuestionsArray(testData.listeningQuestions);
+    }
+  }
+  // ✅ Support Regular Test format
+  else if (testData.questions) {
+    await validateQuestionsArray(testData.questions);
   }
 
   return invalidPaths;

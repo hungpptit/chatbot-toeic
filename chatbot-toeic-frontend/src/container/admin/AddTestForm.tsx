@@ -1,9 +1,10 @@
 // Thêm đề thi mới - Admin
 import { useEffect, useState } from "react";
-import { FaSave, FaPlus, FaUpload } from "react-icons/fa";
+import { FaSave, FaPlus, FaUpload, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import Select from "react-select";
 import "../../styles/AdminTestViewPage.css";
 import "../../styles/cardQuestion.css";
+import "../../styles/AdminMixTestForm.css";
 import AdminMixTestForm from "./AdminMixTestForm";
 import {
   getAllCourseNamesAPI,
@@ -53,10 +54,12 @@ export default function AdminTestAddPage() {
   // ✅ Global audio (cho listening mode)
   const [globalAudioFile, setGlobalAudioFile] = useState<File | null>(null);
   const [globalAudioUrl, setGlobalAudioUrl] = useState<string>('');
+  const [globalAudioPreviewUrl, setGlobalAudioPreviewUrl] = useState<string>(''); // ✅ Preview URL for local file
   
   // ✅ Loading states
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+  const [showJsonFormat, setShowJsonFormat] = useState(false);
 
   useEffect(() => {
     getAllCourseNamesAPI().then(setCourses);
@@ -483,15 +486,108 @@ export default function AdminTestAddPage() {
             Nếu không có paths, dùng "Load File" rồi chọn files bên dưới.
           </p>
         )}
+        {(testMode === 'reading' || testMode === 'listening') && (
+          <div className="upload-format-tip">
+            <button
+              className="json-toggle-btn"
+              onClick={() => setShowJsonFormat(!showJsonFormat)}
+            >
+              {showJsonFormat ? <FaChevronUp /> : <FaChevronDown />} {" "}
+              <strong>📝 Format JSON</strong>
+            </button>
+            {showJsonFormat && (
+              <pre className="json-format-example">
+{testMode === 'reading' ? `{
+  "title": "Reading Test 1",
+  "courseId": 1,
+  "partId": 2,
+  "questions": [
+    {
+      "question": "What is the main idea of the passage?",
+      "optionA": "A detailed analysis",
+      "optionB": "A brief summary",
+      "optionC": "An unrelated topic",
+      "optionD": "A personal opinion",
+      "correctAnswer": "B",
+      "explanation": "The passage focuses on summarizing key points.",
+      "typeId": 3,
+      "skillId": 1
+    }
+  ]
+}` : `{
+  "title": "Listening Test 1",
+  "courseId": 1,
+  "audioPath": "D:/audio/lecture1.mp3",
+  "partId": 1,
+  "questions": [
+    {
+      "question": "Look at the picture. What is the man doing?",
+      "imagePath": "D:/images/q1.jpg",
+      "startSecond": 0.0,
+      "endSecond": 15.5,
+      "optionA": "He is walking on the street",
+      "optionB": "He is sitting at a desk",
+      "optionC": "He is reading a book",
+      "optionD": "He is talking on the phone",
+      "correctAnswer": "A",
+      "explanation": "The man is clearly walking on the street.",
+      "typeId": 1,
+      "skillId": 6
+    }
+  ]
+}`}
+              </pre>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ✅ Global Audio Input - Chỉ hiện khi Listening mode */}
       {testMode === 'listening' && (
         <div className="global-audio-section">
           <h4>🎵 Audio chung cho toàn bộ đề thi</h4>
-          {globalAudioUrl ? (
-            <div className="audio-url-display">
-              <strong>URL đã upload:</strong> <a href={globalAudioUrl} target="_blank" rel="noopener noreferrer">{globalAudioUrl}</a>
+          {globalAudioUrl || globalAudioPreviewUrl ? (
+            <div className="audio-preview-container">
+              <div className="audio-player-wrapper">
+                <audio controls style={{ width: '100%', marginBottom: '10px' }}>
+                  <source src={globalAudioUrl || globalAudioPreviewUrl} type="audio/mpeg" />
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+              <div className="audio-url-info">
+                {globalAudioUrl ? (
+                  <p style={{ fontSize: '12px', color: '#666', wordBreak: 'break-all', margin: '8px 0' }}>
+                    ✅ <strong>Cloudinary URL:</strong> <a href={globalAudioUrl} target="_blank" rel="noopener noreferrer">{globalAudioUrl}</a>
+                  </p>
+                ) : (
+                  <p style={{ fontSize: '12px', color: '#666', margin: '8px 0' }}>
+                    📁 <strong>Preview từ file:</strong> {globalAudioFile?.name || 'Unknown'}
+                  </p>
+                )}
+              </div>
+              <button 
+                onClick={() => {
+                  // Revoke preview URL
+                  if (globalAudioPreviewUrl) {
+                    URL.revokeObjectURL(globalAudioPreviewUrl);
+                  }
+                  setGlobalAudioUrl('');
+                  setGlobalAudioFile(null);
+                  setGlobalAudioPreviewUrl('');
+                }}
+                style={{
+                  padding: '6px 12px',
+                  background: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  marginTop: '8px'
+                }}
+              >
+                🗑️ Xóa audio
+              </button>
             </div>
           ) : (
             <div className="audio-file-input">
@@ -499,13 +595,16 @@ export default function AdminTestAddPage() {
               <input
                 type="file"
                 accept="audio/*"
-                onChange={(e) => setGlobalAudioFile(e.target.files?.[0] || null)}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    // ✅ Tạo preview URL cho audio
+                    const previewUrl = URL.createObjectURL(file);
+                    setGlobalAudioFile(file);
+                    setGlobalAudioPreviewUrl(previewUrl);
+                  }
+                }}
               />
-              {globalAudioFile && (
-                <p className="audio-file-selected">
-                  ✅ Đã chọn: <strong>{globalAudioFile.name}</strong>
-                </p>
-              )}
             </div>
           )}
         </div>

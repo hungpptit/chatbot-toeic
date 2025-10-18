@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaSave, FaPlus, FaArrowLeft, FaBook, FaHeadphones } from "react-icons/fa";
+import { FaSave, FaPlus, FaArrowLeft, FaBook, FaHeadphones, FaUpload, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import Select from "react-select";
 import "../../styles/AdminMixTestForm.css";
 import {
@@ -14,6 +14,7 @@ import {
   type QuestionInput,
   type MediaInput,
 } from "../../services/adminTestService";
+import { batchUploadFromPathsAPI } from "../../services/uploadService";
 
 // Question type for Mixed Test
 type MixedQuestion = {
@@ -30,6 +31,7 @@ type MixedQuestion = {
   // Media fields for listening questions
   imageFile?: File | null;
   imageUrl?: string;
+  imagePreviewUrl?: string; // ✅ Preview URL từ URL.createObjectURL()
   // Audio timing fields (for global audio)
   startSecond?: number | null;
   endSecond?: number | null;
@@ -42,6 +44,12 @@ interface AdminMixTestFormProps {
   selectedCourseId: number | null;
 }
 
+// ✅ Helper: Normalize Windows paths
+const normalizeWindowsPath = (path: string): string => {
+  if (!path) return path;
+  return path.replace(/\\/g, '/');
+};
+
 export default function AdminMixTestForm({ onBack, testTitle, setTestTitle, selectedCourseId }: AdminMixTestFormProps) {
   // State for questions - separate arrays for Reading and Listening
   const [readingQuestions, setReadingQuestions] = useState<MixedQuestion[]>([createEmptyMixedQuestion()]);
@@ -50,6 +58,7 @@ export default function AdminMixTestForm({ onBack, testTitle, setTestTitle, sele
   // Global audio for all listening questions
   const [globalAudioFile, setGlobalAudioFile] = useState<File | null>(null);
   const [globalAudioUrl, setGlobalAudioUrl] = useState<string>('');
+  const [globalAudioPreviewUrl, setGlobalAudioPreviewUrl] = useState<string>(''); // ✅ Preview URL for local file
   
   // Dropdown options
   const [questionTypes, setQuestionTypes] = useState<QuestionType[]>([]);
@@ -58,12 +67,36 @@ export default function AdminMixTestForm({ onBack, testTitle, setTestTitle, sele
   
   // Loading state
   const [isCreating, setIsCreating] = useState(false);
+  
+  // ✅ JSON upload state
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+  const [showJsonFormat, setShowJsonFormat] = useState(false);
+
+  
 
   useEffect(() => {
     getAllQuestionTypesAPI().then(setQuestionTypes);
     getAllPartsAPI().then(setParts);
     getAllSkillsAPI().then(setSkills);
   }, []);
+
+  // ✅ Cleanup preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      // Revoke all preview URLs to prevent memory leaks
+      [...readingQuestions, ...listeningQuestions].forEach(q => {
+        if (q.imagePreviewUrl) {
+          URL.revokeObjectURL(q.imagePreviewUrl);
+        }
+      });
+      
+      // Revoke global audio preview URL
+      if (globalAudioPreviewUrl) {
+        URL.revokeObjectURL(globalAudioPreviewUrl);
+      }
+    };
+  }, [readingQuestions, listeningQuestions, globalAudioPreviewUrl]);
 
   // Handle question changes for Reading section
   const handleReadingChange = (index: number, field: string, value: string | number | null | File) => {
@@ -87,6 +120,201 @@ export default function AdminMixTestForm({ onBack, testTitle, setTestTitle, sele
   // Add new Listening question
   const handleAddListeningQuestion = () => {
     setListeningQuestions((prev) => [...prev, createEmptyMixedQuestion()]);
+  };
+
+  // ✅ Handle JSON file upload
+  const handleUploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setUploadFile(file);
+  };
+
+  // ✅ Load JSON file to form (without uploading media)
+  const handleLoadJsonToForm = () => {
+    if (!uploadFile) return alert("❌ Vui lòng chọn file JSON trước!");
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const json = JSON.parse(text);
+
+        // Validate basic structure
+        if (!json.title || !json.courseId) {
+          alert("❌ File JSON thiếu title hoặc courseId!");
+          return;
+        }
+
+        // Set basic info
+        setTestTitle(json.title);
+
+        // Separate questions into Reading and Listening
+        const readingQs: MixedQuestion[] = [];
+        const listeningQs: MixedQuestion[] = [];
+
+        if (json.readingQuestions && Array.isArray(json.readingQuestions)) {
+          json.readingQuestions.forEach((q: any) => {
+            readingQs.push({
+              question: q.question || "",
+              optionA: q.optionA || "",
+              optionB: q.optionB || "",
+              optionC: q.optionC || "",
+              optionD: q.optionD || "",
+              correctAnswer: q.correctAnswer || "",
+              explanation: q.explanation || "",
+              typeId: q.typeId || null,
+              skillId: q.skillId || null,
+              partId: q.partId || null,
+              imageFile: null,
+              imageUrl: '',
+              imagePreviewUrl: '',
+              startSecond: null,
+              endSecond: null,
+            });
+          });
+        }
+
+        if (json.listeningQuestions && Array.isArray(json.listeningQuestions)) {
+          json.listeningQuestions.forEach((q: any) => {
+            listeningQs.push({
+              question: q.question || "",
+              optionA: q.optionA || "",
+              optionB: q.optionB || "",
+              optionC: q.optionC || "",
+              optionD: q.optionD || "",
+              correctAnswer: q.correctAnswer || "",
+              explanation: q.explanation || "",
+              typeId: q.typeId || null,
+              skillId: q.skillId || null,
+              partId: q.partId || null,
+              imageFile: null,
+              imageUrl: q.imagePath || '', // Keep path for batch upload
+              imagePreviewUrl: '',
+              startSecond: q.startSecond || null,
+              endSecond: q.endSecond || null,
+            });
+          });
+        }
+
+        if (readingQs.length > 0) setReadingQuestions(readingQs);
+        if (listeningQs.length > 0) setListeningQuestions(listeningQs);
+
+        alert("✅ Đã load dữ liệu JSON lên form!");
+      } catch (err) {
+        console.error("❌ Lỗi đọc JSON:", err);
+        alert("❌ Không thể đọc file JSON!");
+      }
+    };
+    reader.readAsText(uploadFile);
+  };
+
+  // ✅ Batch upload from JSON with paths (upload images to Cloudinary first)
+  const handleBatchUploadFromPaths = async () => {
+    if (!uploadFile) {
+      alert("❌ Vui lòng chọn file JSON trước!");
+      return;
+    }
+
+    try {
+      setIsBatchProcessing(true);
+
+      const text = await uploadFile.text();
+      const testData = JSON.parse(text);
+
+      // Auto-format Windows paths
+      if (testData.audioPath) {
+        testData.audioPath = normalizeWindowsPath(testData.audioPath);
+      }
+
+      // Format paths in both reading and listening sections
+      if (testData.readingQuestions) {
+        testData.readingQuestions = testData.readingQuestions.map((q: any) => ({
+          ...q,
+          imagePath: q.imagePath ? normalizeWindowsPath(q.imagePath) : q.imagePath,
+        }));
+      }
+
+      if (testData.listeningQuestions) {
+        testData.listeningQuestions = testData.listeningQuestions.map((q: any) => ({
+          ...q,
+          imagePath: q.imagePath ? normalizeWindowsPath(q.imagePath) : q.imagePath,
+          audioPath: q.audioPath ? normalizeWindowsPath(q.audioPath) : q.audioPath,
+        }));
+      }
+
+      console.log('📤 Uploading mixed test files from paths...');
+
+      // Call batch upload API
+      const uploadedData = await batchUploadFromPathsAPI(testData);
+
+      console.log('📥 Batch upload response:', uploadedData);
+
+      // Load data with URLs to form
+      setTestTitle(uploadedData.title);
+
+      // Set global audio if exists
+      if (uploadedData.audioUrl) {
+        setGlobalAudioUrl(uploadedData.audioUrl);
+        console.log('✅ Set globalAudioUrl:', uploadedData.audioUrl);
+      }
+
+      // Process reading questions
+      const readingQs: MixedQuestion[] = [];
+      if (uploadedData.readingQuestions && Array.isArray(uploadedData.readingQuestions)) {
+        uploadedData.readingQuestions.forEach((q: any) => {
+          readingQs.push({
+            question: q.question || "",
+            optionA: q.optionA || "",
+            optionB: q.optionB || "",
+            optionC: q.optionC || "",
+            optionD: q.optionD || "",
+            correctAnswer: q.correctAnswer || "",
+            explanation: q.explanation || "",
+            typeId: q.typeId || null,
+            skillId: q.skillId || null,
+            partId: q.partId || null,
+            imageFile: null,
+            imageUrl: q.imageUrl || '',
+            imagePreviewUrl: '',
+            startSecond: null,
+            endSecond: null,
+          });
+        });
+      }
+
+      // Process listening questions
+      const listeningQs: MixedQuestion[] = [];
+      if (uploadedData.listeningQuestions && Array.isArray(uploadedData.listeningQuestions)) {
+        uploadedData.listeningQuestions.forEach((q: any) => {
+          listeningQs.push({
+            question: q.question || "",
+            optionA: q.optionA || "",
+            optionB: q.optionB || "",
+            optionC: q.optionC || "",
+            optionD: q.optionD || "",
+            correctAnswer: q.correctAnswer || "",
+            explanation: q.explanation || "",
+            typeId: q.typeId || null,
+            skillId: q.skillId || null,
+            partId: q.partId || null,
+            imageFile: null,
+            imageUrl: q.imageUrl || '', // ✅ Cloudinary URL
+            imagePreviewUrl: '',
+            startSecond: q.startSecond || null,
+            endSecond: q.endSecond || null,
+          });
+        });
+      }
+
+      if (readingQs.length > 0) setReadingQuestions(readingQs);
+      if (listeningQs.length > 0) setListeningQuestions(listeningQs);
+
+      alert("✅ Upload thành công! Files đã được upload lên Cloudinary và hiển thị preview.");
+    } catch (error: any) {
+      console.error("❌ Batch upload failed:", error);
+      alert(`❌ Upload thất bại: ${error.message}`);
+    } finally {
+      setIsBatchProcessing(false);
+    }
   };
 
   // Auto-upload local image paths to Cloudinary
@@ -245,6 +473,76 @@ export default function AdminMixTestForm({ onBack, testTitle, setTestTitle, sele
 
   return (
     <div className="mixed-test-container">
+      {/* ✅ JSON Upload Section */}
+      <div className="upload-section">
+        <h3>📤 Tải lên file JSON cho Mixed Test</h3>
+        <input type="file" accept=".json" onChange={handleUploadFile} />
+        <div className="upload-buttons">
+          <button className="save-btn" onClick={handleLoadJsonToForm}>
+            <FaUpload /> Load File lên form (không upload media)
+          </button>
+          <button 
+            className="save-btn upload-btn-green" 
+            onClick={handleBatchUploadFromPaths}
+            disabled={isBatchProcessing}
+          >
+            <FaUpload /> {isBatchProcessing ? "Đang upload..." : "Upload từ paths (có imagePath/audioPath)"}
+          </button>
+        </div>
+        <p className="upload-tip">
+          💡 <strong>Tip:</strong> Nếu JSON có <code>imagePath</code>/<code>audioPath</code>, dùng "Upload từ paths" để upload ảnh lên Cloudinary và hiển thị preview.
+        </p>
+        <div className="upload-format-tip">
+          <button
+            className="json-toggle-btn"
+            onClick={() => setShowJsonFormat(!showJsonFormat)}
+          >
+            {showJsonFormat ? <FaChevronUp /> : <FaChevronDown />} {" "}
+            <strong>📝 Format JSON</strong>
+          </button>
+          {showJsonFormat && (
+            <pre className="json-format-example">
+{`{
+  "title": "Mixed Test 1",
+  "courseId": 1,
+  "audioPath": "D:/audio/test.mp3",
+  "readingQuestions": [
+    {
+      "question": "Question text",
+      "optionA": "...",
+      "optionB": "...",
+      "optionC": "...",
+      "optionD": "...",
+      "correctAnswer": "A",
+      "explanation": "...",
+      "typeId": 1,
+      "skillId": 2,
+      "partId": 5
+    }
+  ],
+  "listeningQuestions": [
+    {
+      "question": "Question text",
+      "optionA": "...",
+      "optionB": "...",
+      "optionC": "...",
+      "optionD": "...",
+      "correctAnswer": "B",
+      "explanation": "...",
+      "typeId": 2,
+      "skillId": 1,
+      "partId": 1,
+      "imagePath": "D:/images/q1.jpg",
+      "startSecond": 0,
+      "endSecond": 10
+    }
+  ]
+}`}
+            </pre>
+          )}
+        </div>
+      </div>
+
       {/* Reading Section */}
       <div className="test-section reading">
         <div className="section-header">
@@ -282,9 +580,48 @@ export default function AdminMixTestForm({ onBack, testTitle, setTestTitle, sele
         {/* Global Audio Input for all Listening questions */}
         <div className="global-audio-section">
           <h4>🎵 Audio chung cho tất cả câu hỏi Listening</h4>
-          {globalAudioUrl ? (
-            <div className="audio-url-display">
-              <strong>URL đã upload:</strong> <a href={globalAudioUrl} target="_blank" rel="noopener noreferrer">{globalAudioUrl}</a>
+          {globalAudioUrl || globalAudioPreviewUrl ? (
+            <div className="audio-preview-container">
+              <div className="audio-player-wrapper">
+                <audio controls style={{ width: '100%', marginBottom: '10px' }}>
+                  <source src={globalAudioUrl || globalAudioPreviewUrl} type="audio/mpeg" />
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+              <div className="audio-url-info">
+                {globalAudioUrl ? (
+                  <p style={{ fontSize: '12px', color: '#666', wordBreak: 'break-all', margin: '8px 0' }}>
+                    ✅ <strong>Cloudinary URL:</strong> <a href={globalAudioUrl} target="_blank" rel="noopener noreferrer">{globalAudioUrl}</a>
+                  </p>
+                ) : (
+                  <p style={{ fontSize: '12px', color: '#666', margin: '8px 0' }}>
+                    📁 <strong>Preview từ file:</strong> {globalAudioFile?.name || 'Unknown'}
+                  </p>
+                )}
+              </div>
+              <button 
+                onClick={() => {
+                  // Revoke preview URL
+                  if (globalAudioPreviewUrl) {
+                    URL.revokeObjectURL(globalAudioPreviewUrl);
+                  }
+                  setGlobalAudioUrl('');
+                  setGlobalAudioFile(null);
+                  setGlobalAudioPreviewUrl('');
+                }}
+                style={{
+                  padding: '6px 12px',
+                  background: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  marginTop: '8px'
+                }}
+              >
+                🗑️ Xóa audio
+              </button>
             </div>
           ) : (
             <div className="audio-file-input">
@@ -292,13 +629,16 @@ export default function AdminMixTestForm({ onBack, testTitle, setTestTitle, sele
               <input
                 type="file"
                 accept="audio/*"
-                onChange={(e) => setGlobalAudioFile(e.target.files?.[0] || null)}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    // ✅ Tạo preview URL cho audio
+                    const previewUrl = URL.createObjectURL(file);
+                    setGlobalAudioFile(file);
+                    setGlobalAudioPreviewUrl(previewUrl);
+                  }
+                }}
               />
-              {globalAudioFile && (
-                <p className="audio-file-selected">
-                  ✅ Đã chọn: <strong>{globalAudioFile.name}</strong>
-                </p>
-              )}
             </div>
           )}
         </div>
@@ -395,20 +735,68 @@ function QuestionCard({
           {/* Image input */}
           <div className="media-input-group">
             <h4>🖼️ Hình ảnh (tùy chọn)</h4>
-            {question.imageUrl ? (
+            {question.imageUrl || question.imagePreviewUrl ? (
               <div className="media-preview">
-                <img src={question.imageUrl} alt="Preview" style={{ maxWidth: '200px', maxHeight: '150px' }} />
-                <p>URL: {question.imageUrl}</p>
+                <img 
+                  src={question.imageUrl || question.imagePreviewUrl || ''} 
+                  alt="Preview" 
+                  style={{ 
+                    maxWidth: '100%', 
+                    maxHeight: '300px',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    marginBottom: '10px'
+                  }} 
+                />
+                {question.imageUrl ? (
+                  <p style={{ fontSize: '12px', color: '#666', wordBreak: 'break-all' }}>
+                    ✅ <strong>Cloudinary URL:</strong> <a href={question.imageUrl} target="_blank" rel="noopener noreferrer">{question.imageUrl}</a>
+                  </p>
+                ) : (
+                  <p style={{ fontSize: '12px', color: '#666' }}>
+                    📁 <strong>Preview từ file:</strong> {question.imageFile ? (question.imageFile as File).name : 'Unknown'}
+                  </p>
+                )}
+                <button 
+                  onClick={() => {
+                    // ✅ Revoke preview URL để tránh memory leak
+                    if (question.imagePreviewUrl) {
+                      URL.revokeObjectURL(question.imagePreviewUrl);
+                    }
+                    onChange('imageUrl', '');
+                    onChange('imagePreviewUrl', '');
+                    onChange('imageFile', null);
+                  }}
+                  style={{
+                    padding: '6px 12px',
+                    background: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    marginTop: '8px'
+                  }}
+                >
+                  🗑️ Xóa ảnh
+                </button>
               </div>
             ) : (
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) onChange('imageFile', file);
-                }}
-              />
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // ✅ Tạo preview URL cho ảnh từ máy
+                      const previewUrl = URL.createObjectURL(file);
+                      onChange('imageFile', file);
+                      onChange('imagePreviewUrl', previewUrl);
+                    }
+                  }}
+                />
+              </div>
             )}
           </div>
 
@@ -510,6 +898,7 @@ function createEmptyMixedQuestion(): MixedQuestion {
     partId: null,
     imageFile: null,
     imageUrl: '',
+    imagePreviewUrl: '',
     startSecond: null,
     endSecond: null,
   };
