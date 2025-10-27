@@ -13,6 +13,7 @@ import {
 } from "../services/question_test_services";
 import { getAllPartsAPI, type Part } from "../services/adminTestService";
 import ExamSidebar from "../components/ExamSidebar";
+import { FaHeadphones, FaBook } from 'react-icons/fa';
 
 interface TestExamProps {
   mode: "exam" | "review";
@@ -451,6 +452,13 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
               <div className="test4">
                 {filteredQuestions.map((item, index) => (
                   <div id={`question-${index + 1}`} key={item.id}>
+                    {/* Question type icon */}
+                    <span className="question-icon">
+                      {item.partId <= 4
+                        ? <FaHeadphones title="Listening" style={{ marginRight: 8, color: '#FF9800' }} />
+                        : <FaBook title="Reading" style={{ marginRight: 8, color: '#2196F3' }} />
+                      }
+                    </span>
                     <CardQuestion
                       key={item.id}
                       item={item}
@@ -487,7 +495,7 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
                       showResult={showResult}
                       incorrectAnswer={incorrectAnswers.find(ans => ans.questionId === item.id) || null}
                       onAudioReplay={handleAudioReplay} // ✅ Pass audio replay function
-                      hasGlobalAudio={!!globalAudio}    // ✅ Indicate if global audio exists
+                      hasGlobalAudio={!!globalAudio && item.partId <= 4}    // ✅ Indicate if global audio exists
                     />
                   </div>
                 ))}

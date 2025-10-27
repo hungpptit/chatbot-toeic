@@ -1,14 +1,21 @@
 import { useEffect, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import {
   getQuestionsByTestIdAPI,
   updateQuestionAPI,
   type QuestionWithMedia,
   type MediaMapping,
 } from "../../services/question_test_services";
-import { getAllPartsAPI, type Part } from "../../services/adminTestService";
+import {
+  getAllPartsAPI,
+  type Part,
+  getAllQuestionTypesAPI,
+  type QuestionType,
+  getAllSkillsAPI,
+  type Skill
+} from "../../services/adminTestService";
 import { uploadImageAPI, uploadAudioAPI } from "../../services/uploadService";
-import { FaEdit, FaSave, FaTimes, FaUpload, FaTrash } from "react-icons/fa";
+import { FaEdit, FaSave, FaTimes, FaUpload, FaTrash, FaBook, FaHeadphones } from "react-icons/fa";
 import "../../styles/AdminTestViewPage.css";
 import "../../styles/cardQuestion.css";
 
@@ -40,20 +47,29 @@ export default function AdminTestViewPage() {
   const [savingChanges, setSavingChanges] = useState<boolean>(false);
   
   // ✅ Track original data for comparison
-  const [originalQuestions, setOriginalQuestions] = useState<QuestionWithMedia[]>([]);
+  // const [originalQuestions, setOriginalQuestions] = useState<QuestionWithMedia[]>([]);
+  const [, setOriginalQuestions] = useState<QuestionWithMedia[]>([]);
   const [changedImageQuestions, setChangedImageQuestions] = useState<Set<number>>(new Set());
   
   // ✅ Parts filtering
   const [parts, setParts] = useState<Part[]>([]);
+  const [questionTypes, setQuestionTypes] = useState<QuestionType[]>([]);
+  const [skills, setSkills] = useState<Skill[]>([]);
   const [selectedPartId, setSelectedPartId] = useState<number | null>(null);
   const [filteredQuestions, setFilteredQuestions] = useState<QuestionWithMedia[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // ✅ Load Parts data
-        const partsData = await getAllPartsAPI();
+        // ✅ Load Parts, Question Types, and Skills data
+        const [partsData, typesData, skillsData] = await Promise.all([
+          getAllPartsAPI(),
+          getAllQuestionTypesAPI(),
+          getAllSkillsAPI()
+        ]);
         setParts(partsData);
+        setQuestionTypes(typesData);
+        setSkills(skillsData);
         console.log('📋 Admin view loaded parts:', partsData);
 
         // Load questions
@@ -378,6 +394,32 @@ export default function AdminTestViewPage() {
       setChangedImageQuestions(new Set()); // ✅ Clear changed images tracking
       
       if (successCount > 0) {
+        // Re-fetch all questions to refresh UI with updated media
+        const refreshedData = await getQuestionsByTestIdAPI(Number(id));
+        
+        // Map timing fields from mediaMappings (same as initial load)
+        const dataWithTiming = refreshedData.map((q) => {
+          const audioMap = q.mediaMappings?.find((m) => m.media?.type === 'audio');
+          return {
+            ...q,
+            startSecond: audioMap?.startSecond ?? null,
+            endSecond: audioMap?.endSecond ?? null,
+          };
+        });
+        setQuestions(dataWithTiming);
+        
+        // Re-extract global audio from refreshed data
+        const audioMedia = refreshedData.find((q: QuestionWithMedia) => 
+          q.mediaMappings?.some((m: MediaMapping) => m.media?.type === 'audio')
+        );
+        if (audioMedia) {
+          const audioUrl = audioMedia.mediaMappings?.find((m: MediaMapping) => 
+            m.media?.type === 'audio'
+          )?.media?.url;
+          setGlobalAudio(audioUrl || null);
+          console.log('🎵 Refreshed global audio:', audioUrl);
+        }
+        
         alert(`✅ Đã lưu thay đổi cho ${successCount}/${updatePromises.length} câu hỏi!`);
         console.log(`✅ Successfully updated ${successCount} questions`);
       } else {
@@ -403,7 +445,13 @@ export default function AdminTestViewPage() {
   const handleEditQuestion = (q: any) => {
     if (mode !== "edit") return;
     setEditingId(q.id);
-    setEditData({ ...q });
+    // Load existing timing from audio mediaMappings
+    const audioMap = q.mediaMappings?.find((m: any) => m.media?.type === 'audio');
+    setEditData({
+      ...q,
+      startSecond: audioMap?.startSecond ?? null,
+      endSecond: audioMap?.endSecond ?? null,
+    });
   };
 
   const handleCancelEdit = () => {
@@ -411,7 +459,7 @@ export default function AdminTestViewPage() {
     setEditData({});
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | number | null) => {
     if (mode === "view") return;
     setEditData((prev: any) => ({ ...prev, [field]: value }));
   };
@@ -423,15 +471,26 @@ export default function AdminTestViewPage() {
         const currentQuestion = questions.find(q => q.id === editingId);
         const mediaFiles = [];
         
-        // Include existing media mappings in update
+        // Include existing media mappings in update with timing
         if (currentQuestion?.mediaMappings) {
           for (const mapping of currentQuestion.mediaMappings) {
             if (mapping.media) {
-              mediaFiles.push({
-                type: mapping.media.type,
-                url: mapping.media.url,
-                description: mapping.media.description || 'Question media'
-              });
+              if (mapping.media.type === 'audio') {
+                // Include timing for audio
+                mediaFiles.push({
+                  type: 'audio',
+                  url: mapping.media.url,
+                  description: mapping.media.description || 'Question media',
+                  startSecond: editData.startSecond ?? null,
+                  endSecond: editData.endSecond ?? null,
+                });
+              } else {
+                mediaFiles.push({
+                  type: mapping.media.type,
+                  url: mapping.media.url,
+                  description: mapping.media.description || 'Question media'
+                });
+              }
             }
           }
         }
@@ -445,15 +504,27 @@ export default function AdminTestViewPage() {
         console.log('📤 Updating question with media:', {
           questionId: editingId,
           hasMedia: mediaFiles.length > 0,
-          mediaCount: mediaFiles.length
+          mediaCount: mediaFiles.length,
+          startSecond: editData.startSecond,
+          endSecond: editData.endSecond
         });
 
         await updateQuestionAPI(editingId as number, updateData);
         
-        // Update local state
-        setQuestions((prev) =>
-          prev.map((q) => (q.id === editingId ? { ...q, ...editData } : q))
-        );
+        // Re-fetch to get updated data including mediaMappings
+        const refreshedData = await getQuestionsByTestIdAPI(Number(id));
+        
+        // Map timing fields from mediaMappings
+        const dataWithTiming = refreshedData.map((q) => {
+          const audioMap = q.mediaMappings?.find((m) => m.media?.type === 'audio');
+          return {
+            ...q,
+            startSecond: audioMap?.startSecond ?? null,
+            endSecond: audioMap?.endSecond ?? null,
+          };
+        });
+        setQuestions(dataWithTiming);
+        
         setEditingId(null);
         setEditData({});
         alert("✅ Cập nhật thành công!");
@@ -501,7 +572,7 @@ export default function AdminTestViewPage() {
         )}
       </div>
 
-      {/* ✅ Global Audio Section */}
+      {/* ✅ Global Audio Section (show only for Listening parts Part 1-4) */}
       <div className="global-audio-container">
         <h4 className="global-audio-title">
           🎵 Audio cho toàn bộ đề thi:
@@ -562,24 +633,122 @@ export default function AdminTestViewPage() {
       {filteredQuestions.map((q) => {
         const isEditing = editingId === q.id;
         const questionImage = getQuestionImage(q);
-        
+        const isListening = q.partId >= 1 && q.partId <= 4;
+
         // ✅ Calculate actual question index in full list
         const actualIndex = questions.findIndex(question => question.id === q.id) + 1;
 
         return (
-          <div key={q.id} className="card-container">
-            {/* ✅ Question Image Section */}
-            <div className="question-image-section">
-              {questionImage ? (
-                <div className="question-image-container">
-                  <img 
-                    src={questionImage} 
-                    alt={`Question ${actualIndex} image`}
-                    className="question-image"
-                  />
-                  {mode === "edit" && (
-                    <div className="image-edit-controls" style={{ marginTop: "8px", padding: "8px", border: "1px solid #ddd", borderRadius: "4px", backgroundColor: "#f8f8f8" }}>
-                      <p style={{ fontSize: "12px", color: "#666", margin: "0 0 5px 0" }}>Thay đổi hình ảnh:</p>
+          <div key={q.id} className={`card-container${mode === 'edit' && isEditing ? ' editing' : ''}`}>
+            {/* Icon per question type */}
+            <div className="card-question-icon">
+            {/* Edit metadata: Part, Skill, Type */}
+            {mode === "edit" && isEditing && (
+              <div className="edit-metadata">
+                <select className="edit-select"
+                   value={editData.partId || ''}
+                   onChange={(e) => handleChange('partId', Number(e.target.value))}
+                 >
+                   <option value="">-- Part --</option>
+                   {parts.map(p => (
+                     <option key={p.id} value={p.id}>{p.name}</option>
+                   ))}
+                 </select>
+                <select className="edit-select"
+                   value={editData.skillId || ''}
+                   onChange={(e) => handleChange('skillId', Number(e.target.value))}
+                 >
+                   <option value="">-- Skill --</option>
+                   {skills.map(s => (
+                     <option key={s.id} value={s.id}>{s.name}</option>
+                   ))}
+                 </select>
+                <select className="edit-select"
+                   value={editData.typeId || ''}
+                   onChange={(e) => handleChange('typeId', Number(e.target.value))}
+                 >
+                   <option value="">-- Type --</option>
+                   {questionTypes.map(t => (
+                     <option key={t.id} value={t.id}>{t.name}</option>
+                   ))}
+                 </select>
+              </div>
+             )}
+              {isListening ? <FaHeadphones style={{ marginRight: 8, color: '#FF9800' }} /> : <FaBook style={{ marginRight: 8, color: '#2196F3' }} />}
+            </div>
+
+            {/* Question Image Section (only for listening questions) */}
+            {isListening && (
+              <div className="question-image-section">
+                {questionImage ? (
+                  <div className="question-image-container">
+                    <img 
+                      src={questionImage} 
+                      alt={`Question ${actualIndex} image`}
+                      className="question-image"
+                    />
+                    {mode === "edit" && (
+                      <div className="image-edit-controls" style={{ marginTop: "8px", padding: "8px", border: "1px solid #ddd", borderRadius: "4px", backgroundColor: "#f8f8f8" }}>
+                        <p style={{ fontSize: "12px", color: "#666", margin: "0 0 5px 0" }}>Thay đổi hình ảnh:</p>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              handleImageFileSelect(q.id, e.target.files[0]);
+                            }
+                          }}
+                          style={{ fontSize: "12px", marginRight: "8px" }}
+                        />
+                        {/* ✅ Show preview if file selected */}
+                        {questionImagePreviews[q.id] && (
+                          <div className="image-preview-container">
+                            <img 
+                              src={questionImagePreviews[q.id]} 
+                              alt="Preview" 
+                              className="image-preview"
+                            />
+                            <div className="preview-actions">
+                              <button 
+                                className="save-btn"
+                                onClick={() => handleQuestionImageUpload(q.id)}
+                                disabled={uploadingMedia[q.id]}
+                              >
+                                <FaUpload /> {uploadingMedia[q.id] ? "Uploading..." : "Upload"}
+                              </button>
+                              <button 
+                                className="cancel-btn"
+                                onClick={() => handleCancelImageSelection(q.id)}
+                              >
+                                <FaTimes /> Hủy
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {questionImageFiles[q.id] && !questionImagePreviews[q.id] && (
+                          <button 
+                            className="save-btn"
+                            onClick={() => handleQuestionImageUpload(q.id)}
+                            disabled={uploadingMedia[q.id]}
+                            style={{ fontSize: "11px", padding: "4px 8px", marginRight: "5px" }}
+                          >
+                            <FaUpload /> {uploadingMedia[q.id] ? "Uploading..." : "Thay đổi"}
+                          </button>
+                        )}
+                        <button 
+                          className="cancel-btn"
+                          onClick={() => handleDeleteQuestionImage(q.id)}
+                          style={{ fontSize: "11px", padding: "4px 8px" }}
+                        >
+                          <FaTrash /> Xóa
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  mode === "edit" && (
+                    <div className="question-image-upload" style={{ marginBottom: "15px", padding: "10px", border: "1px dashed #ccc", borderRadius: "4px", backgroundColor: "#f9f9f9" }}>
+                      <p style={{ color: "#666", fontSize: "13px", margin: "0 0 8px 0" }}>Thêm hình ảnh cho câu hỏi này:</p>
                       <input
                         type="file"
                         accept="image/*"
@@ -620,74 +789,49 @@ export default function AdminTestViewPage() {
                           className="save-btn"
                           onClick={() => handleQuestionImageUpload(q.id)}
                           disabled={uploadingMedia[q.id]}
-                          style={{ fontSize: "11px", padding: "4px 8px", marginRight: "5px" }}
+                          style={{ fontSize: "11px", padding: "4px 8px" }}
                         >
-                          <FaUpload /> {uploadingMedia[q.id] ? "Uploading..." : "Thay đổi"}
+                          <FaUpload /> {uploadingMedia[q.id] ? "Uploading..." : "Upload"}
                         </button>
                       )}
-                      <button 
-                        className="cancel-btn"
-                        onClick={() => handleDeleteQuestionImage(q.id)}
-                        style={{ fontSize: "11px", padding: "4px 8px" }}
-                      >
-                        <FaTrash /> Xóa
-                      </button>
                     </div>
-                  )}
-                </div>
-              ) : (
-                mode === "edit" && (
-                  <div className="question-image-upload" style={{ marginBottom: "15px", padding: "10px", border: "1px dashed #ccc", borderRadius: "4px", backgroundColor: "#f9f9f9" }}>
-                    <p style={{ color: "#666", fontSize: "13px", margin: "0 0 8px 0" }}>Thêm hình ảnh cho câu hỏi này:</p>
+                  )
+                )}
+              </div>
+            )}
+
+            {/* Timing inputs for listening questions in edit mode */}
+            {mode === 'edit' && isEditing && isListening && (
+              <div className="audio-timing-section">
+                <h5 className="audio-timing-title">🎵 Timing cho audio (giây)</h5>
+                <div className="audio-timing-controls">
+                  <div className="timing-input-group">
+                    <label className="timing-input-label">Bắt đầu:</label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          handleImageFileSelect(q.id, e.target.files[0]);
-                        }
-                      }}
-                      style={{ fontSize: "12px", marginRight: "8px" }}
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder="0"
+                      value={editData.startSecond ?? ''}
+                      onChange={(e) => handleChange('startSecond', e.target.value === '' ? null : parseFloat(e.target.value))}
+                      className="timing-input"
                     />
-                    {/* ✅ Show preview if file selected */}
-                    {questionImagePreviews[q.id] && (
-                      <div className="image-preview-container">
-                        <img 
-                          src={questionImagePreviews[q.id]} 
-                          alt="Preview" 
-                          className="image-preview"
-                        />
-                        <div className="preview-actions">
-                          <button 
-                            className="save-btn"
-                            onClick={() => handleQuestionImageUpload(q.id)}
-                            disabled={uploadingMedia[q.id]}
-                          >
-                            <FaUpload /> {uploadingMedia[q.id] ? "Uploading..." : "Upload"}
-                          </button>
-                          <button 
-                            className="cancel-btn"
-                            onClick={() => handleCancelImageSelection(q.id)}
-                          >
-                            <FaTimes /> Hủy
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    {questionImageFiles[q.id] && !questionImagePreviews[q.id] && (
-                      <button 
-                        className="save-btn"
-                        onClick={() => handleQuestionImageUpload(q.id)}
-                        disabled={uploadingMedia[q.id]}
-                        style={{ fontSize: "11px", padding: "4px 8px" }}
-                      >
-                        <FaUpload /> {uploadingMedia[q.id] ? "Uploading..." : "Upload"}
-                      </button>
-                    )}
                   </div>
-                )
-              )}
-            </div>
+                  <div className="timing-input-group">
+                    <label className="timing-input-label">Kết thúc:</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder="auto"
+                      value={editData.endSecond ?? ''}
+                      onChange={(e) => handleChange('endSecond', e.target.value === '' ? null : parseFloat(e.target.value))}
+                      className="timing-input"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <h2 className="card-question">
               {actualIndex}.{" "}

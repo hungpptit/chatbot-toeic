@@ -1,0 +1,323 @@
+/* ========================================
+   FILE: src/styles/MLRecommendations.css
+   MỤC ĐÍCH: Styles cho ML Recommendations component
+   ======================================== */
+
+.ml-recommendations {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Header */
+.recommendations-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.recommendations-header h2 {
+    font-size: 28px;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.refresh-btn {
+    padding: 10px 20px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.refresh-btn:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+}
+
+/* Loading State */
+.ml-recommendations.loading {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error State */
+.ml-recommendations.error {
+    text-align: center;
+    padding: 40px;
+    background: #ffe6e6;
+    border-radius: 12px;
+    color: #c0392b;
+}
+
+.ml-recommendations.error button {
+    margin-top: 15px;
+    padding: 10px 25px;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Empty State */
+.ml-recommendations.empty {
+    text-align: center;
+    padding: 60px 20px;
+    background: #e8f8f5;
+    border-radius: 12px;
+    color: #27ae60;
+}
+
+/* Weak Skills Section */
+.weak-skills-section {
+    margin-bottom: 40px;
+}
+
+.weak-skills-section h3 {
+    font-size: 22px;
+    color: #34495e;
+    margin-bottom: 20px;
+}
+
+.skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.skill-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 5px solid #3498db;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.skill-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.skill-card.selected {
+    border-left-width: 8px;
+    box-shadow: 0 4px 16px rgba(52, 152, 219, 0.3);
+}
+
+.skill-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.skill-header h4 {
+    font-size: 18px;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.model-badge {
+    font-size: 12px;
+    padding: 4px 10px;
+    background: #ecf0f1;
+    border-radius: 12px;
+    color: #7f8c8d;
+}
+
+.skill-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.skill-stats .stat {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+}
+
+.skill-stats .label {
+    color: #7f8c8d;
+}
+
+.skill-stats .value {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #ecf0f1;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    transition: width 0.5s ease;
+    border-radius: 4px;
+}
+
+/* Recommendations Section */
+.recommendations-section {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.recommendations-section h3 {
+    font-size: 22px;
+    color: #34495e;
+    margin-bottom: 10px;
+}
+
+.section-description {
+    color: #7f8c8d;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.section-description strong {
+    color: #3498db;
+}
+
+.no-recommendations {
+    text-align: center;
+    padding: 40px;
+    color: #95a5a6;
+}
+
+.questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.question-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    transition: all 0.3s;
+}
+
+.question-card:hover {
+    border-color: #3498db;
+    background: #ebf5fb;
+}
+
+.question-number {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #3498db;
+    color: white;
+    border-radius: 50%;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.question-content {
+    flex: 1;
+}
+
+.question-content p {
+    margin: 0 0 10px 0;
+    color: #2c3e50;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.question-meta {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.meta-item {
+    font-size: 13px;
+    color: #7f8c8d;
+    padding: 4px 10px;
+    background: white;
+    border-radius: 6px;
+}
+
+.meta-item.difficulty {
+    color: #f39c12;
+    font-weight: 600;
+}
+
+.practice-btn {
+    flex-shrink: 0;
+    padding: 10px 20px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.practice-btn:hover {
+    background: #229954;
+    transform: translateX(5px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .skills-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .question-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .practice-btn {
+        width: 100%;
+    }
+
+    .recommendations-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+
+    .refresh-btn {
+        width: 100%;
+    }
+}

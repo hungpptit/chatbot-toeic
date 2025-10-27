@@ -547,7 +547,7 @@ export default function AdminMixTestForm({ onBack, testTitle, setTestTitle, sele
       <div className="test-section reading">
         <div className="section-header">
           <FaBook className="section-icon" style={{ color: '#2196F3' }} />
-          <h3 className="section-title">📖 Reading Questions</h3>
+          <h3 className="section-title">Reading Questions</h3>
           <span className="question-count">{readingQuestions.length} câu hỏi</span>
         </div>
 
@@ -573,7 +573,7 @@ export default function AdminMixTestForm({ onBack, testTitle, setTestTitle, sele
       <div className="test-section listening">
         <div className="section-header">
           <FaHeadphones className="section-icon" style={{ color: '#FF9800' }} />
-          <h3 className="section-title">🎧 Listening Questions</h3>
+          <h3 className="section-title">Listening Questions</h3>
           <span className="question-count">{listeningQuestions.length} câu hỏi</span>
         </div>
 

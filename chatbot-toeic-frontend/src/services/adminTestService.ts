@@ -216,15 +216,17 @@ export const createNewTestAPI = async (
                 let uploadedUrl: string;
                 
                 if ((mediaInput as any).url) {
-                  // Batch upload đã có URL rồi
+                  // Batch upload already provided URL
                   uploadedUrl = (mediaInput as any).url;
                   console.log(`✅ Using existing URL: ${uploadedUrl}`);
                 } else {
-                  // Upload file mới lên Cloudinary
-                  uploadedUrl = await uploadFileAPI(
+                  // Upload file to Cloudinary
+                  const res = await uploadFileAPI(
                     mediaInput.file,
                     mediaInput.type
                   );
+                  // extract URL if response is object
+                  uploadedUrl = typeof res === 'string' ? res : res.url;
                   console.log(`✅ Uploaded new file: ${uploadedUrl}`);
                 }
 

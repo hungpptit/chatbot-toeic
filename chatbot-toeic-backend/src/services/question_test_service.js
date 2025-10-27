@@ -40,7 +40,7 @@ export const RandomQuestionsByTestId = async (testId, limit = null) => {
           include: [{
             model: db.MediaFiles,
             as: 'media',
-            attributes: ['id', 'mediaType', 'mediaUrl', 'description', 'duration'] // ✅ Include duration
+            attributes: ['id', 'mediaType', 'mediaUrl', 'description', 'duration']
           }],
           attributes: ['id', 'mediaId', 'startSecond', 'endSecond', 'sortOrder']
         }
@@ -83,7 +83,7 @@ export const RandomQuestionsByTestId = async (testId, limit = null) => {
         }));
       }
       
-      return questionData;
+  return questionData;
     });
 
     console.log('📤 Sending transformed questions with correct field names');
@@ -120,6 +120,20 @@ export const updateQuestion = async (id, updatedData, retryCount = 0) => {
           typeId: updatedData.typeId,
           partId: updatedData.partId,
         }, { transaction });
+        
+        // ✅ Handle skill update if provided
+        if (updatedData.skillId !== undefined) {
+          // Remove existing skill mappings
+          await db.QuestionSkill.destroy({ where: { questionId: id }, transaction });
+          // Create new mapping if skillId is not null
+          if (updatedData.skillId) {
+            await db.QuestionSkill.create({
+              questionId: id,
+              skillId: updatedData.skillId,
+              weight: 1
+            }, { transaction });
+          }
+        }
 
         // ✅ Handle media updates if provided (URLs only, files already uploaded by frontend)
         if (updatedData.mediaFiles && Array.isArray(updatedData.mediaFiles)) {
@@ -154,13 +168,23 @@ export const updateQuestion = async (id, updatedData, retryCount = 0) => {
               );
 
               if (existingMapping) {
-                // Update existing media
+                // Update existing media file
                 await existingMapping.media.update({
                   mediaUrl: mediaInput.url,
                   description: mediaInput.description || 'Updated media',
-                  duration: mediaInput.duration || null // ✅ Update duration for existing media
+                  duration: mediaInput.duration || null
                 }, { transaction });
-                console.log(`✅ Updated existing ${mediaInput.type} media with duration:`, mediaInput.duration);
+                
+                // Also update mapping timing for audio
+                if (mediaInput.type === 'audio') {
+                  await existingMapping.update({
+                    startSecond: mediaInput.startSecond ?? null,
+                    endSecond: mediaInput.endSecond ?? null
+                  }, { transaction });
+                  console.log(`✅ Updated existing ${mediaInput.type} media and timing:`, mediaInput.startSecond, mediaInput.endSecond);
+                } else {
+                  console.log(`✅ Updated existing ${mediaInput.type} media with duration:`, mediaInput.duration);
+                }
               } else {
                 // Create new media
                 const newMedia = await db.MediaFiles.create({ // ✅ Fixed: MediaFiles not MediaFile

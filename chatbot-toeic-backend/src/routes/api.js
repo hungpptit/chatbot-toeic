@@ -13,6 +13,7 @@ import AminTestRouter from  './AdminTest_router.js';
 import accountRouter from './account_router.js';
 import statisticalRouter from './statistical_router.js';
 import uploadRouter from './upload.js';
+import mlRouter from './ml_router.js';
 // import userRouter from './user.route.js';
 // import questionRouter from './question.route.js';
 
@@ -34,5 +35,6 @@ router.use('/adminTest', AminTestRouter); // AdminTest_router.js chứa các end
 router.use('/account', accountRouter);
 router.use('/statistical', statisticalRouter);
 router.use('/', uploadRouter);
+router.use('/ml', mlRouter); // ML recommendations
 
 export default router;
