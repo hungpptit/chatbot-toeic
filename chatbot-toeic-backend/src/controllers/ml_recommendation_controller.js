@@ -4,6 +4,7 @@
 // ========================================
 
 import { spawn } from 'child_process';
+import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -28,24 +29,19 @@ export const getRecommendations = async (req, res) => {
         // Path to ML script
         const mlScriptPath = path.join(__dirname, '../../ml/predict_hybrid_unified.py');
 
-        // Spawn Python process
-        const pythonProcess = spawn('python', [mlScriptPath, userId]);
+        // Spawn Python process and ask it to write output JSON to a file
+        const outFileName = `result_user_${userId}_${Date.now()}.json`;
+        const outPath = path.join(__dirname, '../../ml', outFileName);
 
-        let dataString = '';
+        const pythonArgs = [mlScriptPath, userId.toString(), '--quiet', '--out', outPath];
+        const pythonProcess = spawn('python', pythonArgs);
+
         let errorString = '';
-
-        // Collect stdout
-        pythonProcess.stdout.on('data', (data) => {
-            dataString += data.toString();
-        });
-
-        // Collect stderr
         pythonProcess.stderr.on('data', (data) => {
             errorString += data.toString();
         });
 
-        // Handle process completion
-        pythonProcess.on('close', (code) => {
+        pythonProcess.on('close', async (code) => {
             if (code !== 0) {
                 console.error('Python script error:', errorString);
                 return res.status(500).json({
@@ -56,8 +52,11 @@ export const getRecommendations = async (req, res) => {
             }
 
             try {
-                // Parse JSON output from Python
-                const result = JSON.parse(dataString);
+                const raw = await fs.readFile(outPath, { encoding: 'utf-8' });
+                const result = JSON.parse(raw);
+
+                // Clean up the temporary output file (best-effort)
+                try { await fs.unlink(outPath); } catch (e) { /* ignore */ }
 
                 return res.status(200).json({
                     code: 200,
@@ -65,12 +64,12 @@ export const getRecommendations = async (req, res) => {
                     data: result
                 });
             } catch (parseError) {
-                console.error('Failed to parse Python output:', parseError);
+                console.error('Failed to read/parse Python output file:', parseError);
                 return res.status(500).json({
                     code: 500,
-                    message: "Failed to parse ML output",
+                    message: "Failed to read/parse ML output file",
                     error: parseError.message,
-                    raw: dataString
+                    stderr: errorString
                 });
             }
         });

@@ -47,6 +47,23 @@ import subprocess
 import json
 from sklearn.naive_bayes import GaussianNB
 from dotenv import load_dotenv
+import sys
+
+# Ensure stdout/stderr use UTF-8 on Windows terminals to avoid "charmap" encode errors
+try:
+    # Python 3.7+: reconfigure if available
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+except Exception:
+    # Fallback: wrap streams (some environments may not expose buffer)
+    try:
+        import io
+        sys.stdout = io.TextIOWrapper(getattr(sys.stdout, 'buffer', sys.stdout), encoding='utf-8', errors='replace')
+        sys.stderr = io.TextIOWrapper(getattr(sys.stderr, 'buffer', sys.stderr), encoding='utf-8', errors='replace')
+    except Exception:
+        # Last resort: ignore and continue — prints may still fail on some consoles
+        pass
+import argparse
 
 # Load .env từ parent directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -338,31 +355,47 @@ def full_pipeline(userId: int, k: int = 3):
 # MAIN: Test script
 # ============================================================================
 if __name__ == "__main__":
-    import sys
-    
-    # Get userId from command line or use default
-    userId = int(sys.argv[1]) if len(sys.argv) > 1 else 3
-    
-    print(f"""
-╔══════════════════════════════════════════════════════════════════════╗
-║                                                                      ║
-║          HYBRID UNIFIED MODEL - WEAK SKILL DETECTION                ║
-║                                                                      ║
-║  Strategy: Global (<10 attempts) + Unified (≥10 attempts)          ║
-║  Benefits: 1 model for all users, 99.98% storage savings           ║
-║                                                                      ║
-╚══════════════════════════════════════════════════════════════════════╝
-    """)
-    
+    parser = argparse.ArgumentParser(description='Predict weak skills and recommend questions (Hybrid Unified)')
+    parser.add_argument('userId', nargs='?', type=int, default=3, help='User ID to predict')
+    parser.add_argument('--out', '-o', help='Output JSON file path (default: ml/result_user_<userId>.json)')
+    parser.add_argument('--quiet', action='store_true', help='Suppress verbose console output')
+    parser.add_argument('--k', type=int, default=3, help='Number of recommendations per anchor (default 3)')
+
+    args = parser.parse_args()
+
+    userId = args.userId
+
+    # If quiet, suppress stdout/stderr to avoid huge console output
+    if args.quiet:
+        try:
+            devnull = open(os.devnull, 'w', encoding='utf-8')
+            sys.stdout.flush()
+            sys.stderr.flush()
+            sys.stdout = devnull
+            sys.stderr = devnull
+        except Exception:
+            pass
+
     # Run full pipeline
-    result = full_pipeline(userId, k=3)
-    
-    print("\n" + "="*80)
-    print("📋 FINAL RESULTS")
-    print("="*80)
-    print(f"Weak Skills: {result['weak_skills']}")
-    print(f"\nRecommendations:")
-    for skill, questions in result['recommendations'].items():
-        print(f"\n{skill}:")
-        for i, q in enumerate(questions[:5], 1):
-            print(f"  {i}. {q[:80]}...")
+    result = full_pipeline(userId, k=args.k)
+
+    # Determine output path
+    default_out = os.path.join(os.path.dirname(__file__), f"result_user_{userId}.json")
+    out_path = args.out if args.out else default_out
+
+    # Write JSON result to file (UTF-8)
+    try:
+        with open(out_path, 'w', encoding='utf-8') as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+        # Always print a short confirmation to original stdout
+        try:
+            sys.__stdout__.write(f"JSON result written to: {out_path}\n")
+        except Exception:
+            print(f"JSON result written to: {out_path}")
+    except Exception as e:
+        # If writing fails, fallback to printing JSON to original stdout
+        try:
+            sys.__stdout__.write(f"Failed to write file: {e}\n")
+            sys.__stdout__.write(json.dumps(result, ensure_ascii=False))
+        except Exception:
+            pass

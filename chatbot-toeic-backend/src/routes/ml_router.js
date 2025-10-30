@@ -5,7 +5,7 @@
 
 import express from 'express';
 import { getRecommendations, retrainModels } from '../controllers/ml_recommendation_controller.js';
-import { verifyToken } from '../Middleware/verifyToken.js';
+import verifyToken from '../Middleware/verifyToken.js';
 
 const router = express.Router();
 
