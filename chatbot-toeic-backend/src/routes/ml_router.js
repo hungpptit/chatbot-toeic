@@ -1,25 +1,25 @@
-// ========================================
-// FILE: src/routes/ml_router.js
-// MỤC ĐÍCH: Routes cho ML recommendations
-// ========================================
-
 import express from 'express';
-import { getRecommendations, retrainModels } from '../controllers/ml_recommendation_controller.js';
 import verifyToken from '../Middleware/verifyToken.js';
+import { getRecommendations, retrainModels } from '../controllers/ml_recommendation_controller.js';
+import { getRecommendationDetails } from '../controllers/ml_recommendation_detail_controller.js';
 
 const router = express.Router();
 
 /**
  * @route GET /api/ml/recommend/:userId
- * @desc Get weak skills and question recommendations
- * @access Private (requires login)
+ * @desc Chạy Python ML để dự đoán kỹ năng yếu và gợi ý ID câu hỏi
  */
 router.get('/recommend/:userId', verifyToken, getRecommendations);
 
 /**
+ * @route GET /api/ml/recommend/details/:userId
+ * @desc Gọi ML + lấy chi tiết câu hỏi từ DB
+ */
+router.get('/recommend/details/:userId', verifyToken, getRecommendationDetails);
+
+/**
  * @route POST /api/ml/retrain
- * @desc Trigger ML model retraining (Admin only)
- * @access Private (Admin only)
+ * @desc Retrain model (admin)
  */
 router.post('/retrain', verifyToken, retrainModels);
 

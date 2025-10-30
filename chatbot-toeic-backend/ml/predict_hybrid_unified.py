@@ -337,9 +337,14 @@ def full_pipeline(userId: int, k: int = 3):
                 try:
                     similar = json.loads(similar_json)
                     for s in similar:
-                        all_suggestions[s['id']] = s['question']  # Deduplicate by ID
-                except:
+                        all_suggestions[s['id']] = {
+                            "id": s['id'],
+                            "question": s['question']
+                        }
+                except Exception as e:
+                    print(f"⚠️ Parse error: {e}")
                     pass
+
         
         recommendations[skill] = list(all_suggestions.values())[:k*3]  # Top k*3 questions
         print(f"   ✅ Tìm được {len(recommendations[skill])} câu hỏi gợi ý")
