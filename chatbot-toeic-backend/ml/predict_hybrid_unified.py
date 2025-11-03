@@ -316,7 +316,7 @@ def full_pipeline(userId: int, k: int = 3):
         
         # Query questions thuộc skill này
         query = f"""
-        SELECT TOP 30 q.id, q.question
+        SELECT TOP 50 q.id, q.question
         FROM Questions q
         JOIN QuestionSkills qs ON q.id = qs.questionId
         JOIN Skills s ON qs.skillId = s.id
@@ -331,7 +331,7 @@ def full_pipeline(userId: int, k: int = 3):
         
         # Recommend similar questions
         all_suggestions = {}
-        for _, q in questions_df.head(10).iterrows():  # Chỉ lấy 10 anchor questions
+        for _, q in questions_df.head(20).iterrows():  # Tăng lên 20 anchor để đảm bảo đủ 30 unique
             similar_json = recommend_questions(q['id'], k=k)
             if similar_json:
                 try:
@@ -344,9 +344,13 @@ def full_pipeline(userId: int, k: int = 3):
                 except Exception as e:
                     print(f"⚠️ Parse error: {e}")
                     pass
+            
+            # Early exit nếu đã đủ 30 unique questions
+            if len(all_suggestions) >= 30:
+                break
 
         
-        recommendations[skill] = list(all_suggestions.values())[:k*3]  # Top k*3 questions
+        recommendations[skill] = list(all_suggestions.values())[:30]  # Top 30 questions
         print(f"   ✅ Tìm được {len(recommendations[skill])} câu hỏi gợi ý")
     
     conn.close()

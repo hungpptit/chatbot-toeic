@@ -1,0 +1,129 @@
+{
+  "weak_skills": [
+    "Vocabulary"
+  ],
+  "recommendations": {
+    "Vocabulary": [
+      {
+        "id": 111,
+        "question": "The CEO has asked for a detailed financial ______ before the meeting."
+      },
+      {
+        "id": 121,
+        "question": "The CEO has asked for a detailed financial ______ before the meeting."
+      },
+      {
+        "id": 131,
+        "question": "The CEO has asked for a detailed financial ______ before the meeting."
+      },
+      {
+        "id": 106,
+        "question": "The final decision will be made ______ the board of directors."
+      },
+      {
+        "id": 116,
+        "question": "The final decision will be made ______ the board of directors."
+      },
+      {
+        "id": 126,
+        "question": "The final decision will be made ______ the board of directors."
+      },
+      {
+        "id": 112,
+        "question": "Jane will be in charge of the project ______ Mr. Lee is on vacation."
+      },
+      {
+        "id": 122,
+        "question": "Jane will be in charge of the project ______ Mr. Lee is on vacation."
+      },
+      {
+        "id": 132,
+        "question": "Jane will be in charge of the project ______ Mr. Lee is on vacation."
+      },
+      {
+        "id": 110,
+        "question": "We will offer a full refund to any customer who is not ______ satisfied."
+      },
+      {
+        "id": 120,
+        "question": "We will offer a full refund to any customer who is not ______ satisfied."
+      },
+      {
+        "id": 130,
+        "question": "We will offer a full refund to any customer who is not ______ satisfied."
+      },
+      {
+        "id": 113,
+        "question": "The product launch was delayed ______ a supply chain issue."
+      },
+      {
+        "id": 123,
+        "question": "The product launch was delayed ______ a supply chain issue."
+      },
+      {
+        "id": 133,
+        "question": "The product launch was delayed ______ a supply chain issue."
+      },
+      {
+        "id": 107,
+        "question": "Mr. Kim was promoted to sales manager because of his ______ performance."
+      },
+      {
+        "id": 117,
+        "question": "Mr. Kim was promoted to sales manager because of his ______ performance."
+      },
+      {
+        "id": 127,
+        "question": "Mr. Kim was promoted to sales manager because of his ______ performance."
+      },
+      {
+        "id": 108,
+        "question": "Please make sure all reports are submitted ______ the deadline."
+      },
+      {
+        "id": 118,
+        "question": "Please make sure all reports are submitted ______ the deadline."
+      },
+      {
+        "id": 128,
+        "question": "Please make sure all reports are submitted ______ the deadline."
+      },
+      {
+        "id": 104,
+        "question": "The board meeting has been postponed ______ further notice."
+      },
+      {
+        "id": 314,
+        "question": "314 nÃ¨"
+      },
+      {
+        "id": 315,
+        "question": "314 nÃ¨"
+      },
+      {
+        "id": 310,
+        "question": "hÃ´m nÃ y"
+      },
+      {
+        "id": 109,
+        "question": "The technician explained the issue clearly and ______."
+      },
+      {
+        "id": 119,
+        "question": "The technician explained the issue clearly and ______."
+      },
+      {
+        "id": 129,
+        "question": "The technician explained the issue clearly and ______."
+      },
+      {
+        "id": 114,
+        "question": "Our staff is trained to respond to all customer inquiries ______."
+      },
+      {
+        "id": 124,
+        "question": "Our staff is trained to respond to all customer inquiries ______."
+      }
+    ]
+  }
+}

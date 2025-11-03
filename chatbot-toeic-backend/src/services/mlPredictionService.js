@@ -87,7 +87,8 @@ async function runPythonPrediction(userId) {
           questionIds: questionIds,
           confidence: 0.8,
           totalAttempts: 0,
-          overallAccuracy: null
+          overallAccuracy: null,
+          updatedAt: db.sequelize.fn('GETDATE') // Use SQL Server GETDATE()
         });
 
         // Save to MLPredictionHistory (always insert new record)
@@ -96,6 +97,7 @@ async function runPythonPrediction(userId) {
           weakSkills: result.weak_skills || [],
           questionIds: questionIds,
           confidence: 0.8
+          // Do NOT set createdAt - let SQL Server default (getdate()) handle it
         });
 
         console.log(`✅ Saved ML prediction to database for user ${userId}`);
