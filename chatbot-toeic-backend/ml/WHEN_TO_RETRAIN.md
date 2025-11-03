@@ -132,23 +132,25 @@ SAU (2025): Users hay bỏ cuộc sau 5 câu
 └─────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────┐
-│  OPTION 2: Scheduled (Recommended)                  │
+│  OPTION 2: Scheduled (Recommended) ✅ IMPLEMENTED   │
 ├─────────────────────────────────────────────────────┤
-│  - Train: Mỗi tuần/tháng vào lúc rảnh (3am)        │
-│  - Frequency: Cố định                               │
+│  - Train: Tự động mỗi 6 tiếng                      │
+│  - Frequency: Cố định (0, 6, 12, 18h mỗi ngày)     │
 │  - Pros: Tự động, đảm bảo model luôn mới           │
 │  - Cons: Tốn resources (nhưng chấp nhận được)      │
 │                                                     │
 │  Phù hợp: Production, nhiều users                   │
 │                                                     │
-│  Command:                                           │
-│    # Chạy mỗi Chủ Nhật 3am                         │
-│    python train_unified_model.py                    │
+│  ✅ HIỆN TẠI ĐÃ IMPLEMENT:                         │
+│    File: backend/cronJobs/mlRetrainCron.js         │
+│    Schedule: Cron "0 */6 * * *"                    │
+│    Command: spawn("python", ["ml/train_model.py"]) │
+│    Auto-start: Khi backend server khởi động        │
 │                                                     │
-│  Setup:                                             │
-│    - Windows Task Scheduler                         │
-│    - Node.js cron job                              │
-│    - Manual script                                  │
+│  Logs:                                              │
+│    [ML Retrain Cron] Training started at ...       │
+│    [ML Retrain Cron] Training output: ...          │
+│    [ML Retrain Cron] Training completed            │
 └─────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────┐
@@ -164,6 +166,72 @@ SAU (2025): Users hay bỏ cuộc sau 5 câu
 │                                                     │
 │  Phù hợp: Scale lớn, enterprise                     │
 └─────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 🔧 **Chi tiết implementation (mlRetrainCron.js):**
+
+```javascript
+// File: chatbot-toeic-backend/cronJobs/mlRetrainCron.js
+
+import cron from "node-cron";
+import { spawn } from "child_process";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Hàm train model
+async function retrainModels() {
+  console.log(`[ML Retrain Cron] Training started at ${new Date().toISOString()}`);
+  
+  const pythonScript = path.join(__dirname, "../ml/train_model.py");
+  const pythonProcess = spawn("python", [pythonScript]);
+
+  pythonProcess.stdout.on("data", (data) => {
+    console.log(`[ML Retrain Cron] Training output: ${data.toString()}`);
+  });
+
+  pythonProcess.stderr.on("data", (data) => {
+    console.error(`[ML Retrain Cron] Training error: ${data.toString()}`);
+  });
+
+  pythonProcess.on("close", (code) => {
+    if (code === 0) {
+      console.log(`[ML Retrain Cron] Training completed at ${new Date().toISOString()}`);
+    } else {
+      console.error(`[ML Retrain Cron] Training failed with code ${code}`);
+    }
+  });
+}
+
+// Schedule: Mỗi 6 tiếng (0h, 6h, 12h, 18h)
+cron.schedule("0 */6 * * *", async () => {
+  console.log("[ML Retrain Cron] Scheduled retrain triggered");
+  await retrainModels();
+});
+
+console.log("[ML Retrain Cron] Cron job registered: 0 */6 * * * (every 6 hours)");
+```
+
+**Workflow tự động:**
+```
+1. Backend server khởi động
+   ↓
+2. mlRetrainCron.js được import trong server.js
+   ↓
+3. Cron job đăng ký schedule "0 */6 * * *"
+   ↓
+4. Đúng 0h/6h/12h/18h:
+   - Spawn Python train_model.py
+   - Train unified_model.pkl và weak_skill_model.pkl
+   - Logs progress
+   ↓
+5. Model mới được lưu vào ml/model/
+   ↓
+6. Lần predict tiếp theo dùng model mới
 ```
 
 ---
@@ -305,14 +373,22 @@ python check_user_skills.py
 ║                                                          ║
 ║  🎯 Khuyến nghị cho project này:                        ║
 ║                                                          ║
+║    ✅ HIỆN TẠI (Implemented):                           ║
+║      → Auto train: Mỗi 6 tiếng                         ║
+║      → File: cronJobs/mlRetrainCron.js                 ║
+║      → Schedule: 0h, 6h, 12h, 18h                      ║
+║      → Command: python ml/train_model.py               ║
+║      → Auto-start: Khi backend server khởi động        ║
+║                                                          ║
 ║    Phase 1: MVP (100-1000 users)                        ║
 ║      → Manual train: Khi cần                           ║
 ║      → Frequency: 1 tháng/lần                          ║
-║                                                          ║
-║    Phase 2: Growth (1000-10k users)                     ║
-║      → Scheduled train: Mỗi tuần                       ║
 ║      → Command: python train_unified_model.py          ║
-║      → Time: Chủ Nhật 3am                              ║
+║                                                          ║
+║    Phase 2: Growth (1000-10k users) ✅                  ║
+║      → Scheduled train: Mỗi 6 tiếng (IMPLEMENTED)      ║
+║      → Command: Auto via mlRetrainCron.js              ║
+║      → Time: 0h, 6h, 12h, 18h                          ║
 ║                                                          ║
 ║    Phase 3: Scale (10k+ users)                          ║
 ║      → Event-based: Khi accuracy drop                  ║
@@ -336,7 +412,37 @@ python check_user_skills.py
    - Production: Auto mỗi tuần
    - Enterprise: Event-based + monitoring
 
-4. **Hiện tại project của bạn:** 
-   - Có `train_unified_model.py` sẵn
-   - Chạy manual khi cần: `python train_unified_model.py`
-   - Setup scheduled task sau khi có nhiều users hơn
+4. **✅ Hiện tại project của bạn:** 
+   - **AUTO-RETRAIN ĐÃ ĐƯỢC IMPLEMENT:**
+     - File: `chatbot-toeic-backend/cronJobs/mlRetrainCron.js`
+     - Schedule: Mỗi 6 tiếng (0h, 6h, 12h, 18h)
+     - Command: `python ml/train_model.py`
+     - Auto-start: Tự động khi backend server khởi động
+     - Logs: Realtime training progress trong console
+   
+   - **Chạy manual (nếu cần):**
+     ```bash
+     cd chatbot-toeic-backend/ml
+     python train_model.py
+     # hoặc
+     python train_unified_model.py
+     ```
+
+5. **Workflow hoàn chỉnh:**
+   ```
+   User làm test/practice
+     ↓
+   Submit results → Database
+     ↓
+   Background: triggerMLPredictionAsync(userId)
+     ↓
+   Python predict_hybrid_unified.py
+     ↓
+   Update MLPredictions (cache) + MLPredictionHistory
+     ↓
+   Mỗi 6 tiếng: mlRetrainCron.js
+     ↓
+   Train lại model với data mới
+     ↓
+   Model mới sẵn sàng cho predictions tiếp theo
+   ```

@@ -54,6 +54,21 @@ export const getMLRecommendationsAPI = async (userId: number): Promise<MLRecomme
 };
 
 /**
+ * Get weak skills and question recommendations with full details for a user
+ */
+export const getMLRecommendationDetailsAPI = async (userId: number): Promise<any> => {
+    try {
+        const response = await axios.get(`${API_URL}/api/ml/recommend/details/${userId}`, {
+            withCredentials: true
+        });
+        return response.data;
+    } catch (error: any) {
+        console.error('Error fetching ML recommendation details:', error);
+        throw error.response?.data || error;
+    }
+};
+
+/**
  * Trigger model retraining (Admin only)
  */
 export const retrainMLModelsAPI = async (): Promise<{ code: number; message: string }> => {

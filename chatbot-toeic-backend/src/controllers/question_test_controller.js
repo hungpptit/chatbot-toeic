@@ -1,7 +1,8 @@
 
-import { RandomQuestionsByTestId,updateQuestion, SubmitTestResult, CheckUserHasDoneTestDetailed, GetUserTestDetailById, GetUserTestHistoryByTestId,StartUserTest,
+import { RandomQuestionsByTestId,updateQuestion, SubmitTestResult, SubmitPracticeResult, CheckUserHasDoneTestDetailed, GetUserTestDetailById, GetUserTestHistoryByTestId,StartUserTest,
   createQuestion
 }  from '../services/question_test_service.js';
+import { triggerMLPredictionAsync } from '../services/mlPredictionService.js';
 
 // Controller: Lấy danh sách câu hỏi ngẫu nhiên theo testId
 const getQuestionsByTest = async (req, res) => {
@@ -91,6 +92,9 @@ const submitTest = async (req, res) => {
 
     const result = await SubmitTestResult({ userId, testId, answers });
 
+    // ✅ Trigger ML prediction in background (không blocking response)
+    triggerMLPredictionAsync(userId);
+
     res.status(200).json({
       message: 'Submit successful',
       userTestId: result.userTestId,  
@@ -102,6 +106,47 @@ const submitTest = async (req, res) => {
   } catch (err) {
     console.error('Error submitting test result:', err);
     res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// ✅ NEW: Submit practice results (no testId needed)
+const submitPractice = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { answers } = req.body;
+
+    console.log('📥 submitPractice received:', {
+      userId,
+      answersCount: answers?.length,
+      body: req.body
+    });
+
+    if (!userId || !Array.isArray(answers) || answers.length === 0) {
+      console.warn('⚠️ Invalid submitPractice request:', { userId, answers });
+      return res.status(400).json({ message: 'Missing or invalid parameters' });
+    }
+
+    const result = await SubmitPracticeResult({ userId, answers });
+
+    console.log('✅ Practice submitted successfully:', result);
+
+    // ✅ Trigger ML prediction in background (không blocking response)
+    triggerMLPredictionAsync(userId);
+
+    res.status(200).json({
+      message: 'Practice completed',
+      correctCount: result.correctCount,
+      total: result.total,
+      score: result.score,
+      incorrectAnswers: result.incorrectAnswers
+    });
+  } catch (err) {
+    console.error('❌ Error submitting practice result:', err);
+    console.error('Stack:', err.stack);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: err.message
+    });
   }
 };
 
@@ -178,6 +223,7 @@ export {
   getQuestionsByTest,
   updateQuestionController,
   submitTest,
+  submitPractice,
   checkUserTestDetailed,
   getUserTestDetailId,
   checkHistoryUserTestDetailed,

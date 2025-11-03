@@ -6,6 +6,7 @@ import {
   getQuestionsByTestIdAPI,
   getUserTestDetailByIdAPI,
   submitTestAPI,
+  submitPracticeAPI,
   startTestAPI,
   type QuestionWithMedia,
   type MediaMapping,
@@ -16,18 +17,20 @@ import ExamSidebar from "../components/ExamSidebar";
 import { FaHeadphones, FaBook } from 'react-icons/fa';
 
 interface TestExamProps {
-  mode: "exam" | "review";
+  mode: "exam" | "review" | "practice";
   userTestId?: number;
 }
 
 export default function TestExam({ mode = "exam" }: TestExamProps) {
+  console.log("🔍 TestExam mode:", mode); // ✅ Debug log
+  
   const [questionData, setQuestionData] = useState<QuestionWithMedia[]>([]);
   const [userAnswers, setUserAnswers] = useState<{ [questionId: number]: string }>({});
   const [showResult, setShowResult] = useState(mode === "review");
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectAnswers, setIncorrectAnswers] = useState<SubmitResult["incorrectAnswers"]>([]);
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set());
-  const [showStartPopup, setShowStartPopup] = useState(mode === "exam");
+  const [showStartPopup, setShowStartPopup] = useState(mode === "exam"); // ✅ Only show popup for exam mode
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [score, setScore] = useState<number>(0);
   const [totalQuestions, setTotalQuestions] = useState<number>(0);
@@ -164,6 +167,31 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
           
           setQuestionData(data);
           setTotalQuestions(data.length);
+        } else if (mode === "practice") {
+          // ✅ Practice mode: questions passed via location.state
+          const practiceQuestions = location.state?.questions || [];
+          console.log('📥 Practice mode received questions:', practiceQuestions);
+          
+          if (practiceQuestions.length > 0) {
+            // ✅ Extract global audio if any
+            const audioMedia = practiceQuestions.find((q: QuestionWithMedia) => 
+              q.mediaMappings?.some((m: MediaMapping) => m.media?.type === 'audio')
+            );
+            
+            if (audioMedia) {
+              const audioUrl = audioMedia.mediaMappings?.find((m: MediaMapping) => 
+                m.media?.type === 'audio'
+              )?.media?.url;
+              setGlobalAudio(audioUrl || null);
+              console.log('🎵 Found global audio for practice:', audioUrl);
+            }
+            
+            setQuestionData(practiceQuestions);
+            setTotalQuestions(practiceQuestions.length);
+            setStartTime(new Date()); // ✅ Start timer immediately for practice
+          } else {
+            console.warn('⚠️ No questions provided for practice mode');
+          }
         }
       } catch (err) {
         console.error("Fetch data error:", err);
@@ -303,17 +331,28 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
 
   // Submit
   const handleSubmitTest = async () => {
-    if (!id) {
-      console.error("Missing test ID");
-      return;
-    }
     const answersArray = questionData.map(q => ({
       questionId: q.id,
       selectedAnswer: userAnswers[q.id] || "",
     }));
 
     try {
-      const result = await submitTestAPI(Number(id), answersArray);
+      let result: SubmitResult;
+      
+      if (mode === "practice") {
+        // ✅ Practice mode: gọi submitPracticeAPI (không cần testId)
+        console.log("📝 Submitting practice results...");
+        result = await submitPracticeAPI(answersArray);
+      } else {
+        // ✅ Exam mode: gọi submitTestAPI (cần testId)
+        if (!id) {
+          console.error("Missing test ID for exam mode");
+          return;
+        }
+        console.log("📝 Submitting test results...");
+        result = await submitTestAPI(Number(id), answersArray);
+      }
+      
       setCorrectCount(result.correctCount);
       setIncorrectAnswers(result.incorrectAnswers);
       setScore(result.score);
@@ -343,7 +382,7 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
       )}
 
       {/* Main content */}
-      {(mode === "review" || !showStartPopup) && (
+      {(mode === "review" || mode === "practice" || !showStartPopup) && (
         <div className="test-container">
           {/* ✅ Header */}
           <div className="test-header">
@@ -354,84 +393,77 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
           <div className="test-main">
             {/* ✅ Left content */}
             <div className="test-left">
-              {/* ✅ test3 - Exam controls hoặc Review Summary */}
-              <div className="test3">
-                {mode === "exam" ? (
-                  <>
-                    {/* ✅ Global Audio Player (if exists) */}
-                    {globalAudio && (
-                      <div className="global-audio-container exam-mode">
-                        <h4 className="global-audio-title exam-mode">
-                          🎵 Audio cho toàn bộ đề thi:
-                        </h4>
-                        <audio controls className="global-audio-player">
-                          <source src={globalAudio} type="audio/mpeg" />
-                          Trình duyệt không hỗ trợ audio.
-                        </audio>
-                      </div>
-                    )}
-                    
-                    {/* <div className="audio-controls">
-                      <button>▶</button>
-                      <div className="progress-bar">
-                        <div className="filled"></div>
-                      </div>
-                      <span>-47:00</span>
-                      <input type="range" />
-                      <button>⚙</button>
-                    </div> */}
-                    <div className="parts">
-                      {parts.map((part) => (
+              {/* ✅ test3 - Exam controls hoặc Review Summary - Hide completely for practice mode */}
+              {mode !== "practice" && (
+                <div className="test3">
+                  {mode === "exam" ? (
+                    <>
+                      {/* ✅ Global Audio Player (if exists) */}
+                      {globalAudio && (
+                        <div className="global-audio-container exam-mode">
+                          <h4 className="global-audio-title exam-mode">
+                            🎵 Audio cho toàn bộ đề thi:
+                          </h4>
+                          <audio controls className="global-audio-player">
+                            <source src={globalAudio} type="audio/mpeg" />
+                            Trình duyệt không hỗ trợ audio.
+                          </audio>
+                        </div>
+                      )}
+                      
+                      <div className="parts">
+                        {parts.map((part) => (
+                          <div 
+                            key={part.id} 
+                            className={`part-button ${selectedPartId === part.id ? "active" : ""}`}
+                            onClick={() => handlePartSelect(part.id)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            {part.name}
+                          </div>
+                        ))}
+                        {/* ✅ All Parts button */}
                         <div 
-                          key={part.id} 
-                          className={`part-button ${selectedPartId === part.id ? "active" : ""}`}
-                          onClick={() => handlePartSelect(part.id)}
+                          className={`part-button ${selectedPartId === null ? "active" : ""}`}
+                          onClick={() => setSelectedPartId(null)}
                           style={{ cursor: 'pointer' }}
                         >
-                          {part.name}
-                        </div>
-                      ))}
-                      {/* ✅ All Parts button */}
-                      <div 
-                        className={`part-button ${selectedPartId === null ? "active" : ""}`}
-                        onClick={() => setSelectedPartId(null)}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        Tất cả
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  /* ✅ Review Summary - Ô riêng biệt */
-                  showResult && (
-                    <div className="review-summary flexible">
-                      <div className="summary-box">
-                        <h3 className="summary-title">Kết quả làm bài</h3>
-                        <div className="summary-score">
-                          <span className="big-score">{correctCount}/{questionData.length}</span>
-                          <span className="accuracy">
-                            🎯 Độ chính xác: <strong>{((correctCount / questionData.length) * 100).toFixed(1)}%</strong>
-                          </span>
+                          Tất cả
                         </div>
                       </div>
-                      <div className="summary-status">
-                        <div className="status correct">
-                          <span>✔ Trả lời đúng</span>
-                          <p>{correctCount} câu hỏi</p>
+                    </>
+                  ) : (
+                    /* ✅ Review Summary - Ô riêng biệt */
+                    showResult && (
+                      <div className="review-summary flexible">
+                        <div className="summary-box">
+                          <h3 className="summary-title">Kết quả làm bài</h3>
+                          <div className="summary-score">
+                            <span className="big-score">{correctCount}/{questionData.length}</span>
+                            <span className="accuracy">
+                              🎯 Độ chính xác: <strong>{((correctCount / questionData.length) * 100).toFixed(1)}%</strong>
+                            </span>
+                          </div>
                         </div>
-                        <div className="status incorrect">
-                          <span>✘ Trả lời sai</span>
-                          <p>{incorrectAnswers.length} câu hỏi</p>
-                        </div>
-                        <div className="status skipped">
-                          <span>➖ Bỏ qua</span>
-                          <p>{questionData.length - correctCount - incorrectAnswers.length} câu hỏi</p>
+                        <div className="summary-status">
+                          <div className="status correct">
+                            <span>✔ Trả lời đúng</span>
+                            <p>{correctCount} câu hỏi</p>
+                          </div>
+                          <div className="status incorrect">
+                            <span>✘ Trả lời sai</span>
+                            <p>{incorrectAnswers.length} câu hỏi</p>
+                          </div>
+                          <div className="status skipped">
+                            <span>➖ Bỏ qua</span>
+                            <p>{questionData.length - correctCount - incorrectAnswers.length} câu hỏi</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                )}
-              </div>
+                    )
+                  )}
+                </div>
+              )}
 
               {/* ✅ test3a - Audio Player riêng cho review mode */}
               {mode === "review" && globalAudio && (
@@ -449,7 +481,7 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
               )}
 
               {/* ✅ Questions area */}
-              <div className="test4">
+              <div className={`test4 mode-${mode}`}>
                 {filteredQuestions.map((item, index) => (
                   <div id={`question-${index + 1}`} key={item.id}>
                     {/* Question type icon */}
@@ -465,7 +497,7 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
                       index={index + 1}
                       selectedAnswer={userAnswers[item.id] || null}
                       onSelectAnswer={
-                        mode === "exam"
+                        mode === "exam" || mode === "practice"
                           ? (questionId, selected) => {
                               setUserAnswers(prev => ({
                                 ...prev,
@@ -477,7 +509,7 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
                           : () => {}
                       }
                       onAnswer={
-                        mode === "exam"
+                        mode === "exam" || mode === "practice"
                           ? (_questionNumber, isAnswered) => {
                               const questionId = item.id;
                               if (isAnswered) {
@@ -496,6 +528,7 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
                       incorrectAnswer={incorrectAnswers.find(ans => ans.questionId === item.id) || null}
                       onAudioReplay={handleAudioReplay} // ✅ Pass audio replay function
                       hasGlobalAudio={!!globalAudio && item.partId <= 4}    // ✅ Indicate if global audio exists
+                      mode={mode} // ✅ Pass mode prop for per-question audio
                     />
                   </div>
                 ))}
@@ -520,7 +553,7 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
                 <ExamSidebar
                   answeredQuestions={getAnsweredQuestionsForSidebar()}
                   onJumpToQuestion={handleJumpToQuestion}
-                  onSubmit={mode === "exam" ? handleSubmitTest : () => {}}
+                  onSubmit={mode === "exam" || mode === "practice" ? handleSubmitTest : () => {}}
                   showResult={showResult}
                   correctCount={correctCount}
                   totalQuestions={totalQuestions > 0 ? totalQuestions : questionData.length}

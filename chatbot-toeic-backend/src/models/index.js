@@ -76,6 +76,7 @@ const initDb = async () => {
   db.QuestionEmbedding = (await import('./QuestionEmbeddings.js')).default(sequelize, Sequelize.DataTypes);
   db.MediaFiles = (await import('./MediaFiles.js')).default(sequelize, Sequelize.DataTypes);
   db.QuestionMediaMap = (await import('./QuestionMediaMap.js')).default(sequelize, Sequelize.DataTypes);
+  db.MLPrediction = (await import('./MLPrediction.js')).default(sequelize, Sequelize.DataTypes);
 
 
   // ✅ Gắn associations (nếu có)

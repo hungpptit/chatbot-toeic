@@ -28,7 +28,7 @@ export default (sequelize, DataTypes) => {
     },
     testId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true, // ✅ Allow null for practice mode (ML recommendations)
       references: {
         model: 'Tests',
         key: 'id',

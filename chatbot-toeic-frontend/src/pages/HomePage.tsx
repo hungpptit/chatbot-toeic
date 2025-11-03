@@ -83,7 +83,17 @@ export default function HomePage() {
           <hr />
           <p className="warning">
             <span className="icon">⚠️</span> Bạn chưa tạo mục tiêu cho quá trình luyện thi của mình. 
-            <a href="#" className="link"> Tạo ngay.</a>
+            <a
+              href="#"
+              className="link"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/ml-recommendations');
+              }}
+            >
+              {' '}
+              Tạo ngay.
+            </a>
           </p>
           <button className="result-button" onClick={() => navigate('/test-analytics')}>
             📊 Thống kê kết quả

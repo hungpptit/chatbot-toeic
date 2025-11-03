@@ -4,7 +4,7 @@
 // ========================================
 
 import db from '../models/index.js';
-import fetch from 'node-fetch'; // npm install node-fetch@2
+import { getRecommendations } from './ml_recommendation_controller.js';
 
 export const getRecommendationDetails = async (req, res) => {
   try {
@@ -13,12 +13,23 @@ export const getRecommendationDetails = async (req, res) => {
       return res.status(400).json({ code: 400, message: "userId is required" });
     }
 
-    // 🧠 Gọi controller ML nội bộ để lấy danh sách câu hỏi gợi ý
-    const mlResponse = await fetch(`http://localhost:8080/api/ml/recommend/${userId}`, {
-      headers: { Authorization: req.headers.authorization || '' }
+    // 🧠 Gọi ML controller trực tiếp thay vì fetch (tránh vấn đề cookie)
+    let mlData;
+    await new Promise((resolve, reject) => {
+      const mockRes = {
+        status: (code) => ({
+          json: (data) => {
+            if (code === 200 && data.data) {
+              mlData = data.data;
+              resolve();
+            } else {
+              reject(new Error(data.message || 'ML call failed'));
+            }
+          }
+        })
+      };
+      getRecommendations(req, mockRes, reject);
     });
-    const mlJson = await mlResponse.json();
-    const mlData = mlJson?.data;
 
     if (!mlData) {
       return res.status(500).json({
@@ -27,13 +38,11 @@ export const getRecommendationDetails = async (req, res) => {
       });
     }
 
-    console.log('🧩 Raw recommendations:', JSON.stringify(mlData.recommendations, null, 2));
+    console.log('🧩 Raw ML data:', JSON.stringify(mlData, null, 2));
 
-    // ✅ Lấy danh sách ID câu hỏi từ ML (vì ML trả [{id, question}, ...])
-    const questionIds = Object.values(mlData.recommendations)
-      .flat()
-      .filter(q => typeof q === 'object' && q.id)
-      .map(q => q.id);
+    // ✅ Lấy danh sách ID câu hỏi từ ML
+    // ML controller trả về questionIds trực tiếp, KHÔNG phải recommendations object
+    const questionIds = mlData.questionIds || [];
 
     console.log('✅ Question IDs to query:', questionIds);
 
@@ -100,7 +109,7 @@ export const getRecommendationDetails = async (req, res) => {
       code: 200,
       message: "Detailed recommendations retrieved successfully",
       data: {
-        weak_skills: mlData.weak_skills,
+        weak_skills: mlData.weakSkills || mlData.weak_skills || [],
         questions: transformedQuestions
       }
     });

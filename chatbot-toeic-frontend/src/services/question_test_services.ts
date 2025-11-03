@@ -182,6 +182,20 @@ export const submitTestAPI = async (
   return response.data;
 };
 
+// ✅ NEW: Submit practice results (no testId needed)
+export const submitPracticeAPI = async (
+  answers: Answer[]
+): Promise<SubmitResult> => {
+  const response = await axios.post<SubmitResult>(
+    `${API_BASE_URL}/SubmitPractice`,
+    { answers },
+    { withCredentials: true }
+  );
+  console.log("Submit practice response:", response);
+  console.log("Submit practice result (data):", response.data);
+  return response.data;
+};
+
 export const getUserTestHistoryByTestIdAPI = async (testId: number) => {
   try {
     const res = await axios.get<{ message: string; data: UserTestHistory[] }>(

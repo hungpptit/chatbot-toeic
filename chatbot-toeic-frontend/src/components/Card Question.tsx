@@ -1,5 +1,15 @@
+import React from "react";
 import "../styles/cardQuestion.css";
 import type { QuestionWithMedia as QuestionItem } from "../services/question_test_services";
+
+// ✅ Global audio manager - only one audio plays at a time
+let currentPlayingAudio: HTMLAudioElement | null = null;
+
+const pauseAllAudio = (exceptElement?: HTMLAudioElement) => {
+  if (currentPlayingAudio && currentPlayingAudio !== exceptElement) {
+    currentPlayingAudio.pause();
+  }
+};
 
 export interface QuestionType {
   id: number;
@@ -29,6 +39,7 @@ type CardQuestionProps = {
   } | null;
   onAudioReplay?: (startSecond?: number, endSecond?: number) => void; // ✅ Audio replay function
   hasGlobalAudio?: boolean; // ✅ Whether global audio is available
+  mode?: "exam" | "review" | "practice"; // ✅ Mode for conditional rendering
 };
 
 export default function CardQuestion({
@@ -40,7 +51,8 @@ export default function CardQuestion({
   showResult,
   incorrectAnswer,
   onAudioReplay,
-  hasGlobalAudio
+  hasGlobalAudio,
+  mode = "exam" // ✅ Default to exam mode
 }: CardQuestionProps) {
   // ✅ Helper function to get image URL for this question
   const getQuestionImage = (): string | null => {
@@ -49,11 +61,12 @@ export default function CardQuestion({
   };
 
   // ✅ Helper function to get audio timing for this question
-  const getAudioTiming = (): { startSecond?: number, endSecond?: number } => {
+  const getAudioTiming = (): { startSecond?: number, endSecond?: number, audioUrl?: string } => {
     const audioMapping = item.mediaMappings?.find(m => m.media?.type === 'audio');
     return {
       startSecond: audioMapping?.startSecond,
-      endSecond: audioMapping?.endSecond
+      endSecond: audioMapping?.endSecond,
+      audioUrl: audioMapping?.media?.url
     };
   };
 
@@ -97,6 +110,84 @@ export default function CardQuestion({
   };
 
   const questionImage = getQuestionImage();
+  const audioTiming = getAudioTiming(); // ✅ Get audio timing and URL
+
+  // ✅ Audio player time control for practice mode - Allow seeking within range only
+  const audioRef = React.useRef<HTMLAudioElement>(null);
+  
+  React.useEffect(() => {
+    const audioElement = audioRef.current;
+    if (!audioElement || mode !== "practice" || !audioTiming.audioUrl) return;
+    if (audioTiming.startSecond === undefined || audioTiming.endSecond === undefined) return;
+
+    const startSec = audioTiming.startSecond;
+    const endSec = audioTiming.endSecond;
+
+    // Set initial playback position
+    const handleLoadedMetadata = () => {
+      audioElement.currentTime = startSec;
+    };
+
+    // Allow seeking ONLY within startSec-endSec range
+    const handleSeeking = () => {
+      if (audioElement.currentTime < startSec) {
+        audioElement.currentTime = startSec;
+      } else if (audioElement.currentTime > endSec) {
+        audioElement.currentTime = endSec;
+      }
+    };
+
+    // Monitor playback and pause at endSecond
+    const handleTimeUpdate = () => {
+      if (audioElement.currentTime >= endSec) {
+        audioElement.pause();
+        audioElement.currentTime = startSec; // Reset to start for replay
+      }
+      // Safety: if somehow below start, reset
+      if (audioElement.currentTime < startSec) {
+        audioElement.currentTime = startSec;
+      }
+    };
+
+    // ✅ Ensure only ONE audio plays at a time
+    const handlePlay = () => {
+      // Pause all other audio first
+      pauseAllAudio(audioElement);
+      // Set this as current playing
+      currentPlayingAudio = audioElement;
+      
+      // Ensure playback starts within range
+      if (audioElement.currentTime < startSec || audioElement.currentTime >= endSec) {
+        audioElement.currentTime = startSec;
+      }
+    };
+
+    // Clear reference when paused
+    const handlePause = () => {
+      if (currentPlayingAudio === audioElement) {
+        currentPlayingAudio = null;
+      }
+    };
+
+    audioElement.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audioElement.addEventListener('seeking', handleSeeking);
+    audioElement.addEventListener('timeupdate', handleTimeUpdate);
+    audioElement.addEventListener('play', handlePlay);
+    audioElement.addEventListener('pause', handlePause);
+
+    return () => {
+      audioElement.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audioElement.removeEventListener('seeking', handleSeeking);
+      audioElement.removeEventListener('timeupdate', handleTimeUpdate);
+      audioElement.removeEventListener('play', handlePlay);
+      audioElement.removeEventListener('pause', handlePause);
+      
+      // Cleanup: if this was the playing audio, clear it
+      if (currentPlayingAudio === audioElement) {
+        currentPlayingAudio = null;
+      }
+    };
+  }, [mode, audioTiming.audioUrl, audioTiming.startSecond, audioTiming.endSecond]);
 
   // const isCorrect = selectedAnswer === item.correctAnswer;
 
@@ -119,6 +210,45 @@ export default function CardQuestion({
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
             }}
           />
+        </div>
+      )}
+
+      {/* ✅ Per-question Audio Player (practice mode only) */}
+      {mode === "practice" && audioTiming.audioUrl && (
+        <div className="question-audio-container" style={{
+          marginBottom: '15px',
+          padding: '12px',
+          backgroundColor: '#f0f7ff',
+          borderRadius: '8px',
+          border: '1px solid #4CAF50',
+          boxShadow: '0 2px 6px rgba(76, 175, 80, 0.15)'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            marginBottom: '8px'
+          }}>
+            <span style={{ fontSize: '18px' }}>🎵</span>
+            <span style={{ 
+              fontSize: '14px', 
+              fontWeight: 600, 
+              color: '#2c5f2d'
+            }}>
+              Audio cho câu hỏi này
+            </span>
+          </div>
+          <audio 
+            ref={audioRef}
+            controls 
+            style={{
+              width: '100%',
+              height: '40px'
+            }}
+          >
+            <source src={audioTiming.audioUrl} type="audio/mpeg" />
+            Trình duyệt không hỗ trợ audio.
+          </audio>
         </div>
       )}
 

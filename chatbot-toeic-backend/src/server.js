@@ -40,6 +40,7 @@ app.use('/api', router); // Định nghĩa các route API SAU middleware static
 // Test kết nối database
 db.connectToDB();
 import "./cronJobs/embeddingCron.js";
+import "./cronJobs/mlRetrainCron.js"; // ✅ Auto-retrain ML models every 6 hours
 
 app.listen(port || 8080, '0.0.0.0', () => {
   console.log(`✅ Backend server listening on http://0.0.0.0:${port || 8080}`);

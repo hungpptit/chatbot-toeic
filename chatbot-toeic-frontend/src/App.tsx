@@ -20,6 +20,7 @@ import AdminTestViewPage from "./container/admin/AdminTestViewPage";
 import AdminTestAddPage from "./container/admin/AddTestForm";
 import AdminAddCourse from "./container/admin/AdminAddCourse";
 import AdminTestAnalyticsPage from "./container/admin/AdminTestAnalyticsPage";
+import MLRecommendationsPage from "./pages/MLRecommendationsPage";
 
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
@@ -70,6 +71,11 @@ function AppContent() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/vocab" element={<VocabularyPage />} />
           <Route path="/login" element={<LoginSignup />} />
+          <Route path="/ml-recommendations" element={
+            <RequireAuth>
+              <MLRecommendationsPage />
+            </RequireAuth>
+          } />
           <Route path="/profile" element={
             <RequireAuth>
               <ProfilePage />
@@ -102,6 +108,12 @@ function AppContent() {
           <Route path="/TestExam/:id" element={
             <RequireAuth>
               <TestExam mode="exam" />
+            </RequireAuth>
+          } />
+
+          <Route path="/test-practice" element={
+            <RequireAuth>
+              <TestExam mode="practice" />
             </RequireAuth>
           } />
 

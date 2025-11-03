@@ -1,7 +1,7 @@
 // routes/questions_router.js
 import express from 'express';
 import { authMiddleware } from '../Middleware/authMiddleware.js';
-import { getQuestionsByTest, updateQuestionController,submitTest, startTest, checkUserTestDetailed, getUserTestDetailId,checkHistoryUserTestDetailed,
+import { getQuestionsByTest, updateQuestionController,submitTest, submitPractice, startTest, checkUserTestDetailed, getUserTestDetailId,checkHistoryUserTestDetailed,
   createQuestionController
  } from '../controllers/question_test_controller.js';
 
@@ -15,6 +15,9 @@ router.put('/update-question', authMiddleware, updateQuestionController);
 router.post('/create-question', authMiddleware, createQuestionController);
 
 router.post('/Submit/:testId', authMiddleware, submitTest);
+
+// ✅ NEW: Submit practice results (no testId needed)
+router.post('/SubmitPractice', authMiddleware, submitPractice);
 
 router.post('/StartTest/:testId', authMiddleware, startTest);
 

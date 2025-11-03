@@ -3,11 +3,64 @@
   border-radius: 1rem;
   padding: 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  max-width: unset;
+  max-width: 100%; /* ✅ Force không vượt quá container cha */
   box-sizing: border-box;
   width: 100%;
   gap: 5px;
   margin-bottom: 5px;
+  overflow: hidden; /* ✅ Ngăn nội dung tràn ra ngoài */
+  flex-shrink: 0; /* ✅ Không cho co lại */
+}
+
+/* ✅ Ensure images stay within container */
+.card-container img {
+  max-width: 100% !important;
+  height: auto !important;
+  object-fit: contain;
+  display: block;
+  margin-left: auto;
+  margin-right: auto; /* ✅ Căn giữa ảnh */
+}
+
+/* ✅ Question image container - CENTERED */
+.question-image-container {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  margin-bottom: 15px;
+  text-align: center; /* ✅ Căn giữa */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.question-image-container img {
+  max-width: 100% !important; /* ✅ Default: full width for exam/review */
+  max-height: 350px !important; /* ✅ Giới hạn chiều cao hợp lý */
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: block;
+}
+
+/* ✅ Practice mode: add margin on sides for centered look */
+.mode-practice .question-image-container img {
+  max-width: 90% !important; /* ✅ Margin 2 bên trong practice mode */
+}
+
+/* ✅ Audio container */
+.question-audio-container {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.question-audio-container audio {
+  max-width: 100%;
 }
 
 .card-question {

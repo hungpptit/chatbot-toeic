@@ -31,6 +31,7 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 10px;
+    padding-bottom: 30px; /* ✅ Add space at bottom */
     overflow: visible !important;
     position: relative;
 }
@@ -45,8 +46,12 @@
 /* ✅ Main content area */
 .test-main {
     display: flex;
-    gap: 4px;
-    /* ✅ Bỏ flex: 1 và min-height để cho phép mở rộng tự nhiên */
+    gap: 16px;
+    align-items: flex-start;
+    width: 100%;
+    box-sizing: border-box;
+    /* ✅ Responsive: stack vertically on small screens */
+    flex-wrap: nowrap;
 }
 
 /* ✅ Left content area */
@@ -54,13 +59,19 @@
     flex: 3;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px; /* ✅ Reduced from 16px to 8px */
+    min-width: 0; /* ✅ Allow flex items to shrink below content size */
+    max-width: 100%; /* ✅ Prevent overflow */
+    width: 100%;
+    box-sizing: border-box;
+    padding-bottom: 20px; /* ✅ Add space at bottom */
 }
 
 /* ✅ Right sidebar */
 .test-right {
     flex: 1;
-    min-width: 250px;
+    min-width: 280px;
+    max-width: 350px;
     flex-shrink: 0;
 }
 
@@ -72,9 +83,12 @@
     text-align: center;
     white-space: nowrap;
     font-weight: bold;
+    font-size: 1.2rem;
     align-items: center;
     justify-content: center;
-    flex: 1;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* ============================================== */
@@ -82,12 +96,14 @@
 .test2 {
     border: 2px solid #4caf50;
     border-radius: 8px;  
-    height: auto; /* ✅ Để sidebar tự điều chỉnh chiều cao */
-    max-height: calc(100vh - 100px); /* ✅ Chiều cao tối đa */
-    overflow-y: auto; /* ✅ Cuộn nội bộ nếu cần */
-    position: sticky; /* ✅ Sidebar dính khi cuộn trang */
-    top: 20px; /* ✅ Khoảng cách từ top khi dính */
-    align-self: flex-start; /* ✅ Căn chỉnh theo đầu container */
+    height: auto;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    position: sticky;
+    top: 20px;
+    align-self: flex-start;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 
@@ -95,27 +111,25 @@
 
 .test3 {
     border: 2px solid #4caf50; 
-    border-radius: 8px; 
+    border-radius: 12px; 
     display: flex;
     flex-direction: column;
     padding: 20px;
-    overflow: hidden;
-    box-sizing: border-box;
-    flex-shrink: 0;
-    min-height: 150px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    gap: 16px;
 }
 
 /* ✅ Ô riêng cho Audio Player trong review mode */
 .test3a {
     border: 2px solid #28a745; 
-    border-radius: 8px; 
+    border-radius: 12px; 
     display: flex;
     flex-direction: column;
-    padding: 10px;
-    overflow: hidden;
-    box-sizing: border-box;
-    flex-shrink: 0;
-    min-height: 80px;
+    padding: 16px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    gap: 12px;
 }
 
 .audio-controls {
@@ -123,7 +137,7 @@
   align-items: center;
   width: 100%;
   max-width: 800px;
-  gap: 10px;
+  gap: 12px;
 }
 
 .progress-bar {
@@ -172,16 +186,58 @@
 
 .test4 {
     border: 2px solid #4caf50; 
-    border-radius: 8px; 
-    padding: 6px;
-    overflow-y: auto;
-    scrollbar-width: none;
+    border-radius: 12px; 
+    padding: 20px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    /* ✅ Fixed height for ~5 questions, scroll inside */
+    height: calc(100vh - 180px);
+    max-height: 800px;
+    min-height: 500px;
+    overflow-y: auto; /* ✅ Scroll INSIDE test4 */
+    overflow-x: hidden;
+    width: 100%; /* ✅ Chiếm full width của parent */
     box-sizing: border-box;
-    will-change: transform;
-    /* ✅ Chiều cao tối ưu cho 4 câu có media hoặc 6 câu không có media */
-    height: 600px;
-    max-height: 600px;
-    min-height: 400px;
+    margin-bottom: 10px; /* ✅ Cách đáy 10px */
+}
+
+/* ✅ Practice mode: test4 takes full height (no test3 above) */
+.test4.mode-practice {
+    height: calc(100vh - 110px); /* ✅ Taller because no test3, adjusted for margin */
+    max-height: none;
+    min-height: calc(100vh - 110px);
+}
+
+/* ✅ Exam mode: standard height with test3 above */
+.test4.mode-exam {
+    height: calc(100vh - 360px); /* ✅ Shorter because test3 exists, adjusted for margin */
+    max-height: 800px;
+    min-height: 500px;
+}
+
+/* ✅ Review mode: similar to exam */
+.test4.mode-review {
+    height: calc(100vh - 360px);
+    max-height: 800px;
+    min-height: 500px;
+}
+
+/* ✅ Individual question spacing */
+.test4 > div {
+    margin-bottom: 16px;
+    width: 100%; /* ✅ Mỗi question chiếm full width */
+    box-sizing: border-box;
+    flex-shrink: 0; /* ✅ Don't shrink questions */
+}
+
+/* ✅ Question icon styling */
+.question-icon {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
 }
 
 .test4::-webkit-scrollbar {
@@ -416,6 +472,59 @@
 
 /* Responsive Media */
 @media (max-width: 768px) {
+  .test-container {
+    padding: 8px;
+    max-width: 100%;
+  }
+
+  .test-main {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .test-left {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .test-right {
+    width: 100%;
+    max-width: 100%;
+    min-width: 100%;
+    position: static;
+  }
+
+  .test2 {
+    position: static;
+    max-height: none;
+  }
+
+  .test4 {
+    padding: 12px;
+    height: calc(100vh - 220px); /* ✅ Adjust for mobile */
+    min-height: 400px;
+  }
+
+  .test4.mode-practice {
+    height: calc(100vh - 140px); /* ✅ Practice mode on mobile */
+    min-height: calc(100vh - 140px);
+  }
+
+  .test4.mode-exam,
+  .test4.mode-review {
+    height: calc(100vh - 300px); /* ✅ Exam/Review on mobile */
+    min-height: 400px;
+  }
+
+  .card-container {
+    padding: 12px;
+  }
+
+  .question-image-container img {
+    max-height: 250px !important;
+    max-width: 95% !important;
+  }
+  
   .global-audio-container.exam-mode,
   .global-audio-container.review-mode {
     padding: 8px;

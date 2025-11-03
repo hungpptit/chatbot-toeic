@@ -1,6 +1,60 @@
 # 📚 ML FOLDER - FILE DOCUMENTATION
 
-Tài liệu tổng hợp tất cả các file Python trong thư mục `ml/` với giải thích chi tiết.
+Tài liệu tổng hợp tất cả các file Python và Node.js trong hệ thống ML với giải thích chi tiết.
+
+---
+
+## 🤖 AUTOMATION OVERVIEW
+
+### ✅ **TỰ ĐỘNG HÓA ĐÃ ĐƯỢC IMPLEMENT:**
+
+```
+╔═══════════════════════════════════════════════════════════╗
+║  AUTO-PREDICT (Sau mỗi test/practice)                    ║
+╠═══════════════════════════════════════════════════════════╣
+║  File: backend/services/mlPredictionService.js           ║
+║  Trigger: submitTest() và submitPractice()              ║
+║  Process: Background (setImmediate, không block)         ║
+║  Python: predict_hybrid_unified.py                       ║
+║  Database: MLPredictions (cache) + MLPredictionHistory   ║
+╚═══════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════╗
+║  AUTO-RETRAIN (Mỗi 6 tiếng)                              ║
+╠═══════════════════════════════════════════════════════════╣
+║  File: backend/cronJobs/mlRetrainCron.js                 ║
+║  Schedule: "0 */6 * * *" (0h, 6h, 12h, 18h)              ║
+║  Python: train_model.py                                  ║
+║  Auto-start: Khi backend server khởi động                ║
+╚═══════════════════════════════════════════════════════════╝
+```
+
+**Workflow hoàn chỉnh:**
+```
+User làm test/practice
+  ↓
+Submit results → Database (UserResults)
+  ↓
+Backend: triggerMLPredictionAsync(userId) → Background process
+  ↓
+Spawn Python: predict_hybrid_unified.py {userId}
+  ↓
+Python: Query all UserResults → Hybrid strategy → Output JSON
+  ↓
+Node.js: Parse JSON → Extract questionIds
+  ↓
+Database: 
+  - Upsert MLPredictions (cache, 1 record/user)
+  - Insert MLPredictionHistory (tracking, multiple records)
+  ↓
+Frontend: Fetch từ MLPredictions (instant reads)
+  ↓
+[Every 6 hours]
+  ↓
+mlRetrainCron.js → Train models với data mới
+  ↓
+Models updated → Ready cho predictions tiếp theo
+```
 
 ---
 
@@ -31,6 +85,17 @@ ml/
     ├── unified_model.pkl         [Unified model]
     ├── unified_model_info.pkl    [Unified model metadata]
     └── user_X_model.pkl          [Personal models - deprecated]
+
+../backend/ (Node.js Automation)
+├── 🤖 AUTOMATION FILES
+│   ├── services/
+│   │   └── mlPredictionService.js ⭐ [Auto-predict after submit]
+│   └── cronJobs/
+│       └── mlRetrainCron.js       ⭐ [Auto-retrain every 6 hours]
+│
+└── 💾 DATABASE TABLES
+    ├── MLPredictions              [Cache - 1 record/user, instant reads]
+    └── MLPredictionHistory        [Tracking - multiple records, trends]
 ```
 
 ---
@@ -339,17 +404,31 @@ python check_skills_distribution.py
 python find_best_user.py
 ```
 
-### 2. Production Usage
+### 2. Production Usage (AUTOMATED ✅)
 
+**Backend server tự động:**
+- ✅ **Auto-predict**: Sau mỗi test/practice submit
+  - File: `backend/services/mlPredictionService.js`
+  - Python: `predict_hybrid_unified.py`
+  - Database: Update `MLPredictions` + Insert `MLPredictionHistory`
+
+- ✅ **Auto-retrain**: Mỗi 6 tiếng (0h, 6h, 12h, 18h)
+  - File: `backend/cronJobs/mlRetrainCron.js`
+  - Python: `train_model.py`
+  - Models: `weak_skill_model.pkl` + `unified_model.pkl`
+
+**Manual test (nếu cần debug):**
 ```bash
 # Predict cho user
 python predict_hybrid_unified.py 3
 ```
 
-### 3. Maintenance (Định kỳ)
+### 3. Maintenance (Tự động - không cần làm gì)
 
 ```bash
-# Retrain models (mỗi tuần/tháng)
+# ✅ Auto-retrain mỗi 6 tiếng (đã setup trong mlRetrainCron.js)
+
+# Manual retrain (chỉ khi cần test ngay)
 python train_model.py           # Global model
 python train_unified_model.py   # Unified model
 ```
@@ -374,10 +453,14 @@ python demo_scalability.py 10000
 ```
 Bạn muốn làm gì?
 │
-├─ PRODUCTION: Predict weak skills + recommend
+├─ ✅ PRODUCTION (AUTO - Không cần làm gì):
+│  ├─> Auto-predict → mlPredictionService.js (backend/services/)
+│  └─> Auto-retrain → mlRetrainCron.js (backend/cronJobs/)
+│
+├─ MANUAL PREDICT (Debug/Testing):
 │  └─> predict_hybrid_unified.py ⭐
 │
-├─ TRAINING: Train models
+├─ TRAINING: Train models (Manual)
 │  ├─> Global model → train_model.py
 │  └─> Unified model → train_unified_model.py ⭐
 │
@@ -399,9 +482,11 @@ Bạn muốn làm gì?
 
 | Task | Command | Output |
 |------|---------|--------|
+| **✅ Auto-predict** | `Auto (mlPredictionService.js)` | MLPredictions + MLPredictionHistory |
+| **✅ Auto-retrain** | `Auto (mlRetrainCron.js)` | Models every 6 hours |
 | **Train global** | `python train_model.py` | weak_skill_model.pkl |
 | **Train unified** | `python train_unified_model.py` | unified_model.pkl |
-| **Predict (prod)** | `python predict_hybrid_unified.py 3` | Weak skills + recommendations |
+| **Predict (manual)** | `python predict_hybrid_unified.py 3` | Weak skills + recommendations |
 | **Test unified** | `python predict_unified.py 3` | Weak skills only |
 | **Check user** | `python check_user_skills.py` | User skills distribution |
 | **Check DB** | `python check_skills_distribution.py` | All skills in DB |
@@ -412,14 +497,25 @@ Bạn muốn làm gì?
 
 ## 📅 VERSION HISTORY
 
-### Version 2.0 (2025-10-08) ⭐ CURRENT
+### Version 3.0 (2025-01-09) ⭐ CURRENT - AUTOMATION UPDATE
+- **Added: Node.js Automation**
+  - `backend/services/mlPredictionService.js` - Auto-predict after submit
+  - `backend/cronJobs/mlRetrainCron.js` - Auto-retrain every 6 hours
+- **Added: Database caching**
+  - `MLPredictions` - Cache table (1 record/user, instant reads)
+  - `MLPredictionHistory` - Tracking table (multiple records, trends)
+- **Workflow: Fully automated**
+  - Submit → Background predict → Update cache
+  - Every 6 hours → Auto retrain models
+
+### Version 2.0 (2025-10-08) - UNIFIED MODEL
 - Added: `predict_hybrid_unified.py` (production-ready)
 - Added: `train_unified_model.py` (scalable approach)
 - Added: `predict_unified.py` (standalone test)
 - Added: Utility files (check_*, find_*, demo_*)
 - Strategy: Global + Unified (1 model for all users)
 
-### Version 1.0 (Original)
+### Version 1.0 (Original) - PERSONAL MODEL
 - Files: `predict_hybrid.py`, `train_personal_model.py`
 - Strategy: Global + Personal (1 model per user)
 - Issue: Không scale với nhiều users

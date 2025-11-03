@@ -2,6 +2,7 @@ import db from '../models/index.js';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
+import { triggerMLUpdate, needsMLUpdate } from './ml_service.js';
 
 
 export const RandomQuestionsByTestId = async (testId, limit = null) => {
@@ -373,6 +374,7 @@ export const SubmitTestResult = async ({ userId, testId, answers }) => {
       status: 'completed'
     }, { transaction });
 
+    // 7. ✅ Cập nhật QuestionStats để ML học
     await db.sequelize.query(`
       MERGE QuestionStats AS target
       USING (
@@ -390,12 +392,140 @@ export const SubmitTestResult = async ({ userId, testId, answers }) => {
         VALUES (src.questionId, src.attempts, src.correct);
     `, { transaction });
 
-
+    // ✅ Trigger ML update (async, non-blocking)
+    setImmediate(async () => {
+      const shouldUpdate = await needsMLUpdate(userId);
+      if (shouldUpdate) {
+        console.log(`🎯 Triggering ML update for user ${userId} after exam`);
+        await triggerMLUpdate(userId);
+      } else {
+        console.log(`⏭️ Skipping ML update for user ${userId} (not enough new data)`);
+      }
+    });
 
     return {
       userTestId: userTest.id,
       correctCount,
       total: totalQuestions, // ✅ Tổng số câu hỏi trong test
+      score,
+      incorrectAnswers,
+    };
+  });
+};
+
+// ✅ NEW: Submit practice results (không cần testId, nhưng vẫn track trong UserTest)
+export const SubmitPracticeResult = async ({ userId, answers }) => {
+  return await db.sequelize.transaction(async (transaction) => {
+    let correctCount = 0;
+    const incorrectAnswers = [];
+
+    console.log(`📊 SubmitPracticeResult Debug:`, {
+      userId,
+      answersReceived: answers.length
+    });
+
+    // 1️⃣ Tạo UserTest để track lịch sử luyện tập (testId = null cho practice mode)
+    const userTest = await db.UserTest.create({
+      userId,
+      testId: null, // ✅ NULL indicates practice mode
+      status: 'in_progress',
+      startedAt: new Date(),
+      score: 0
+    }, { transaction });
+
+    console.log(`✅ Created UserTest for practice mode:`, userTest.id);
+
+    // 2️⃣ Lấy question IDs để validate
+    const questionIds = answers.map(a => a.questionId);
+    const questions = await db.Question.findAll({
+      where: { id: questionIds },
+      attributes: ['id', 'correctAnswer', 'explanation'],
+      transaction
+    });
+
+    const questionMap = new Map(questions.map(q => [q.id, q]));
+
+    // 3️⃣ Xử lý từng câu trả lời và lưu UserResults
+    const resultsToSave = [];
+
+    for (const { questionId, selectedAnswer } of answers) {
+      const question = questionMap.get(questionId);
+      if (!question) continue;
+
+      const isCorrect = question.correctAnswer === selectedAnswer;
+
+      // Prepare UserResult record
+      resultsToSave.push({
+        userId,
+        userTestId: userTest.id, // ✅ Link to practice UserTest
+        questionId,
+        selectedOption: selectedAnswer || null,
+        isCorrect,
+        answeredAt: new Date(),
+      });
+
+      if (isCorrect) {
+        correctCount++;
+      } else {
+        incorrectAnswers.push({
+          questionId,
+          correctAnswer: question.correctAnswer,
+          selectedAnswer,
+          explanation: question.explanation,
+        });
+      }
+
+      // ✅ Cập nhật QuestionStats để ML học
+      const [stat] = await db.QuestionStats.findOrCreate({
+        where: { questionId },
+        defaults: { attempts: 0, correct: 0 },
+        transaction
+      });
+
+      await stat.increment({
+        attempts: 1,
+        correct: isCorrect ? 1 : 0
+      }, { transaction });
+    }
+
+    // 4️⃣ Lưu tất cả UserResults
+    if (resultsToSave.length > 0) {
+      await db.UserResult.bulkCreate(resultsToSave, { transaction });
+      console.log(`✅ Saved ${resultsToSave.length} UserResults for practice`);
+    }
+
+    // 5️⃣ Tính score và update UserTest
+    const totalQuestions = answers.length || 1;
+    const score = Math.round((correctCount / totalQuestions) * 10 * 10) / 10;
+
+    await userTest.update({
+      score,
+      completedAt: new Date(),
+      status: 'completed'
+    }, { transaction });
+
+    console.log("📊 Practice Score:", { 
+      userTestId: userTest.id,
+      correctCount, 
+      totalQuestions,
+      score 
+    });
+
+    // ✅ Trigger ML update (async, non-blocking)
+    setImmediate(async () => {
+      const shouldUpdate = await needsMLUpdate(userId);
+      if (shouldUpdate) {
+        console.log(`🎯 Triggering ML update for user ${userId} after practice`);
+        await triggerMLUpdate(userId);
+      } else {
+        console.log(`⏭️ Skipping ML update for user ${userId} (not enough new data)`);
+      }
+    });
+
+    return {
+      userTestId: userTest.id, // ✅ Return userTestId để frontend có thể dùng
+      correctCount,
+      total: totalQuestions,
       score,
       incorrectAnswers,
     };

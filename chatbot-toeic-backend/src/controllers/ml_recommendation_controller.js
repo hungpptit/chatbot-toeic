@@ -1,12 +1,14 @@
 // ========================================
 // FILE: src/controllers/ml_recommendation_controller.js
-// MỤC ĐÍCH: API endpoint để gọi ML prediction
+// MỤC ĐÍCH: API endpoint để gọi ML prediction với database caching
 // ========================================
 
 import { spawn } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import os from 'os';
+import db from '../models/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,6 +16,11 @@ const __dirname = path.dirname(__filename);
 /**
  * Get weak skills and question recommendations for a user
  * @route GET /api/ml/recommend/:userId
+ * 
+ * ✅ NEW STRATEGY: Database-first caching
+ * 1. Check MLPredictions table first (instant)
+ * 2. If missing/old → Run Python (async if possible)
+ * 3. Save to MLPredictions for next time
  */
 export const getRecommendations = async (req, res) => {
     try {
@@ -26,15 +33,38 @@ export const getRecommendations = async (req, res) => {
             });
         }
 
-        // Path to ML script
-        const mlScriptPath = path.join(__dirname, '../../ml/predict_hybrid_unified.py');
+        // ✅ 1. Check database first (instant read)
+        let prediction = await db.MLPrediction.findOne({
+            where: { userId }
+        });
 
-        // Spawn Python process and ask it to write output JSON to a file
+        if (prediction) {
+            console.log(`✅ Returning cached ML result for user ${userId} (from database)`);
+            return res.status(200).json({
+                code: 200,
+                message: "Recommendations retrieved successfully (from cache)",
+                data: {
+                    userId: prediction.userId,
+                    weakSkills: prediction.weakSkills,
+                    questionIds: prediction.questionIds,
+                    confidence: prediction.confidence,
+                    updatedAt: prediction.updatedAt
+                }
+            });
+        }
+
+        console.log(`🔄 No cached prediction for user ${userId}, running Python script...`);
+
+        // ✅ 2. Run Python script to generate prediction
+        const mlScriptPath = path.join(__dirname, '../../ml/predict_hybrid_unified.py');
         const outFileName = `result_user_${userId}_${Date.now()}.json`;
-        const outPath = path.join(__dirname, '../../ml', outFileName);
+        const outPath = path.join(os.tmpdir(), outFileName);
 
         const pythonArgs = [mlScriptPath, userId.toString(), '--quiet', '--out', outPath];
-        const pythonProcess = spawn('python', pythonArgs);
+        
+        const pythonProcess = spawn('python', pythonArgs, {
+            stdio: ['ignore', 'ignore', 'pipe']
+        });
 
         let errorString = '';
         pythonProcess.stderr.on('data', (data) => {
@@ -55,13 +85,42 @@ export const getRecommendations = async (req, res) => {
                 const raw = await fs.readFile(outPath, { encoding: 'utf-8' });
                 const result = JSON.parse(raw);
 
-                // Clean up the temporary output file (best-effort)
+                // ✅ 3. Extract question IDs from recommendations
+                const questionIds = [];
+                const recommendations = result.recommendations || {};
+                Object.values(recommendations).forEach(questions => {
+                    questions.forEach(q => {
+                        if (q.id && !questionIds.includes(q.id)) {
+                            questionIds.push(q.id);
+                        }
+                    });
+                });
+
+                // ✅ 4. Save to database (upsert) - Let Sequelize handle timestamps
+                const [savedPrediction] = await db.MLPrediction.upsert({
+                    userId: userId,
+                    weakSkills: result.weak_skills || [],
+                    questionIds: questionIds,
+                    confidence: 0.8, // TODO: Calculate from model
+                    totalAttempts: 0, // TODO: Query from UserResults
+                    overallAccuracy: null
+                    // Don't manually set createdAt/updatedAt - Sequelize handles it
+                });
+
+                console.log(`✅ Saved ML prediction to database for user ${userId}`);
+
+                // Clean up temp file
                 try { await fs.unlink(outPath); } catch (e) { /* ignore */ }
 
                 return res.status(200).json({
                     code: 200,
                     message: "Recommendations retrieved successfully",
-                    data: result
+                    data: {
+                        userId: userId,
+                        weakSkills: result.weak_skills || [],
+                        questionIds: questionIds,
+                        updatedAt: new Date()
+                    }
                 });
             } catch (parseError) {
                 console.error('Failed to read/parse Python output file:', parseError);
