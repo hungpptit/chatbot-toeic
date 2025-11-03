@@ -476,7 +476,7 @@ export const SubmitPracticeResult = async ({ userId, answers }) => {
       }
 
       // ✅ Cập nhật QuestionStats để ML học
-      const [stat] = await db.QuestionStats.findOrCreate({
+      const [stat] = await db.QuestionStat.findOrCreate({
         where: { questionId },
         defaults: { attempts: 0, correct: 0 },
         transaction

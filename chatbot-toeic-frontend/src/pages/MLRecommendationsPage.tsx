@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getCurrentUser, type User } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 import { getMLRecommendationDetailsAPI } from '../services/mlRecommendation_services';
+import '../styles/MLRecommendationsPage.css';
 
 export default function MLRecommendationsPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -73,80 +74,65 @@ export default function MLRecommendationsPage() {
   }
 
   return (
-    <div style={{ padding: 40, maxWidth: 1200, margin: '0 auto' }}>
-      <h1 style={{ marginBottom: 20 }}>📊 Phân tích kỹ năng & Gợi ý luyện tập</h1>
+    <div className="ml-recommendations-page">
+      <h1>📊 Phân tích kỹ năng & Gợi ý luyện tập</h1>
       
       {weakSkills.length > 0 ? (
         <>
-          <div style={{ background: '#f5f5f5', padding: 20, borderRadius: 8, marginBottom: 30 }}>
-            <h3 style={{ margin: '0 0 15px 0' }}>🎯 Kỹ năng cần cải thiện:</h3>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div className="ml-weak-skills-box">
+            <h3>🎯 Kỹ năng cần cải thiện:</h3>
+            <div className="ml-skills-container">
               {weakSkills.map((skill, i) => (
-                <span
-                  key={i}
-                  style={{
-                    background: '#e74c3c',
-                    color: 'white',
-                    padding: '8px 16px',
-                    borderRadius: 20,
-                    fontSize: 14,
-                    fontWeight: 'bold'
-                  }}
-                >
+                <span key={i} className="ml-skill-badge">
                   {skill}
                 </span>
               ))}
             </div>
           </div>
 
-          <div style={{ marginBottom: 30 }}>
-            <h3 style={{ margin: '0 0 15px 0' }}>💡 Câu hỏi gợi ý: {questions.length} câu</h3>
-            <p style={{ color: '#666', marginBottom: 20 }}>
+          <div className="ml-questions-section">
+            <h3>💡 Câu hỏi gợi ý: {questions.length} câu</h3>
+            <p className="ml-questions-description">
               Hệ thống đã phân tích kết quả của bạn và chọn {questions.length} câu hỏi phù hợp để bạn luyện tập.
               Các câu hỏi bao gồm cả Reading và Listening để giúp bạn cải thiện kỹ năng yếu.
             </p>
             <button
               onClick={handleStartPractice}
-              style={{
-                background: '#27ae60',
-                color: 'white',
-                border: 'none',
-                padding: '15px 40px',
-                borderRadius: 8,
-                fontSize: 16,
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-              }}
-              onMouseOver={(e) => (e.currentTarget.style.background = '#229954')}
-              onMouseOut={(e) => (e.currentTarget.style.background = '#27ae60')}
+              className="ml-start-practice-btn"
             >
               🚀 Bắt đầu luyện tập
             </button>
           </div>
 
-          <div style={{ borderTop: '1px solid #ddd', paddingTop: 20 }}>
-            <details>
-              <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: 10 }}>
-                Xem danh sách câu hỏi ({questions.length})
+          <div className="ml-questions-list-section">
+            <details className="ml-questions-details" open>
+              <summary className="ml-questions-summary">
+                Danh sách câu hỏi ({questions.length})
               </summary>
-              <ul style={{ maxHeight: 400, overflow: 'auto', background: '#fafafa', padding: 20, borderRadius: 4 }}>
-                {questions.map((q, i) => (
-                  <li key={q.id} style={{ marginBottom: 10 }}>
-                    <strong>#{i + 1}</strong> - Part {q.partId} - {q.question.substring(0, 60)}...
-                    {q.mediaMappings && q.mediaMappings.length > 0 && (
-                      <span style={{ marginLeft: 10, color: '#e67e22', fontSize: 12 }}>
-                        🎵 Có audio
+
+              <div className="ml-scrollable-container">
+                <ul className="ml-questions-list">
+                  {questions.map((q, i) => (
+                    <li key={q.id} className="ml-question-item">
+                      <span className="ml-question-number">#{i + 1}</span>
+                      <span className="ml-question-part">Part {q.partId}</span>
+                      <span className="ml-question-text">
+                        {q.question.substring(0, 80)}...
                       </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
+                      {q.mediaMappings && q.mediaMappings.length > 0 && (
+                        <span className="ml-audio-badge">🎵 Có audio</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </details>
           </div>
+
+
         </>
       ) : (
-        <div style={{ textAlign: 'center', padding: 40 }}>
+        <div className="ml-empty-state">
           <h2>🎉 Tuyệt vời!</h2>
           <p>Bạn không có kỹ năng nào yếu. Hãy tiếp tục luyện tập để duy trì!</p>
         </div>
