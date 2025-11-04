@@ -94,7 +94,11 @@ export default function MLRecommendationsPage() {
             <h3>💡 Câu hỏi gợi ý: {questions.length} câu</h3>
             <p className="ml-questions-description">
               Hệ thống đã phân tích kết quả của bạn và chọn {questions.length} câu hỏi phù hợp để bạn luyện tập.
-              Các câu hỏi bao gồm cả Reading và Listening để giúp bạn cải thiện kỹ năng yếu.
+              Các câu hỏi thuộc kỹ năng{' '}
+              <strong style={{ color: '#e74c3c', fontWeight: 'bold' }}>
+                {weakSkills.join(', ')}
+              </strong>{' '}
+              để giúp bạn cải thiện kỹ năng yếu.
             </p>
             <button
               onClick={handleStartPractice}

@@ -81,8 +81,21 @@ export const getRecommendationDetails = async (req, res) => {
       questionIds.indexOf(a.id) - questionIds.indexOf(b.id)
     );
 
+    // ✅ DEDUPLICATE: Loại bỏ câu hỏi trùng content
+    const seenContent = new Set();
+    const uniqueQuestions = orderedQuestions.filter(q => {
+      const content = q.question?.trim();
+      if (!content || seenContent.has(content)) {
+        return false;
+      }
+      seenContent.add(content);
+      return true;
+    });
+
+    console.log(`🔍 Deduplication: ${orderedQuestions.length} questions → ${uniqueQuestions.length} unique`);
+
     // ✅ Chuyển đổi dữ liệu media giống chuẩn RandomQuestionsByTestId
-    const transformedQuestions = orderedQuestions.map(q => {
+    const transformedQuestions = uniqueQuestions.map(q => {
       const qData = q.toJSON();
 
       if (qData.mediaMappings) {

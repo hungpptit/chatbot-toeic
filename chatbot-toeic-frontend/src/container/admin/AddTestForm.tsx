@@ -642,8 +642,40 @@ export default function AdminTestAddPage() {
           <div className="question-media-section">
             <h4 className="question-media-title">🖼️ Hình ảnh cho câu hỏi này (tùy chọn)</h4>
             {q.imageUrl ? (
-              <div className="audio-url-display">
-                <strong>URL đã upload:</strong> <a href={q.imageUrl} target="_blank" rel="noopener noreferrer">{q.imageUrl}</a>
+              <div className="image-preview-container">
+                <img 
+                  src={q.imageUrl} 
+                  alt={`Question ${i + 1}`}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '300px',
+                    objectFit: 'contain',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    marginBottom: '10px'
+                  }}
+                />
+                <div className="audio-url-display">
+                  <strong>✅ Cloudinary URL:</strong> <a href={q.imageUrl} target="_blank" rel="noopener noreferrer">{q.imageUrl}</a>
+                </div>
+                <button 
+                  onClick={() => {
+                    handleChange(i, 'imageUrl', '');
+                    handleChange(i, 'imageFile', null);
+                  }}
+                  style={{
+                    padding: '6px 12px',
+                    background: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    marginTop: '8px'
+                  }}
+                >
+                  🗑️ Xóa ảnh
+                </button>
               </div>
             ) : (
               <div className="question-image-input">
