@@ -12,7 +12,7 @@ const Part = db.Part;
 const QuestionType = db.QuestionType;
 const TestQuestion = db.TestQuestion;
 const Test_Courses = db.TestCourse;
-const Skills = db.Skill;
+const Skill = db.Skill;
 const QuestionSkill = db.QuestionSkill;
 const MediaFiles = db.MediaFiles;
 const QuestionMediaMap = db.QuestionMediaMap;
@@ -208,12 +208,19 @@ const createNewTest = async (testData) => {
         typeId: q.typeId || 1,
         partId: q.partId || null,
       });
+      
+      // 🔴 FIX: Validate skillId exists before creating QuestionSkill
       if (q.skillId) {
-        await QuestionSkill.create({
-          questionId: question.id,
-          skillId: q.skillId,
-          weight: 1, // 👈 tùy bạn, có thể mặc định 1
-        });
+        const skillExists = await Skill.findByPk(q.skillId);
+        if (!skillExists) {
+          console.warn(`⚠️ Skill ID ${q.skillId} không tồn tại, bỏ qua QuestionSkill`);
+        } else {
+          await QuestionSkill.create({
+            questionId: question.id,
+            skillId: q.skillId,
+            weight: 1,
+          });
+        }
       }
 
       // Nếu có media (ảnh/audio)
@@ -305,7 +312,7 @@ const deleteTestById = async (testIdRaw) => {
 const createSkill = async (skillData) => {
   try {
     const { name, description, parentId } = skillData;
-    const newSkill = await Skills.create({ name, description, parentId });
+    const newSkill = await Skill.create({ name, description, parentId });
     return newSkill;
   } catch (error) {
     console.error("❌ Error creating Skill:", error);
@@ -316,17 +323,17 @@ const createSkill = async (skillData) => {
 // Lấy tất cả skill
 const getAllSkills = async () => {
   try {
-    const skills = await Skills.findAll({
+    const skills = await Skill.findAll({
       attributes: ["id", "name", "description", "parentId"],
       include: [
-        { model: Skills, as: "children", attributes: ["id", "name"] },
-        { model: Skills, as: "parent", attributes: ["id", "name"] },
+        { model: Skill, as: "children", attributes: ["id", "name"] },
+        { model: Skill, as: "parent", attributes: ["id", "name"] },
       ],
       order: [["id", "ASC"]],
     });
     return skills;
   } catch (error) {
-    console.error("❌ Error fetching Skills:", error);
+    console.error("❌ Error fetching Skill:", error);
     throw error;
   }
 };
@@ -334,11 +341,11 @@ const getAllSkills = async () => {
 // Lấy skill theo id
 const getSkillById = async (id) => {
   try {
-    const skill = await Skills.findByPk(id, {
+    const skill = await Skill.findByPk(id, {
       attributes: ["id", "name", "description", "parentId"],
       include: [
-        { model: Skills, as: "children", attributes: ["id", "name"] },
-        { model: Skills, as: "parent", attributes: ["id", "name"] },
+        { model: Skill, as: "children", attributes: ["id", "name"] },
+        { model: Skill, as: "parent", attributes: ["id", "name"] },
       ],
     });
     if (!skill) throw new Error(`Skill with ID ${id} not found`);
@@ -352,7 +359,7 @@ const getSkillById = async (id) => {
 // Cập nhật skill
 const updateSkill = async (id, updates) => {
   try {
-    const skill = await Skills.findByPk(id);
+    const skill = await Skill.findByPk(id);
     if (!skill) throw new Error(`Skill with ID ${id} not found`);
 
     await skill.update(updates);
@@ -366,7 +373,7 @@ const updateSkill = async (id, updates) => {
 // Xóa skill
 const deleteSkill = async (id) => {
   try {
-    const skill = await Skills.findByPk(id);
+    const skill = await Skill.findByPk(id);
     if (!skill) throw new Error(`Skill with ID ${id} not found`);
 
     await skill.destroy();
