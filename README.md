@@ -321,7 +321,7 @@ MIT License - Tự do sử dụng cho mục đích học tập và nghiên cứu
 
 ## 👥 Contributors
 
-- **Phát triển**: Phạm Tuấn Hùng
+- **Phát triển**: Phạm Tuấn Hùng & Hồ Thuận Kiều & Nguyễn Tấn Quý
 - **Trường**: Học viện Công nghệ Bưu chính Viễn thông (PTIT)
 - **Email**: phamtuanhung9a5@gmail.com
 
