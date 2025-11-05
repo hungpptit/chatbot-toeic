@@ -181,9 +181,10 @@ def predict_hybrid_unified(userId: int):
         conn.close()
         return {}
 
-    # Load models
-    global_model_path = os.path.join(os.path.dirname(__file__), "weak_skill_model.pkl")
-    unified_model_path = os.path.join(os.path.dirname(__file__), "unified_model.pkl")
+    # Load models (đọc từ thư mục model/)
+    model_dir = os.path.join(os.path.dirname(__file__), 'model')
+    global_model_path = os.path.join(model_dir, "weak_skill_model.pkl")
+    unified_model_path = os.path.join(model_dir, "unified_model.pkl")
     
     if not os.path.exists(global_model_path):
         raise FileNotFoundError("❌ Global model (weak_skill_model.pkl) không tồn tại! Chạy train_model.py trước.")

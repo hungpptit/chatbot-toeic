@@ -197,8 +197,11 @@ def train_unified_model():
     else:
         print(f"\n⚠️ Test set only has {unique_classes} class. Need more diverse data for full report.")
     
-    # Save model
-    model_path = os.path.join(os.path.dirname(__file__), "unified_model.pkl")
+    # Save model (dùng absolute path và tạo thư mục model/ nếu chưa có)
+    model_dir = os.path.join(os.path.dirname(__file__), 'model')
+    os.makedirs(model_dir, exist_ok=True)
+    
+    model_path = os.path.join(model_dir, "unified_model.pkl")
     joblib.dump(model, model_path)
     print(f"\n💾 Model saved at: {model_path}")
     
@@ -210,7 +213,7 @@ def train_unified_model():
         'total_users': df['userId'].nunique(),
         'test_accuracy': accuracy
     }
-    info_path = os.path.join(os.path.dirname(__file__), "unified_model_info.pkl")
+    info_path = os.path.join(model_dir, "unified_model_info.pkl")
     joblib.dump(feature_info, info_path)
     print(f"📋 Feature info saved at: {info_path}")
     

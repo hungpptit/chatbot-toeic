@@ -6,10 +6,10 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Auto-retrain ML models every 6 hours
-// Cron expression: "0 */6 * * *" = At minute 0 past every 6th hour
-// Examples: 00:00 (midnight), 06:00 (6 AM), 12:00 (noon), 18:00 (6 PM)
-cron.schedule("0 */6 * * *", async () => {
+// ⚠️ TEST MODE: Auto-retrain ML models every 3 minutes (for testing)
+// Production: "0 */6 * * *" = At minute 0 past every 6th hour
+// Test mode: "*/3 * * * *" = Every 3 minutes
+cron.schedule("*/3 * * * *", async () => {
   console.log("⏰ Cron Job: ML Model Retraining started at:", new Date().toLocaleString('vi-VN'));
   
   try {
@@ -20,7 +20,7 @@ cron.schedule("0 */6 * * *", async () => {
   }
 });
 
-console.log("🤖 ML Retrain Cron Job initialized - Running every 6 hours (0, 6, 12, 18h)");
+console.log("🤖 [TEST MODE] ML Retrain Cron Job initialized - Running every 3 minutes");
 
 // Retrain all ML models by running Python script
 async function retrainModels() {
@@ -48,7 +48,10 @@ async function retrainModels() {
       const error = data.toString();
       stderr += error;
       // Only log if it's an actual error (not just warnings)
-      if (!error.includes('FutureWarning') && !error.includes('DeprecationWarning')) {
+      if (!error.includes('FutureWarning') && 
+          !error.includes('DeprecationWarning') && 
+          !error.includes('UserWarning') && 
+          !error.includes('UndefinedMetricWarning')) {
         console.error('[ML Retrain Error]', error.trim());
       }
     });

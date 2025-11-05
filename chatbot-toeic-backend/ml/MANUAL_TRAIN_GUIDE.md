@@ -47,7 +47,7 @@ python ml/train_unified_model.py
 # Kiểm tra files model đã được tạo chưa
 ls ml/model/
 
-# Output mong đợi:
+# Output mong đợi (models được lưu trong thư mục ml/model/):
 # weak_skill_model.pkl          ← Global model
 # unified_model.pkl             ← Unified model
 # unified_model_info.pkl        ← Metadata

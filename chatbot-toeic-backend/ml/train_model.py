@@ -42,6 +42,19 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 import joblib
 from dotenv import load_dotenv
+import sys
+
+# Fix UTF-8 encoding for Windows console
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+except Exception:
+    try:
+        import io
+        sys.stdout = io.TextIOWrapper(getattr(sys.stdout, 'buffer', sys.stdout), encoding='utf-8', errors='replace')
+        sys.stderr = io.TextIOWrapper(getattr(sys.stderr, 'buffer', sys.stderr), encoding='utf-8', errors='replace')
+    except Exception:
+        pass
 
 # Load biến môi trường từ file .env (ở thư mục gốc backend)
 load_dotenv(dotenv_path="./.env")
@@ -97,6 +110,10 @@ model.fit(X_train, y_train)
 print("\n📊 Đánh giá model:")
 print(classification_report(y_test, model.predict(X_test)))
 
-# Lưu model
-joblib.dump(model, "ml/weak_skill_model.pkl")
-print("\n💾 Model saved at ml/weak_skill_model.pkl")
+# Lưu model (dùng absolute path để tránh lỗi khi chạy từ cron)
+model_dir = os.path.join(os.path.dirname(__file__), 'model')
+os.makedirs(model_dir, exist_ok=True)  # Tạo thư mục nếu chưa có
+
+model_path = os.path.join(model_dir, 'weak_skill_model.pkl')
+joblib.dump(model, model_path)
+print(f"\n💾 Model saved at {model_path}")
