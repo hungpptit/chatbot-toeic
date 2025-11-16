@@ -1,0 +1,498 @@
+{
+  "weak_skills": [
+    "Listening",
+    "Vocabulary",
+    "Reading",
+    "Grammar"
+  ],
+  "recommendations": {
+    "Listening": [
+      {
+        "id": 1270,
+        "question": "According to the announcement, what will happen this weekend?"
+      },
+      {
+        "id": 1379,
+        "question": "According to the announcement, what will happen this weekend? (Select the correct response.)"
+      },
+      {
+        "id": 1469,
+        "question": "According to the announcement, what will happen this weekend? (Choose the best option.)"
+      },
+      {
+        "id": 957,
+        "question": "Look at the picture. What is the woman reaching for?"
+      },
+      {
+        "id": 1069,
+        "question": "In the workplace, look at the picture. What is the woman reaching for?"
+      },
+      {
+        "id": 937,
+        "question": "Look at the picture. What is the woman doing?"
+      },
+      {
+        "id": 1258,
+        "question": "What will the man do tomorrow?"
+      },
+      {
+        "id": 1366,
+        "question": "In this scenario, what will the man do tomorrow?"
+      },
+      {
+        "id": 1465,
+        "question": "For business purposes, what will the man do tomorrow?"
+      },
+      {
+        "id": 1598,
+        "question": "When is the deadline for the proposal?"
+      },
+      {
+        "id": 1279,
+        "question": "What is the deadline mentioned?"
+      },
+      {
+        "id": 1373,
+        "question": "Item 1: What is the deadline mentioned?"
+      },
+      {
+        "id": 1266,
+        "question": "What does the woman want to confirm?"
+      },
+      {
+        "id": 1360,
+        "question": "For business purposes, what does the woman want to confirm?"
+      },
+      {
+        "id": 1455,
+        "question": "Item 2: What does the woman want to confirm?"
+      },
+      {
+        "id": 1526,
+        "question": "Where is this announcement being made?"
+      },
+      {
+        "id": 1059,
+        "question": "Where is the meeting being held?"
+      },
+      {
+        "id": 1513,
+        "question": "What is the purpose of this announcement?"
+      },
+      {
+        "id": 1512,
+        "question": "What are listeners asked to do?"
+      },
+      {
+        "id": 1271,
+        "question": "What are listeners advised to do?"
+      },
+      {
+        "id": 1380,
+        "question": "For business purposes, what are listeners advised to do?"
+      },
+      {
+        "id": 934,
+        "question": "Look at the picture. What is the man doing?"
+      },
+      {
+        "id": 1019,
+        "question": " What is the man doing?"
+      },
+      {
+        "id": 982,
+        "question": "Look at the picture. What is the photographer doing?"
+      },
+      {
+        "id": 953,
+        "question": "Look at the picture. What are the musicians doing?"
+      },
+      {
+        "id": 1067,
+        "question": "Based on the situation, look at the picture. What are the musicians doing?"
+      },
+      {
+        "id": 936,
+        "question": "Look at the picture. What are the people doing?"
+      },
+      {
+        "id": 958,
+        "question": "Look at the picture. What is near the counter?"
+      },
+      {
+        "id": 986,
+        "question": "Look at the picture. What is near the counter? (Choose the best option.)"
+      },
+      {
+        "id": 1070,
+        "question": "[Question 2] Look at the picture. What is near the counter?"
+      }
+    ],
+    "Vocabulary": [
+      {
+        "id": 1591,
+        "question": "Who approved this expense report?"
+      },
+      {
+        "id": 1036,
+        "question": "Who is responsible for this report?"
+      },
+      {
+        "id": 1548,
+        "question": "Where did you put the sales report?"
+      },
+      {
+        "id": 1253,
+        "question": "Where are the speakers most likely talking?"
+      },
+      {
+        "id": 1363,
+        "question": "Where are the speakers most likely talking? (Pick the most suitable choice.)"
+      },
+      {
+        "id": 1460,
+        "question": "Based on the situation, where are the speakers most likely talking?"
+      },
+      {
+        "id": 570,
+        "question": "The store is open _____ 9 a.m. and   1 p.m. on weekdays."
+      },
+      {
+        "id": 784,
+        "question": "The store is open _____ 9 a.m. and   1 p.m. on weekdays. (Choose the best option.)"
+      },
+      {
+        "id": 527,
+        "question": "The store is open _____ 9 a.m. and   2 p.m. on weekdays."
+      },
+      {
+        "id": 1107,
+        "question": "The clerk ____ the customer a receipt after the purchase."
+      },
+      {
+        "id": 1209,
+        "question": "Based on the situation, the clerk ____ the customer a receipt after the purchase."
+      },
+      {
+        "id": 1301,
+        "question": "The clerk ____ the customer a receipt after the purchase. (Choose the best option.)"
+      },
+      {
+        "id": 459,
+        "question": "The morning session was highly _____ thanks to clear objectives."
+      },
+      {
+        "id": 502,
+        "question": "The morning session was highly _____ thanks to clear objectives. (Please select the most appropriate answer.)"
+      },
+      {
+        "id": 545,
+        "question": "The morning session was highly _____ thanks to clear objectives. (Select the correct response.)"
+      },
+      {
+        "id": 1277,
+        "question": "What is the speaker requesting?"
+      },
+      {
+        "id": 1371,
+        "question": "Based on the situation, what is the speaker requesting?"
+      },
+      {
+        "id": 1475,
+        "question": "What is the speaker requesting? (Pick the most suitable choice.)"
+      },
+      {
+        "id": 1248,
+        "question": "What will listeners receive tomorrow?"
+      },
+      {
+        "id": 1342,
+        "question": "What will listeners receive tomorrow? (Choose the best option.)"
+      },
+      {
+        "id": 1435,
+        "question": "What will listeners receive tomorrow? (Pick the most suitable choice.)"
+      },
+      {
+        "id": 1090,
+        "question": "The brochure includes a detailed ____ of our services."
+      },
+      {
+        "id": 1190,
+        "question": "The brochure includes a detailed ____ of our services. (Choose the best option.)"
+      },
+      {
+        "id": 1288,
+        "question": "[Question 2] The brochure includes a detailed ____ of our services."
+      },
+      {
+        "id": 438,
+        "question": "Our prices are _____ to those of major competitors."
+      },
+      {
+        "id": 530,
+        "question": "Our prices are _____ to those of major competitors. (Please select the most appropriate answer.)"
+      },
+      {
+        "id": 574,
+        "question": "In the workplace, our prices are _____ to those of major competitors."
+      },
+      {
+        "id": 1241,
+        "question": "What are the speakers mainly discussing?"
+      },
+      {
+        "id": 1255,
+        "question": "What are the speakers mainly discussing? (Select the correct response.)"
+      },
+      {
+        "id": 1335,
+        "question": "Item 2: What are the speakers mainly discussing?"
+      }
+    ],
+    "Reading": [
+      {
+        "id": 1118,
+        "question": "The new security policy will take effect ____ July 1."
+      },
+      {
+        "id": 1217,
+        "question": "[Question 1] The new security policy will take effect ____ July 1."
+      },
+      {
+        "id": 1311,
+        "question": "In this scenario, the new security policy will take effect ____ July 1."
+      },
+      {
+        "id": 466,
+        "question": "The committee recommended that the budget _____ by 5 percent."
+      },
+      {
+        "id": 509,
+        "question": "[Question 1] The committee recommended that the budget _____ by 5 percent."
+      },
+      {
+        "id": 552,
+        "question": "[Question 2] The committee recommended that the budget _____ by 5 percent."
+      },
+      {
+        "id": 476,
+        "question": "I am writing _____ of the logistics team regarding your shipment."
+      },
+      {
+        "id": 519,
+        "question": "For business purposes, i am writing _____ of the logistics team regarding your shipment."
+      },
+      {
+        "id": 562,
+        "question": "In the workplace, i am writing _____ of the logistics team regarding your shipment."
+      },
+      {
+        "id": 1111,
+        "question": "The firm will ____ its head office to a larger building."
+      },
+      {
+        "id": 1211,
+        "question": "For business purposes, the firm will ____ its head office to a larger building."
+      },
+      {
+        "id": 1305,
+        "question": "In this scenario, the firm will ____ its head office to a larger building."
+      },
+      {
+        "id": 1132,
+        "question": "[Notice] Elevators will be inspected on Tuesday morning. The notice is intended to ____."
+      },
+      {
+        "id": 1230,
+        "question": "In this scenario, [Notice] Elevators will be inspected on Tuesday morning. The notice is intended to ____."
+      },
+      {
+        "id": 1333,
+        "question": "[Question 2] [Notice] Elevators will be inspected on Tuesday morning. The notice is intended to ____."
+      },
+      {
+        "id": 471,
+        "question": "Please include at least two professional _____ with your application."
+      },
+      {
+        "id": 514,
+        "question": "Please include at least two professional ________ with your application."
+      },
+      {
+        "id": 557,
+        "question": "Please include at least two professional _____ with your application. (Choose the best option.)"
+      },
+      {
+        "id": 1131,
+        "question": "[Email] Please find the agenda attached. We will start at 10 a.m. The email ____."
+      },
+      {
+        "id": 1228,
+        "question": "According to company policy, [Email] Please find the agenda attached. We will start at 10 a.m. The email ____."
+      },
+      {
+        "id": 1325,
+        "question": "[Email] Please find the agenda attached. We will start at 10 a.m. The email ____. (Please select the most appropriate answer.)"
+      },
+      {
+        "id": 446,
+        "question": "Visitors _____ present a valid ID at reception."
+      },
+      {
+        "id": 489,
+        "question": "Visitors [blank] present a valid ID at reception."
+      },
+      {
+        "id": 582,
+        "question": "Visitors _____ present a valid ID at reception. (Pick the most suitable choice.)"
+      },
+      {
+        "id": 463,
+        "question": "We will _____ the brochures printed by a professional service."
+      },
+      {
+        "id": 506,
+        "question": "Item 1: We will _____ the brochures printed by a professional service."
+      },
+      {
+        "id": 549,
+        "question": "In this scenario, we will _____ the brochures printed by a professional service."
+      },
+      {
+        "id": 1127,
+        "question": "[Advertisement] Join our fitness club this month and pay no joining fee. The ad mainly ____."
+      },
+      {
+        "id": 1229,
+        "question": "[Advertisement] Join our fitness club this month and pay no joining fee. The ad mainly ____. (Please select the most appropriate answer.)"
+      },
+      {
+        "id": 1332,
+        "question": "[Advertisement] Join our fitness club this month and pay no joining fee. The ad mainly ____. (Select the correct response.)"
+      }
+    ],
+    "Grammar": [
+      {
+        "id": 1234,
+        "question": "What will the man probably do next?"
+      },
+      {
+        "id": 1351,
+        "question": "What will the man probably do next? (Please select the most appropriate answer.)"
+      },
+      {
+        "id": 1447,
+        "question": "Item 2: What will the man probably do next?"
+      },
+      {
+        "id": 434,
+        "question": "Customer inquiries must be answered _____ to maintain satisfaction."
+      },
+      {
+        "id": 528,
+        "question": "Customer inquiries must be answered _____ to maintain satisfaction. (Choose the best option.)"
+      },
+      {
+        "id": 571,
+        "question": "Customer inquiries must be answered _____ to maintain satisfaction. (Please select the most appropriate answer.)"
+      },
+      {
+        "id": 1112,
+        "question": "The memo was sent to notify employees ____ the policy changes."
+      },
+      {
+        "id": 1214,
+        "question": "In this scenario, the memo was sent to notify employees ____ the policy changes."
+      },
+      {
+        "id": 1308,
+        "question": "The memo was sent to notify employees ____ the policy changes. (Pick the most suitable choice.)"
+      },
+      {
+        "id": 469,
+        "question": "Scarcely _____ the announcement finished when the questions began."
+      },
+      {
+        "id": 512,
+        "question": "Scarcely _____ the announcement finished when the questions began. (Pick the most suitable choice.)"
+      },
+      {
+        "id": 555,
+        "question": "For business purposes, scarcely _____ the announcement finished when the questions began."
+      },
+      {
+        "id": 1106,
+        "question": "The training is mandatory for all staff ____ new hires."
+      },
+      {
+        "id": 1206,
+        "question": "The training is mandatory for all staff ____ new hires. (Pick the most suitable choice.)"
+      },
+      {
+        "id": 1300,
+        "question": "Item 2: The training is mandatory for all staff ____ new hires."
+      },
+      {
+        "id": 471,
+        "question": "Please include at least two professional _____ with your application."
+      },
+      {
+        "id": 514,
+        "question": "Please include at least two professional ________ with your application."
+      },
+      {
+        "id": 557,
+        "question": "Please include at least two professional _____ with your application. (Choose the best option.)"
+      },
+      {
+        "id": 477,
+        "question": "The company plans to _____ its operations to Southeast Asia next year."
+      },
+      {
+        "id": 520,
+        "question": "According to company policy, the company plans to _____ its operations to Southeast Asia next year."
+      },
+      {
+        "id": 563,
+        "question": "The company plans to [blank] its operations to Southeast Asia next year."
+      },
+      {
+        "id": 440,
+        "question": "We look forward _____ you at the networking session."
+      },
+      {
+        "id": 533,
+        "question": "[Question 1] We look forward _____ you at the networking session."
+      },
+      {
+        "id": 576,
+        "question": "[Question 2] We look forward _____ you at the networking session."
+      },
+      {
+        "id": 478,
+        "question": "Please remember _____ your ID badge when entering the building."
+      },
+      {
+        "id": 521,
+        "question": "According to company policy, please remember _____ your ID badge when entering the building."
+      },
+      {
+        "id": 564,
+        "question": "Based on the situation, please remember _____ your ID badge when entering the building."
+      },
+      {
+        "id": 1087,
+        "question": "Applicants must be ____ to work on weekends."
+      },
+      {
+        "id": 1188,
+        "question": "Item 1: Applicants must be ____ to work on weekends."
+      },
+      {
+        "id": 1319,
+        "question": "Item 1: Applicants must be ____ to work on weekends. (Choose the best option.)"
+      }
+    ]
+  }
+}
