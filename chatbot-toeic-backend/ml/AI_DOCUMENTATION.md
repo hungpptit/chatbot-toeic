@@ -115,32 +115,108 @@ Khi người dùng gặp khó khăn với một câu hỏi cụ thể, hệ th�
 
 ## 3. Hệ Thống Có Thể Thông Minh Hơn Không?
 
-**Câu trả lời là CÓ.** Hệ thống được thiết kế để có thể "học" và trở nên thông minh hơn theo thời gian.
+**Câu trả lời là CÓ.** Hệ thống được thiết kế với một vòng lặp phản hồi (feedback loop), cho phép nó "học" và trở nên thông minh hơn theo thời gian thông qua việc **tái huấn luyện (re-training)**.
 
-### a. Học từ dữ liệu người dùng (Online Learning/Continuous Improvement):
+### a. Học Từ Dữ Liệu Người Dùng (Continuous Improvement)
 
-Mô hình dự đoán điểm yếu không phải là một mô hình tĩnh. Nó có thể được cải thiện liên tục dựa trên chính dữ liệu mà người dùng tạo ra.
+1.  **Lưu trữ lịch sử:** Mỗi khi người dùng làm bài, dữ liệu được ghi vào `UserResults`. Mỗi khi mô hình đưa ra dự đoán, nó được ghi vào `MLPredictionHistory`. Hai bảng này là nguồn "dữ liệu thô" quý giá, phản ánh sự tiến bộ và các mẫu hành vi mới của người dùng.
 
-1.  **Lưu trữ lịch sử dự đoán:** Mỗi khi mô hình đưa ra một dự đoán về điểm yếu, kết quả này không chỉ được lưu ở `MLPredictions` (bảng trạng thái hiện tại) mà còn được ghi lại trong `MLPredictionHistory`.
-    *   **Dẫn chứng:** Model `MLPredictionHistory.js` được thiết kế để lưu lại các snapshot của dự đoán theo thời gian.
+2.  **Tái huấn luyện (Re-training):** Đây là quá trình sử dụng dữ liệu mới để "dạy lại" cho các mô hình AI. Quá trình này được thực hiện bằng cách chạy lại các script huấn luyện.
+    *   **Dẫn chứng code (cách thực thi):**
+        Để tái huấn luyện, nhà phát triển hoặc một tác vụ tự động (cron job) sẽ chạy các lệnh sau trong terminal:
 
-2.  **Tái huấn luyện (Re-training):** Dữ liệu trong `UserResults` và `MLPredictionHistory` là nguồn tài nguyên quý giá. Định kỳ (ví dụ: hàng tuần, hàng tháng), chúng ta có thể sử dụng dữ liệu mới này để **huấn luyện lại** mô hình `weak_skill_model.pkl`.
-    *   **Quy trình:**
-        *   Trích xuất dữ liệu mới từ CSDL.
-        *   Chạy lại script `train_model.py` hoặc `train_unified_model.py` với bộ dữ liệu đã được bổ sung.
-        *   Mô hình mới sau khi huấn luyện sẽ có khả năng dự đoán chính xác hơn, vì nó đã "học" được từ các mẫu dữ liệu mới nhất của người dùng.
+        ```bash
+        # 1. Huấn luyện lại mô hình Global cho người dùng mới
+        # Script này sẽ tự động lấy dữ liệu mới nhất từ CSDL
+        python train_model.py
 
-3.  **Vòng lặp cải tiến (Feedback Loop):**
-    *   Người dùng làm bài -> Hệ thống dự đoán điểm yếu.
-    *   Người dùng luyện tập theo gợi ý -> Hệ thống có thêm dữ liệu mới về sự tiến bộ của người dùng.
-    *   Dữ liệu mới được dùng để tái huấn luyện mô hình.
-    *   Mô hình mới đưa ra dự đoán tốt hơn.
-    *   Đây là một vòng lặp liên tục, giúp hệ thống ngày càng hiểu rõ người dùng và đưa ra gợi ý ngày càng chính xác.
+        # 2. Huấn luyện lại mô hình Unified cho người dùng cũ
+        # Script này cũng tự động lấy dữ liệu mới nhất
+        python train_unified_model.py
+        ```
+    *   Khi các script này chạy, chúng sẽ đọc toàn bộ dữ liệu mới trong bảng `UserResults`, tạo ra các file model `.pkl` mới và ghi đè lên các file cũ trong thư mục `ml/model`. Các lần dự đoán sau đó sẽ tự động sử dụng các mô hình đã được cập nhật này.
 
-### b. Mở rộng mô hình:
+### b. So Sánh: Tái Huấn Luyện vs. Không Tái Huấn Luyện
+
+Việc tái huấn luyện định kỳ là yếu tố then chốt quyết định sự "thông minh" dài hạn của hệ thống.
+
+| Tiêu chí | ✅ **Có Tái Huấn Luyện (Recommended)** | ❌ **Không Tái Huấn Luyện** |
+| :--- | :--- | :--- |
+| **Chất lượng Dự đoán** | **Ngày càng chính xác.** Mô hình học được từ sự tiến bộ của người dùng, hiểu rõ hơn về các điểm yếu thực sự ở thời điểm hiện tại. | **Ngày càng suy giảm (Stale).** Mô hình bị "mắc kẹt" trong quá khứ, các dự đoán dựa trên dữ liệu cũ và có thể không còn phù hợp. |
+| **Tính Cá nhân hóa** | **Cao.** Hệ thống "lớn lên" cùng người dùng. Gợi ý cho người dùng A (đã tiến bộ) sẽ khác với gợi ý cho người dùng B (mới bắt đầu). | **Thấp.** Sau một thời gian, hệ thống sẽ đưa ra những gợi ý chung chung, không còn phù hợp với trình độ hiện tại của người dùng, làm giảm sự tin tưởng. |
+| **Trải nghiệm Người dùng**| **Tích cực.** Người dùng cảm thấy hệ thống thực sự "hiểu" mình và cung cấp các bài tập phù hợp, giúp họ cải thiện hiệu quả. | **Tiêu cực.** Người dùng có thể nhận được các gợi ý về những kỹ năng họ đã thành thạo, hoặc bỏ lỡ các điểm yếu mới phát sinh, gây lãng phí thời gian. |
+| **Bảo trì Hệ thống** | Yêu cầu thiết lập các tác vụ tự động (cron jobs, scheduled tasks) để chạy script định kỳ (ví dụ: hàng tuần). | Không cần bảo trì phần huấn luyện, nhưng phải trả giá bằng chất lượng sản phẩm giảm sút theo thời gian. |
+| **Ví dụ Thực tế** | Một người dùng ban đầu yếu về "Thì Hiện tại đơn". Sau một tuần luyện tập, họ đã thành thạo. Hệ thống tái huấn luyện sẽ nhận ra điều này và bắt đầu gợi ý các kỹ năng khó hơn như "Mệnh đề quan hệ". | Người dùng đó vẫn tiếp tục nhận được gợi ý luyện tập "Thì Hiện tại đơn" dù đã làm đúng 100% các câu hỏi gần đây. Hệ thống trở nên "lỗi thời". |
+
+**Kết luận:** **Không tái huấn luyện** sẽ biến một hệ thống AI thành một hệ thống dựa trên luật lệ tĩnh, làm mất đi giá trị cốt lõi và sự thông minh của nó theo thời gian. **Tái huấn luyện** là quá trình bắt buộc để duy trì và nâng cao trí tuệ của sản phẩm.
+
+### c. Tự Động Hóa Việc Tái Huấn Luyện (Cron Job)
+
+Để đảm bảo việc tái huấn luyện diễn ra định kỳ mà không cần sự can thiệp thủ công, hệ thống sử dụng một tác vụ đã được lên lịch (cron job).
+
+*   **Cách thức hoạt động:**
+    Hệ thống có một file chuyên dụng để định nghĩa các tác vụ chạy nền theo lịch. File này sẽ thiết lập một lịch trình (ví dụ: "chạy vào lúc 2 giờ sáng Chủ Nhật hàng tuần") để tự động thực thi các script huấn luyện mô hình.
+
+*   **Dẫn chứng code:**
+    Mặc dù hiện tại chưa có file cron job cụ thể cho việc tái huấn luyện trong thư mục `cronJobs`, nhưng đây là cách nó **sẽ được triển khai** để hoàn thiện vòng lặp cải tiến:
+
+    Một file mới, ví dụ `mlRetrainJob.js`, sẽ được tạo trong `src/cronJobs/` với nội dung tương tự như sau:
+
+    ```javascript
+    // File: src/cronJobs/mlRetrainJob.js (Ví dụ minh họa)
+
+    import cron from 'node-cron';
+    import { spawn } from 'child_process';
+    import path from 'path';
+
+    // Lên lịch chạy vào 2:00 sáng Chủ Nhật hàng tuần
+    cron.schedule('0 2 * * 0', () => {
+        console.log('🚀 [CRON] Bắt đầu tác vụ tự động tái huấn luyện mô hình AI...');
+
+        const trainUnifiedScript = path.join(__dirname, '../../ml/train_unified_model.py');
+
+        // Chạy script huấn luyện mô hình Unified
+        const pythonProcess = spawn('python', [trainUnifiedScript]);
+
+        pythonProcess.stdout.on('data', (data) => {
+            console.log(`[TRAIN_LOG]: ${data}`);
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+            console.error(`[TRAIN_ERROR]: ${data}`);
+        });
+
+        pythonProcess.on('close', (code) => {
+            if (code === 0) {
+                console.log('✅ [CRON] Tác vụ tái huấn luyện đã hoàn tất thành công.');
+            } else {
+                console.error(`❌ [CRON] Tác vụ tái huấn luyện thất bại với mã lỗi ${code}.`);
+            }
+        });
+    });
+
+    console.log('👍 Cron job để tự động tái huấn luyện AI đã được lên lịch.');
+    ```
+
+*   **Ý nghĩa:** Đoạn code trên cho thấy thiết kế của hệ thống đã tính đến việc tự động hóa. Khi file này được thêm vào và server backend khởi động, nó sẽ tự động chạy các script `train_unified_model.py` và `train_model.py` theo lịch đã định. Điều này đảm bảo các mô hình AI luôn được làm mới với dữ liệu mới nhất, giúp hệ thống liên tục thông minh hơn mà không cần bất kỳ thao tác thủ công nào.
+
+### d. Mở rộng mô hình trong tương lai:
 
 *   **Phân tích sâu hơn:** Thay vì chỉ dự đoán "kỹ năng yếu", mô hình có thể được nâng cấp để dự đoán "xác suất trả lời đúng cho một câu hỏi cụ thể" hoặc "thời gian cần thiết để người dùng thành thạo một kỹ năng".
 *   **Cập nhật mô hình embedding:** Sử dụng các mô hình embedding lớn và hiện đại hơn (ví dụ: các biến thể của BERT, GPT) sẽ giúp việc tìm kiếm câu hỏi tương tự trở nên chính xác hơn rất nhiều.
+
+### e. Cập Nhật Tức Thì (Re-prediction) vs. Tái Huấn Luyện (Re-training)
+
+Đây là một điểm quan trọng để hiểu rõ sự thông minh của hệ thống. Có hai quá trình riêng biệt:
+
+| Hoạt động | **Cập nhật Gợi ý (Re-prediction)** | **Tái Huấn Luyện (Re-training)** |
+| :--- | :--- | :--- |
+| **Mục đích** | Cập nhật gợi ý cho **một** người dùng. | Nâng cấp "bộ não" cho **toàn bộ** hệ thống. |
+| **Khi nào** | **Ngay sau khi** người dùng làm bài. | **Định kỳ** (hàng tuần/tháng). |
+| **Phạm vi** | Chỉ ảnh hưởng đến gợi ý của người dùng đó. | Ảnh hưởng đến chất lượng dự đoán của tất cả người dùng. |
+| **Tốc độ** | Nhanh (vài giây). | Chậm (vài phút đến vài giờ). |
+
+**Tóm lại:** Khi người dùng luyện tập, hệ thống sẽ **ngay lập tức** chạy lại tiến trình dự đoán (`Re-prediction`) **chỉ cho riêng người dùng đó** để cập nhật gợi ý mới. Người dùng không cần phải chờ đến kỳ tái huấn luyện hàng tuần. Quá trình tái huấn luyện (`Re-training`) là để nâng cấp "bộ não" chung, giúp cho các lần `Re-prediction` trong tương lai trở nên chính xác hơn.
 
 ---
 
@@ -320,3 +396,41 @@ python train_unified_model.py
     4.  **Huấn luyện và Lưu:** Tương tự như mô hình global, mô hình `GaussianNB` được huấn luyện và lưu lại thành file `ml/model/unified_model.pkl`.
 
 *   **Công dụng:** Cải thiện chất lượng dự đoán cá nhân hóa. Nên chạy thường xuyên hơn (ví dụ: hàng tuần) để mô hình luôn cập nhật với sự tiến bộ của người dùng.
+
+---
+
+## 6. Phân Tích Ưu/Nhược Điểm và Hiệu Năng
+
+### 6.1. Ưu và Nhược Điểm của Chiến Lược "Hybrid"
+
+Chiến lược "Hybrid" (kết hợp giữa mô hình Global và Unified) được lựa chọn để cân bằng giữa tính chính xác và khả năng mở rộng.
+
+| Ưu điểm (Pros) | Nhược điểm (Cons) |
+| :--- | :--- |
+| ✅ **Giải quyết vấn đề "Cold Start"**: Người dùng mới (chưa có dữ liệu) vẫn nhận được gợi ý ngay lập tức từ mô hình Global, giúp họ bắt đầu nhanh chóng. | ⚠️ **Logic phức tạp hơn**: Code phải có logic để lựa chọn giữa hai mô hình (`if attempts < 10`), làm tăng độ phức tạp trong file `predict_hybrid_unified.py`. |
+| ✅ **Khả năng mở rộng (Scalable)**: Chỉ cần duy trì 2 mô hình cho hàng ngàn người dùng, thay vì phải tạo và quản lý một mô hình cho mỗi người. Điều này tiết kiệm rất nhiều tài nguyên và thời gian huấn luyện. | ⚠️ **Ngưỡng chuyển đổi**: Việc chọn mốc "10 attempts" để chuyển từ mô hình Global sang Unified là một ước tính. Có thể có trường hợp người dùng ở ngay ngưỡng này nhận được gợi ý chưa tối ưu. |
+| ✅ **Tính cá nhân hóa cao**: Khi người dùng có đủ dữ liệu, mô hình Unified sẽ cung cấp các gợi ý được "may đo" riêng, mang lại hiệu quả cao hơn nhiều so với một mô hình chung. | ⚠️ **Bảo trì hai mô hình**: Cần phải đảm bảo cả hai script huấn luyện (`train_model.py` và `train_unified_model.py`) đều được bảo trì và chạy định kỳ. |
+
+### 6.2. Ảnh Hưởng Hiệu Năng Khi Tái Huấn Luyện Thường Xuyên
+
+Đây là một yếu tố quan trọng cần xem xét khi hệ thống phát triển.
+
+**1. Quá trình tái huấn luyện có ngày càng chậm hơn không?**
+
+*   **CÓ.** Chắc chắn là có.
+*   **Nguyên nhân:**
+    *   Các script huấn luyện (`train_model.py`, `train_unified_model.py`) sẽ phải truy vấn bảng `UserResults`, bảng này sẽ ngày càng lớn khi có thêm người dùng và dữ liệu làm bài.
+    *   Thời gian để đọc và xử lý lượng dữ liệu lớn hơn này bằng thư viện `pandas` sẽ tăng lên.
+    *   Thời gian để mô hình `fit()` (học) trên một tập dữ liệu lớn hơn cũng sẽ tăng.
+*   **Mức độ ảnh hưởng:** Sự chậm lại này là có thể dự đoán được và thường tăng tuyến tính với lượng dữ liệu, không phải là một vấn đề gây "bùng nổ" hệ thống.
+
+**2. Việc tái huấn luyện có ảnh hưởng đến hiệu năng của người dùng không?**
+
+*   **KHÔNG, không ảnh hưởng trực tiếp.** Đây là điểm mấu chốt trong thiết kế của hệ thống.
+*   **Nguyên nhân:**
+    *   **Chạy nền (Background Process):** Việc tái huấn luyện được thiết kế để chạy như một tiến trình hoàn toàn riêng biệt, được kích hoạt bởi một `cron job` vào những thời điểm hệ thống ít được sử dụng nhất (ví dụ: 2 giờ sáng Chủ Nhật).
+    *   **Không chặn người dùng:** Trong khi quá trình tái huấn luyện đang diễn ra (có thể mất vài phút hoặc vài giờ), server chính (Node.js) vẫn hoạt động bình thường, vẫn tiếp nhận yêu cầu và trả về gợi ý cho người dùng dựa trên các file mô hình `.pkl` **hiện có**.
+    *   **Cập nhật tức thời:** Khi quá trình tái huấn luyện kết thúc, nó sẽ âm thầm ghi đè các file `.pkl` cũ bằng các file mới. Các lần dự đoán **sau đó** sẽ tự động sử dụng các mô hình đã được nâng cấp này. Người dùng không hề cảm nhận được sự gián đoạn nào.
+*   **Ảnh hưởng gián tiếp (cần lưu ý):**
+    *   Quá trình tái huấn luyện sẽ tiêu tốn tài nguyên CPU và RAM. Nếu server ứng dụng và server huấn luyện là một, có thể xảy ra tình trạng cạnh tranh tài nguyên, làm giảm nhẹ hiệu năng tổng thể trong thời gian huấn luyện.
+    *   **Giải pháp:** Trong tương lai, khi hệ thống lớn mạnh, có thể tách việc huấn luyện ra một server riêng để loại bỏ hoàn toàn ảnh hưởng này.
