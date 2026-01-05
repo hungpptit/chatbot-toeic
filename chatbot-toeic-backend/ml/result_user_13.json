@@ -1,0 +1,129 @@
+{
+  "weak_skills": [
+    "Listening"
+  ],
+  "recommendations": {
+    "Listening": [
+      {
+        "id": 944,
+        "question": "Look at the picture. Where is the bicycle parked?"
+      },
+      {
+        "id": 1033,
+        "question": "Where is the bicycle parked?"
+      },
+      {
+        "id": 955,
+        "question": "Look at the picture. Where is the man standing?"
+      },
+      {
+        "id": 958,
+        "question": "Look at the picture. What is near the counter?"
+      },
+      {
+        "id": 986,
+        "question": "Look at the picture. What is near the counter? (Choose the best option.)"
+      },
+      {
+        "id": 1070,
+        "question": "[Question 2] Look at the picture. What is near the counter?"
+      },
+      {
+        "id": 1274,
+        "question": "What will take place at noon?"
+      },
+      {
+        "id": 1383,
+        "question": "According to company policy, what will take place at noon?"
+      },
+      {
+        "id": 1474,
+        "question": "What will take place at noon? (Pick the most suitable choice.)"
+      },
+      {
+        "id": 1266,
+        "question": "What does the woman want to confirm?"
+      },
+      {
+        "id": 1360,
+        "question": "For business purposes, what does the woman want to confirm?"
+      },
+      {
+        "id": 1455,
+        "question": "Item 2: What does the woman want to confirm?"
+      },
+      {
+        "id": 1007,
+        "question": "When will the meeting start?"
+      },
+      {
+        "id": 1547,
+        "question": "What time does the meeting start?"
+      },
+      {
+        "id": 1059,
+        "question": "Where is the meeting being held?"
+      },
+      {
+        "id": 1018,
+        "question": "What is the clerk handing to the customer?"
+      },
+      {
+        "id": 1042,
+        "question": "What is the clerk handing to the customer? (Choose the best option.)"
+      },
+      {
+        "id": 951,
+        "question": "Look at the picture. What is the clerk doing?"
+      },
+      {
+        "id": 1234,
+        "question": "What will the man probably do next?"
+      },
+      {
+        "id": 1351,
+        "question": "What will the man probably do next? (Please select the most appropriate answer.)"
+      },
+      {
+        "id": 1447,
+        "question": "Item 2: What will the man probably do next?"
+      },
+      {
+        "id": 1253,
+        "question": "Where are the speakers most likely talking?"
+      },
+      {
+        "id": 1363,
+        "question": "Where are the speakers most likely talking? (Pick the most suitable choice.)"
+      },
+      {
+        "id": 1460,
+        "question": "Based on the situation, where are the speakers most likely talking?"
+      },
+      {
+        "id": 1484,
+        "question": "Look at the picture."
+      },
+      {
+        "id": 1485,
+        "question": "Based on the situation, look at the picture."
+      },
+      {
+        "id": 1486,
+        "question": "[Question 1] Based on the situation, look at the picture."
+      },
+      {
+        "id": 1257,
+        "question": "What does the woman suggest?"
+      },
+      {
+        "id": 1367,
+        "question": "Item 1: What does the woman suggest?"
+      },
+      {
+        "id": 1458,
+        "question": "For business purposes, what does the woman suggest?"
+      }
+    ]
+  }
+}

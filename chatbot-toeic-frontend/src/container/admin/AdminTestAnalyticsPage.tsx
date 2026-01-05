@@ -30,8 +30,37 @@ const chartOptions = {
       labels: { color: '#ff6699', font: { size: 16 } },
     },
     tooltip: {
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      padding: 12,
+      titleFont: { size: 14, weight: 'bold' as const },
+      bodyFont: { size: 13 },
       callbacks: {
-        label: (context: any) => `${context.parsed.y}%`,
+        title: (context: any) => {
+          const date = new Date(context[0].label);
+          return date.toLocaleDateString('vi-VN', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          });
+        },
+        label: (context: any) => {
+          return `Độ chính xác: ${context.parsed.y.toFixed(2)}%`;
+        },
+        afterLabel: (context: any) => {
+          const accuracy = context.parsed.y;
+          let performance = '';
+          if (accuracy >= 80) {
+            performance = '🎉 Xuất sắc! Tiếp tục phát huy!';
+          } else if (accuracy >= 60) {
+            performance = '👍 Khá tốt! Cố gắng thêm nhé!';
+          } else if (accuracy >= 40) {
+            performance = '📚 Cần cố gắng thêm!';
+          } else {
+            performance = '💪 Đừng bỏ cuộc, cố lên!';
+          }
+          return performance;
+        }
       },
     },
   },
@@ -62,7 +91,7 @@ export default function AdminTestAnalyticsPage() {
     sections: [] as PartStat[],
   });
   const [, setUser] = useState<{ id: string } | null>(null);
-  const [sectionNames, setSectionNames] = useState<string[]>([]);
+  const [sectionNames, setSectionNames] = useState<string[]>(['Tất cả']); // Bắt đầu với tab "Tất cả"
   const [chartPoints, setChartPoints] = useState<AccuracyPoint[]>([]);
   const [testHistory, setTestHistory] = useState<UserTestHistoryItem[]>([]);
 
@@ -80,18 +109,40 @@ export default function AdminTestAnalyticsPage() {
             getPartStatisticsByUserAPI(),
           ]);
 
+          // Lọc chỉ Part 1-7
+          const filteredParts = partStats.filter(p => 
+            p.name.match(/Part [1-7]$/)
+          );
+
+          // Tính tổng hợp cho tab "Tất cả"
+          const allStats: PartStat = {
+            name: 'Tất cả',
+            done: filteredParts.reduce((sum, p) => sum + p.done, 0),
+            avgTime: filteredParts.length > 0 
+              ? Math.round(filteredParts.reduce((sum, p) => sum + p.avgTime, 0) / filteredParts.length)
+              : 0,
+            avgScore: filteredParts.length > 0
+              ? Number((filteredParts.reduce((sum, p) => sum + p.avgScore, 0) / filteredParts.length).toFixed(2))
+              : 0,
+            maxScore: Math.max(...filteredParts.map(p => p.maxScore), 0),
+            maxScoreTotal: 9,
+            accuracy: filteredParts.length > 0
+              ? Number((filteredParts.reduce((sum, p) => sum + p.accuracy, 0) / filteredParts.length).toFixed(2))
+              : 0
+          };
+
           setStats({
             totalTests: general.totalAttempts,
             totalMinutes: Math.floor(general.totalTimeSeconds / 60),
             targetScore: null,
-            sections: partStats.map(p => ({
+            sections: [allStats, ...filteredParts.map(p => ({
               ...p,
               maxScoreTotal: 9 // giả sử mỗi part tối đa 9 điểm
-            })),
+            }))],
           });
 
-          // Đồng bộ section name từ partStats nếu bạn không cần gọi getAllPartsAPI()
-          setSectionNames(partStats.map(p => p.name));
+          // Thêm "Tất cả" vào đầu danh sách tabs
+          setSectionNames(['Tất cả', ...filteredParts.map(p => p.name)]);
         }
       } catch (err) {
         console.error("❌ Lỗi khi lấy user/stats:", err);
@@ -130,8 +181,8 @@ export default function AdminTestAnalyticsPage() {
 
 
 
-  const currentPartName = sectionNames[activeSection];
-  const currentStats = stats.sections.find(p => p.name === currentPartName);
+  const currentPartName = sectionNames[activeSection] || 'Tất cả';
+  const currentStats = stats.sections.find(p => p.name === currentPartName) || stats.sections[0];
 
   const chartData = {
     labels: chartPoints.map(p => p.date),
@@ -207,7 +258,20 @@ export default function AdminTestAnalyticsPage() {
           </div>
           <div className="section-card">
             <div className="section-title">Thời gian trung bình</div>
-            <div className="section-value">{currentStats?.avgTime || 0}</div>
+            <div className="section-value">
+              {(() => {
+                const totalSeconds = currentStats?.avgTime || 0;
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                
+                if (hours > 0) {
+                  return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else {
+                  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+              })()}
+            </div>
           </div>
           <div className="section-card">
             <div className="section-title">Điểm trung bình</div>
@@ -222,7 +286,18 @@ export default function AdminTestAnalyticsPage() {
         {/* Chart card moved to a separate card below all other cards */}
         <div className="chart-card">
           <div className="chart-title">Thống kê kết quả theo thời gian</div>
-          <Line data={chartData} options={chartOptions} height={320} />
+          {chartPoints.length > 0 ? (
+            <Line data={chartData} options={chartOptions} height={320} />
+          ) : (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '60px 20px', 
+              color: '#888',
+              fontSize: '16px'
+            }}>
+              Chưa có dữ liệu để hiển thị biểu đồ. Hãy làm thêm bài test!
+            </div>
+          )}
         </div>
         {/* Test list card below chart */}
         <div className="test-list-card">

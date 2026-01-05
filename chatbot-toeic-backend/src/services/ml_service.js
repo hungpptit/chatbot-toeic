@@ -80,7 +80,7 @@ export const triggerMLUpdate = async (userId) => {
                     confidence: 0.8, // TODO: Calculate from model probabilities
                     totalAttempts: parseInt(stats.totalAttempts) || 0,
                     overallAccuracy: parseFloat(stats.overallAccuracy) || null,
-                    updatedAt: new Date()
+                    updatedAt: db.sequelize.literal('GETDATE()')
                 });
 
                 console.log(`✅ ML prediction updated for user ${userId}`);
