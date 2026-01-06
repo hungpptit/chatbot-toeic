@@ -6,6 +6,12 @@ const API_BASE_URL = 'http://localhost:8080/api/statistical';
 export interface UserTestStats {
   totalAttempts: number;
   totalTimeSeconds: number;
+  avgScore: number;
+  maxScore: number;
+  maxScoreTotal: number;
+  totalAnswered?: number;
+  totalCorrect?: number;
+  accuracy?: number;
 }
 
 export interface PartStat {
@@ -33,9 +39,10 @@ export interface UserTestHistoryItem  {
   duration: string; // h:mm:ss
 };
 
-export const getUserTestStatsAPI = async () :Promise<UserTestStats> => {
+export const getUserTestStatsAPI = async (days?: number) :Promise<UserTestStats> => {
   try {
     const response = await axios.get<UserTestStats>(`${API_BASE_URL}/user-tests`, {
+      params: typeof days === 'number' ? { days } : undefined,
       withCredentials: true, 
     });
    
@@ -47,9 +54,10 @@ export const getUserTestStatsAPI = async () :Promise<UserTestStats> => {
   }
 };
 
-export const getPartStatisticsByUserAPI = async (): Promise<PartStat[]> => {
+export const getPartStatisticsByUserAPI = async (days?: number): Promise<PartStat[]> => {
   try {
     const response = await axios.get<PartStat[]>(`${API_BASE_URL}/parts/statistics`, {
+      params: typeof days === 'number' ? { days } : undefined,
       withCredentials: true,
     });
 
@@ -72,11 +80,14 @@ export const getAccuracyOverTimeAPI = async (days = 30): Promise<AccuracyPoint[]
   return response.data;
 };
 
-export const getUserTestHistoryAPI = async (): Promise<UserTestHistoryItem[]> => {
+export const getUserTestHistoryAPI = async (days?: number): Promise<UserTestHistoryItem[]> => {
   try {
     const response = await axios.get<{ data: UserTestHistoryItem[] }>(
       `${API_BASE_URL}/user-test-history`,
-      { withCredentials: true } 
+      {
+        withCredentials: true,
+        params: typeof days === 'number' ? { days } : undefined,
+      }
     );
     return response.data.data;
   } catch (error) {

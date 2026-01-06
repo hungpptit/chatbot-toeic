@@ -109,6 +109,7 @@ export interface UserTestDetailResult {
   userTestId: number;
   userId: number;
   testId: number;
+  testTitle?: string | null;
   score: number;           // ✅ Score từ UserTest table
   startedAt: string;       // ✅ ISO Date string
   completedAt: string;     // ✅ ISO Date string
@@ -184,11 +185,12 @@ export const submitTestAPI = async (
 
 // ✅ NEW: Submit practice results (no testId needed)
 export const submitPracticeAPI = async (
-  answers: Answer[]
+  answers: Answer[],
+  durationSeconds?: number
 ): Promise<SubmitResult> => {
   const response = await axios.post<SubmitResult>(
     `${API_BASE_URL}/SubmitPractice`,
-    { answers },
+    { answers, durationSeconds },
     { withCredentials: true }
   );
   console.log("Submit practice response:", response);
@@ -198,13 +200,13 @@ export const submitPracticeAPI = async (
 
 export const getUserTestHistoryByTestIdAPI = async (testId: number) => {
   try {
-    const res = await axios.get<{ message: string; data: UserTestHistory[] }>(
+    const res = await axios.get<{ message: string; data: UserTestHistory[]; testTitle?: string | null }>(
       `${API_BASE_URL}/HistoryTest/${testId}`,
       {
         withCredentials: true, // nếu backend dùng cookie hoặc cần token
       }
     );
-    return res.data.data;
+    return { history: res.data.data, testTitle: res.data.testTitle ?? null };
   } catch (error: any) {
     console.error("Error fetching test history:", error);
     throw error.response?.data || { message: "Unknown error" };

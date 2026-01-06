@@ -75,6 +75,11 @@
   color: white;
 }
 
+.question-btn.skipped {
+  background: #efc2f7 !important;
+  color: white;
+}
+
 .question-btn.correct-answer {
   background: #2196f3 !important;
   color: white;

@@ -10,6 +10,8 @@ interface ExamSidebarProps {
   totalQuestions: number;
   score: number;
   startTime: Date | null;
+  durationSeconds?: number;
+  resultStatusByNumber?: Record<number, 'correct' | 'incorrect' | 'skipped'>;
 }
 
 const ExamSidebar: React.FC<ExamSidebarProps> = ({
@@ -21,8 +23,12 @@ const ExamSidebar: React.FC<ExamSidebarProps> = ({
   totalQuestions,
   score,
   startTime,
+  durationSeconds,
+  resultStatusByNumber,
 }) => {
-  const examDuration = 45 * 60; // 45 phút
+  const examDuration = durationSeconds ?? 45 * 60; // default 45 phút
+
+  const maxScoreTotal = 990;
 
   // Nếu totalQuestions = 0 (chưa submit), lấy số câu từ answeredQuestions hoặc mặc định 40
   const numQuestions = totalQuestions > 0 ? totalQuestions : (answeredQuestions.length > 0 ? Math.max(...answeredQuestions) : 40);
@@ -30,6 +36,12 @@ const ExamSidebar: React.FC<ExamSidebarProps> = ({
 
   const [timeLeft, setTimeLeft] = useState(examDuration);
   const [finalTime, setFinalTime] = useState<number | null>(null);
+
+  // Sync state if duration changes (e.g., practice with custom time)
+  useEffect(() => {
+    setTimeLeft(examDuration);
+    setFinalTime(null);
+  }, [examDuration]);
 
   // ✅ Cập nhật ngay khi có startTime (hỗ trợ F5 không mất đồng bộ)
   useEffect(() => {
@@ -82,7 +94,7 @@ const ExamSidebar: React.FC<ExamSidebarProps> = ({
       {showResult && (
         <div className="exam-result">
           <p>Kết quả: {correctCount} / {totalQuestions} câu đúng</p>
-          <p>Điểm: {score} / 10</p>
+          <p>Điểm: {score} / {maxScoreTotal}</p>
         </div>
       )}
 
@@ -97,7 +109,11 @@ const ExamSidebar: React.FC<ExamSidebarProps> = ({
           <button
             key={num}
             className={`question-btn ${
-              answeredQuestions.includes(num) ? "answered" : ""
+              showResult && resultStatusByNumber?.[num]
+                ? resultStatusByNumber[num]
+                : answeredQuestions.includes(num)
+                  ? "answered"
+                  : ""
             }`}
             onClick={() => onJumpToQuestion(num)}
           >

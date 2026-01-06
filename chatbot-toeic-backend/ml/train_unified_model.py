@@ -3,22 +3,29 @@
 TRAIN UNIFIED MODEL (1 MODEL FOR ALL USERS) - VERSION 2.0
 ================================================================================
 
-📌 MỤC ĐÍCH:
+ MỤC ĐÍCH:
    Train UNIFIED MODEL - 1 model duy nhất cho TẤT CẢ users.
    Model này thay thế Personal Model approach (10k models → 1 model).
 
-✅ ƯU ĐIỂM:
+ ƯU ĐIỂM:
    - Scalable: 1 file cho 10k users thay vì 10k files
    - Fast retrain: 2-3 phút thay vì 14 giờ
    - Easy deploy: Copy 1 file thay vì 10k files
    - User mới: Predict ngay, không cần train
    - Personalization: Vẫn giữ 95% nhờ user features
 
-🎯 OUTPUT:
+ OUTPUT:
    - unified_model.pkl: Unified Naive Bayes model
    - unified_model_info.pkl: Metadata (features, accuracy, training time)
 
-📊 INPUT FEATURES (9 features):
+ ALGORITHM:
+   - Gaussian Naive Bayes: Được chọn vì tốc độ train/predict cực nhanh,
+     hiệu quả với dữ liệu số (numerical features), và yêu cầu ít
+     dữ liệu training so với các model phức tạp hơn. Phù hợp cho
+     bài toán phân loại điểm yếu (weak/strong) với các features
+     đã được tính toán sẵn.
+
+ INPUT FEATURES (9 features):
    USER CONTEXT (6 features):
    - userId_hash: Mã hóa user ID (0-9999)
    - user_level: Trình độ (0=Beginner, 1=Intermediate, 2=Advanced)
@@ -32,21 +39,21 @@ TRAIN UNIFIED MODEL (1 MODEL FOR ALL USERS) - VERSION 2.0
    - correct: Số câu đúng skill này
    - skill_accuracy: Accuracy skill này
 
-📈 TARGET:
+ TARGET:
    - isWeak: 1 nếu accuracy < 60%, 0 nếu accuracy >= 60%
 
-🔄 KHI NÀO RETRAIN:
+ KHI NÀO RETRAIN:
    - Mỗi tuần/tháng khi có thêm users mới
    - Khi có thêm nhiều data mới (>1000 attempts)
    - Setup scheduled task
 
-📝 SỬ DỤNG:
+ SỬ DỤNG:
    python train_unified_model.py
    # Hoặc: python train_unified_model.py --compare (so sánh với personal model)
 
-📅 Created: 2025-10-08
-👤 Author: AI Assistant
-🔗 Related files:
+ Created: 2025-10-08
+
+Related files:
    - predict_unified.py (standalone test)
    - predict_hybrid_unified.py (tích hợp vào hybrid strategy)
    - train_personal_model.py (version cũ - deprecated)

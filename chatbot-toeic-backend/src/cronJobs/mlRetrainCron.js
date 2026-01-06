@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 // ⚠️ TEST MODE: Auto-retrain ML models every 3 minutes (for testing)
 // Production: "0 */6 * * *" = At minute 0 past every 6th hour
 // Test mode: "*/3 * * * *" = Every 3 minutes
-cron.schedule("*/3 * * * *", async () => {
+cron.schedule("0 */6 * * *", async () => {
   console.log("⏰ Cron Job: ML Model Retraining started at:", new Date().toLocaleString('vi-VN'));
   
   try {

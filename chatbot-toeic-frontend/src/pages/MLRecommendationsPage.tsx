@@ -9,6 +9,9 @@ export default function MLRecommendationsPage() {
   const [loading, setLoading] = useState(true);
   const [weakSkills, setWeakSkills] = useState<string[]>([]);
   const [questions, setQuestions] = useState<any[]>([]);
+  const [showPracticeOptions, setShowPracticeOptions] = useState(false);
+  const [selectedQuestionCount, setSelectedQuestionCount] = useState<number>(0);
+  const [selectedMinutes, setSelectedMinutes] = useState<number>(45);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,6 +44,10 @@ export default function MLRecommendationsPage() {
         console.log('📊 Parsed questions:', qs.length);
         setWeakSkills(skills);
         setQuestions(qs);
+
+        // Initialize defaults for practice options
+        setSelectedQuestionCount(qs.length);
+        setSelectedMinutes(Math.max(1, Math.ceil((qs.length * 45) / 60)));
       } else {
         console.warn('⚠️ Unexpected response structure:', response);
       }
@@ -56,11 +63,24 @@ export default function MLRecommendationsPage() {
       alert('Không có câu hỏi để luyện tập');
       return;
     }
-    // Navigate to TestExam practice route with questions in state
+    setShowPracticeOptions((prev) => !prev);
+  };
+
+  const handleConfirmStartPractice = () => {
+    if (questions.length === 0) {
+      alert('Không có câu hỏi để luyện tập');
+      return;
+    }
+
+    const count = Math.min(Math.max(1, selectedQuestionCount || questions.length), questions.length);
+    const minutes = Math.max(1, Number.isFinite(selectedMinutes) ? selectedMinutes : 45);
+    const durationSeconds = Math.max(60, Math.floor(minutes * 60));
+
     navigate('/test-practice', {
       state: {
         title: 'Luyện tập kỹ năng yếu',
-        questions: questions
+        questions: questions.slice(0, count),
+        durationSeconds
       }
     });
   };
@@ -106,6 +126,44 @@ export default function MLRecommendationsPage() {
             >
               🚀 Bắt đầu luyện tập
             </button>
+
+            {showPracticeOptions && (
+              <div className="ml-practice-options">
+                <div className="ml-practice-options-row">
+                  <label className="ml-practice-field">
+                    <span className="ml-practice-label">Số câu muốn làm</span>
+                    <input
+                      className="ml-practice-input"
+                      type="number"
+                      min={1}
+                      max={questions.length}
+                      value={selectedQuestionCount}
+                      onChange={(e) => setSelectedQuestionCount(Number(e.target.value))}
+                    />
+                    <span className="ml-practice-hint">Tối đa: {questions.length} câu</span>
+                  </label>
+
+                  <label className="ml-practice-field">
+                    <span className="ml-practice-label">Thời gian (phút)</span>
+                    <input
+                      className="ml-practice-input"
+                      type="number"
+                      min={1}
+                      value={selectedMinutes}
+                      onChange={(e) => setSelectedMinutes(Number(e.target.value))}
+                    />
+                    <span className="ml-practice-hint">Tối thiểu: 1 phút</span>
+                  </label>
+
+                  <button
+                    onClick={handleConfirmStartPractice}
+                    className="ml-start-practice-btn ml-practice-confirm-btn"
+                  >
+                    ✅ Bắt đầu
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="ml-questions-list-section">

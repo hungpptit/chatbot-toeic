@@ -113,7 +113,7 @@ const submitTest = async (req, res) => {
 const submitPractice = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { answers } = req.body;
+    const { answers, durationSeconds } = req.body;
 
     console.log('📥 submitPractice received:', {
       userId,
@@ -126,7 +126,7 @@ const submitPractice = async (req, res) => {
       return res.status(400).json({ message: 'Missing or invalid parameters' });
     }
 
-    const result = await SubmitPracticeResult({ userId, answers });
+    const result = await SubmitPracticeResult({ userId, answers, durationSeconds });
 
     console.log('✅ Practice submitted successfully:', result);
 

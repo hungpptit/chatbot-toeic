@@ -67,7 +67,7 @@ export default function ChatPage() {
           if (item.viExplanation)
             reply += `• Giải thích TV: ${item.viExplanation}`;
         } else if (item.type === "Free") {
-          reply += `💬 Trả lời: ${item.answer}`;
+          reply += ` ${item.answer}`;
         } else {
           reply += `❓ ${item.question}\n`;
           for (const [key, val] of Object.entries(item.options || {})) {

@@ -98,6 +98,62 @@
   transform: translateY(0);
 }
 
+/* Practice options (choose question count + time) */
+.ml-practice-options {
+  margin-top: 16px;
+  background: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.ml-practice-options-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.ml-practice-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.ml-practice-label {
+  color: #34495e;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.ml-practice-input {
+  width: 180px;
+  max-width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  outline: none;
+  font-size: 14px;
+  background: #fff;
+}
+
+.ml-practice-input:focus {
+  border-color: #27ae60;
+  box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.15);
+}
+
+.ml-practice-hint {
+  color: #7f8c8d;
+  font-size: 12px;
+}
+
+.ml-practice-confirm-btn {
+  padding: 12px 26px;
+  border-radius: 10px;
+  margin-top: 22px;
+}
+
 /* Questions List */
 .ml-questions-list-section {
   border-top: 1px solid #ddd;

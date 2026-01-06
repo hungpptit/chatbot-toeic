@@ -3,32 +3,36 @@
 TRAIN GLOBAL MODEL (WEAK SKILL DETECTION)
 ================================================================================
 
-📌 MỤC ĐÍCH:
+ MỤC ĐÍCH:
    Train GLOBAL MODEL để detect weak skills từ TẤT CẢ users trong database.
    Model này dùng cho users có ÍT DATA (<10 attempts per skill).
 
-🎯 OUTPUT:
+ OUTPUT:
    - weak_skill_model.pkl: Global Naive Bayes model
 
-📊 INPUT FEATURES (3 features):
+ ALGORITHM:
+   - Gaussian Naive Bayes: Được chọn vì tốc độ, sự đơn giản và hiệu quả
+     trên các feature số. Rất phù hợp cho model baseline toàn cục.
+
+ INPUT FEATURES (3 features):
    - attempts: Số lần thử skill
    - correct: Số câu đúng
    - accuracy: Tỷ lệ đúng (correct/attempts)
 
-📈 TARGET:
+ TARGET:
    - isWeak: 1 nếu accuracy < 60%, 0 nếu accuracy >= 60%
 
-🔄 KHI NÀO RETRAIN:
+ KHI NÀO RETRAIN:
    - Định kỳ (mỗi tuần/tháng) khi có thêm users mới
    - Setup cron job hoặc scheduled task
    - Hoặc manual khi thấy accuracy giảm
 
-📝 SỬ DỤNG:
+ SỬ DỤNG:
    python train_model.py
 
-📅 Created: Original
-👤 Author: Backend Team
-🔗 Related files:
+ Created: Original
+ Author: Backend Team
+ Related files:
    - predict_hybrid.py (sử dụng model này cho attempts < 10)
    - predict_hybrid_unified.py (sử dụng model này cho attempts < 10)
 ================================================================================
@@ -107,7 +111,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 model = GaussianNB()
 model.fit(X_train, y_train)
 
-print("\n📊 Đánh giá model:")
+print("\nĐánh giá model:")
 print(classification_report(y_test, model.predict(X_test)))
 
 # Lưu model (dùng absolute path để tránh lỗi khi chạy từ cron)
@@ -116,4 +120,4 @@ os.makedirs(model_dir, exist_ok=True)  # Tạo thư mục nếu chưa có
 
 model_path = os.path.join(model_dir, 'weak_skill_model.pkl')
 joblib.dump(model, model_path)
-print(f"\n💾 Model saved at {model_path}")
+print(f"\n Model saved at {model_path}")

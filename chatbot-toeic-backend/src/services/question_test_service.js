@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
 import { triggerMLUpdate, needsMLUpdate } from './ml_service.js';
+import { toToeicScore } from '../utils/toeicScoring.js';
 
 
 export const RandomQuestionsByTestId = async (testId, limit = null) => {
@@ -354,17 +355,17 @@ export const SubmitTestResult = async ({ userId, testId, answers }) => {
       await db.UserResult.bulkCreate(resultsToSave, { transaction });
     }
 
-    // 5. Tính score thang điểm 10
+    // 5. Tính score TOEIC (0-990)
     // ✅ Dùng tổng số câu hỏi trong test, không phải số câu được trả lời
     const totalQuestions = validQuestionIds.length || 1;
-    const score = Math.round((correctCount / totalQuestions) * 10 * 10) / 10;
+    const score = toToeicScore(correctCount, totalQuestions);
 
-    console.log("📊 Score Calculation:", { 
-      correctCount, 
+    console.log("📊 TOEIC Score Calculation:", {
+      correctCount,
       totalQuestionsInTest: totalQuestions,
       answeredQuestions: filteredAnswers.length,
       unansweredQuestions: totalQuestions - filteredAnswers.length,
-      score 
+      score
     });
 
     // 6. Update UserTest: chỉ cập nhật completedAt + score + status
@@ -414,7 +415,7 @@ export const SubmitTestResult = async ({ userId, testId, answers }) => {
 };
 
 // ✅ NEW: Submit practice results (không cần testId, nhưng vẫn track trong UserTest)
-export const SubmitPracticeResult = async ({ userId, answers }) => {
+export const SubmitPracticeResult = async ({ userId, answers, durationSeconds }) => {
   return await db.sequelize.transaction(async (transaction) => {
     let correctCount = 0;
     const incorrectAnswers = [];
@@ -425,11 +426,21 @@ export const SubmitPracticeResult = async ({ userId, answers }) => {
     });
 
     // 1️⃣ Tạo UserTest để track lịch sử luyện tập (testId = null cho practice mode)
+    // For practice, the old logic created UserTest at submit time, causing duration ~0.
+    // If client provides durationSeconds, backdate startedAt accordingly.
+    const rawDuration = Number(durationSeconds);
+    const safeDurationSeconds = Number.isFinite(rawDuration)
+      ? Math.min(Math.max(Math.floor(rawDuration), 1), 6 * 60 * 60)
+      : null;
+    const startedAt = safeDurationSeconds
+      ? new Date(Date.now() - safeDurationSeconds * 1000)
+      : new Date();
+
     const userTest = await db.UserTest.create({
       userId,
       testId: null, // ✅ NULL indicates practice mode
       status: 'in_progress',
-      startedAt: new Date(),
+      startedAt,
       score: 0
     }, { transaction });
 
@@ -494,9 +505,9 @@ export const SubmitPracticeResult = async ({ userId, answers }) => {
       console.log(`✅ Saved ${resultsToSave.length} UserResults for practice`);
     }
 
-    // 5️⃣ Tính score và update UserTest
+    // 5️⃣ Tính score TOEIC (0-990) và update UserTest
     const totalQuestions = answers.length || 1;
-    const score = Math.round((correctCount / totalQuestions) * 10 * 10) / 10;
+    const score = toToeicScore(correctCount, totalQuestions);
 
     await userTest.update({
       score,
@@ -504,7 +515,7 @@ export const SubmitPracticeResult = async ({ userId, answers }) => {
       status: 'completed'
     }, { transaction });
 
-    console.log("📊 Practice Score:", { 
+    console.log("📊 Practice TOEIC Score:", {
       userTestId: userTest.id,
       correctCount, 
       totalQuestions,
@@ -600,6 +611,14 @@ export const GetUserTestDetailById = async (userTestId) => {
       return { message: 'UserTest not found', details: [] };
     }
 
+    const testTitle = userTest.testId
+      ? (await db.Test.findOne({
+          where: { id: Number(userTest.testId) },
+          attributes: ['title'],
+          raw: true,
+        }))?.title
+      : null;
+
     // Lấy tất cả kết quả user theo userTestId
     const userResults = await db.UserResult.findAll({
       where: { userTestId },
@@ -677,6 +696,7 @@ export const GetUserTestDetailById = async (userTestId) => {
       userTestId: userTest.id,
       userId: userTest.userId,
       testId: userTest.testId,
+      testTitle,
       score: userTest.score, // ✅ Score từ UserTest table
       startedAt: userTest.startedAt,
       completedAt: userTest.completedAt,
@@ -704,8 +724,23 @@ dayjs.extend(timezone);
 const VN_TIMEZONE = 'Asia/Ho_Chi_Minh';
 export const GetUserTestHistoryByTestId = async ({ userId, testId }) => {
   try {
+    const numericTestId = Number(testId);
+    const testRow = Number.isFinite(numericTestId)
+      ? await db.Test.findOne({
+          where: { id: numericTestId },
+          attributes: ['title'],
+          raw: true,
+        })
+      : null;
+
     const userTests = await db.UserTest.findAll({
-      where: { userId, testId },
+      where: {
+        userId,
+        testId: numericTestId,
+        status: 'completed',
+        startedAt: { [db.Sequelize.Op.ne]: null },
+        completedAt: { [db.Sequelize.Op.ne]: null },
+      },
       attributes: ['id', 'startedAt', 'completedAt'],
       order: [['startedAt', 'DESC']]
     });
@@ -734,9 +769,7 @@ export const GetUserTestHistoryByTestId = async ({ userId, testId }) => {
     const data = [];
     for (const test of userTests) {
       const started = dayjs(test.startedAt).tz(VN_TIMEZONE);
-      const completed = test.completedAt
-        ? dayjs(test.completedAt).tz(VN_TIMEZONE)
-        : started; // Nếu chưa có completedAt thì để bằng started để tránh sai lệch
+      const completed = dayjs(test.completedAt).tz(VN_TIMEZONE);
 
       const durationInSec = completed.diff(started, 'second');
       const formattedDuration = new Date(durationInSec * 1000)
@@ -745,6 +778,9 @@ export const GetUserTestHistoryByTestId = async ({ userId, testId }) => {
 
       const totalQuestions = resultMap[test.id]?.total || 0;
       const correctCount = resultMap[test.id]?.correct || 0;
+
+      // If this attempt has no recorded answers, treat it as no history.
+      if (totalQuestions <= 0) continue;
 
       data.push({
         date: started.format('DD/MM/YYYY'),
@@ -756,6 +792,7 @@ export const GetUserTestHistoryByTestId = async ({ userId, testId }) => {
 
     return {
       message: 'Success',
+      testTitle: testRow?.title || null,
       data
     };
   } catch (error) {

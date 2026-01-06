@@ -95,6 +95,10 @@ export default function AdminTestAnalyticsPage() {
   const [chartPoints, setChartPoints] = useState<AccuracyPoint[]>([]);
   const [testHistory, setTestHistory] = useState<UserTestHistoryItem[]>([]);
 
+  const DAY_OPTIONS = [1, 7, 30, 90];
+  const DEFAULT_DAYS = 7;
+  const [daysInput, setDaysInput] = useState<number>(DEFAULT_DAYS);
+  const [appliedDays, setAppliedDays] = useState<number>(DEFAULT_DAYS);
 
 
   useEffect(() => {
@@ -104,9 +108,11 @@ export default function AdminTestAnalyticsPage() {
         setUser(currentUser);
 
         if (currentUser?.id) {
-          const [general, partStats] = await Promise.all([
-            getUserTestStatsAPI(), // không cần truyền userId nếu backend lấy từ token
-            getPartStatisticsByUserAPI(),
+          const [general, partStats, chartDataPoints, history] = await Promise.all([
+            getUserTestStatsAPI(appliedDays), // không cần truyền userId nếu backend lấy từ token
+            getPartStatisticsByUserAPI(appliedDays),
+            getAccuracyOverTimeAPI(appliedDays),
+            getUserTestHistoryAPI(appliedDays),
           ]);
 
           // Lọc chỉ Part 1-7
@@ -121,14 +127,15 @@ export default function AdminTestAnalyticsPage() {
             avgTime: filteredParts.length > 0 
               ? Math.round(filteredParts.reduce((sum, p) => sum + p.avgTime, 0) / filteredParts.length)
               : 0,
-            avgScore: filteredParts.length > 0
-              ? Number((filteredParts.reduce((sum, p) => sum + p.avgScore, 0) / filteredParts.length).toFixed(2))
-              : 0,
-            maxScore: Math.max(...filteredParts.map(p => p.maxScore), 0),
-            maxScoreTotal: 9,
-            accuracy: filteredParts.length > 0
-              ? Number((filteredParts.reduce((sum, p) => sum + p.accuracy, 0) / filteredParts.length).toFixed(2))
-              : 0
+            // ✅ Use overall test stats from backend (TOEIC 0-990)
+            avgScore: general.avgScore || 0,
+            maxScore: general.maxScore || 0,
+            maxScoreTotal: general.maxScoreTotal || 990,
+            accuracy: typeof general.accuracy === 'number'
+              ? general.accuracy
+              : (filteredParts.length > 0
+                ? Number((filteredParts.reduce((sum, p) => sum + p.accuracy, 0) / filteredParts.length).toFixed(2))
+                : 0)
           };
 
           setStats({
@@ -137,12 +144,15 @@ export default function AdminTestAnalyticsPage() {
             targetScore: null,
             sections: [allStats, ...filteredParts.map(p => ({
               ...p,
-              maxScoreTotal: 9 // giả sử mỗi part tối đa 9 điểm
+              maxScoreTotal: p.maxScoreTotal || 990 // fallback
             }))],
           });
 
           // Thêm "Tất cả" vào đầu danh sách tabs
           setSectionNames(['Tất cả', ...filteredParts.map(p => p.name)]);
+
+          setChartPoints(chartDataPoints);
+          setTestHistory(history);
         }
       } catch (err) {
         console.error("❌ Lỗi khi lấy user/stats:", err);
@@ -150,33 +160,7 @@ export default function AdminTestAnalyticsPage() {
     };
 
     fetchUserAndStats();
-  }, []);
-
-  useEffect(() => {
-    const fetchChartData = async () => {
-      try {
-        const data = await getAccuracyOverTimeAPI(30);
-        setChartPoints(data);
-      } catch (error) {
-        console.error('❌ Lỗi lấy dữ liệu biểu đồ:', error);
-      }
-    };
-
-    fetchChartData();
-  }, []);
-
-  useEffect(() => {
-    const fetchTestHistory = async () => {
-      try {
-        const data = await getUserTestHistoryAPI();
-        setTestHistory(data);
-      } catch (error) {
-        console.error('❌ Lỗi khi lấy lịch sử đề thi:', error);
-      }
-    };
-
-    fetchTestHistory();
-  }, []);
+  }, [appliedDays]);
 
 
 
@@ -188,7 +172,7 @@ export default function AdminTestAnalyticsPage() {
     labels: chartPoints.map(p => p.date),
     datasets: [
       {
-        label: '%Correct (30D)',
+        label: `%Correct (${appliedDays}D)`,
         data: chartPoints.map(p => p.accuracy),
         fill: false,
         borderColor: '#ff6699',
@@ -208,13 +192,28 @@ export default function AdminTestAnalyticsPage() {
       <div className="user-analytics-page">
         <div className="filter-row">
           <label>Lọc kết quả theo ngày (tính từ bài thi cuối):</label>
-          <select className="filter-select">
-            <option>30 ngày</option>
-            <option>7 ngày</option>
-            <option>90 ngày</option>
+          <select
+            className="filter-select"
+            value={daysInput}
+            onChange={(e) => setDaysInput(Number(e.target.value) || DEFAULT_DAYS)}
+          >
+            {DAY_OPTIONS
+              .slice()
+              .sort((a, b) => a - b)
+              .map(d => (
+                <option key={d} value={d}>{d} ngày</option>
+              ))}
           </select>
-          <button className="btn-search">Search</button>
-          <button className="btn-clear">Clear</button>
+          <button className="btn-search" onClick={() => setAppliedDays(daysInput)}>Search</button>
+          <button
+            className="btn-clear"
+            onClick={() => {
+              setDaysInput(DEFAULT_DAYS);
+              setAppliedDays(DEFAULT_DAYS);
+            }}
+          >
+            Clear
+          </button>
         </div>
         <div className="summary-row">
           <div className="summary-card">
@@ -275,11 +274,11 @@ export default function AdminTestAnalyticsPage() {
           </div>
           <div className="section-card">
             <div className="section-title">Điểm trung bình</div>
-            <div className="section-value">{currentStats?.avgScore || 0}/9.0</div>
+            <div className="section-value">{currentStats?.avgScore || 0}/990</div>
           </div>
           <div className="section-card">
             <div className="section-title">Điểm cao nhất</div>
-            <div className="section-value">{currentStats?.maxScore || 0}/{currentStats?.maxScoreTotal || 9}</div>
+            <div className="section-value">{currentStats?.maxScore || 0}/990</div>
           </div>
         </div>
 

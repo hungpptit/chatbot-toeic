@@ -3,16 +3,16 @@
 PREDICT HYBRID WITH UNIFIED MODEL (VERSION 2.0)
 ================================================================================
 
-📌 MỤC ĐÍCH:
+ MỤC ĐÍCH:
    Dự đoán kỹ năng yếu của user và gợi ý câu hỏi bằng HYBRID STRATEGY mới:
    - Dùng GLOBAL MODEL khi user có ít data (<10 attempts)
    - Dùng UNIFIED MODEL khi user có đủ data (≥10 attempts)
 
-🔄 KHÁC BIỆT VỚI predict_hybrid.py (cũ):
+ KHÁC BIỆT VỚI predict_hybrid.py (cũ):
    - predict_hybrid.py (cũ): Global + Personal (10k models cho 10k users)
    - predict_hybrid_unified.py (mới): Global + Unified (chỉ 1 model cho tất cả users)
 
-⚙️ HYBRID STRATEGY:
+ HYBRID STRATEGY:
    IF attempts < 10:
       → Dùng GLOBAL MODEL (weak_skill_model.pkl)
       → Input: [attempts, correct, accuracy] (3 features)
@@ -21,18 +21,25 @@ PREDICT HYBRID WITH UNIFIED MODEL (VERSION 2.0)
       → Input: [userId_hash, user_level, total_tests, total_questions, 
                 overall_accuracy, days_active, attempts, correct, skill_accuracy] (9 features)
 
-✅ ƯU ĐIỂM:
+ ƯU ĐIỂM:
    - Scalable: 1 model cho 10k users thay vì 10k models
    - Fast retrain: 2-3 phút thay vì 14 giờ
    - User mới: Predict ngay, không cần train
    - Vẫn giữ 95% personalization
 
-📝 SỬ DỤNG:
+ RECOMMENDATION ALGORITHM (kNN):
+   - Sau khi xác định skill yếu bằng Naive Bayes, hệ thống sử dụng
+     thuật toán k-Nearest Neighbors (kNN) để gợi ý câu hỏi.
+   - Logic: Script `findSimilar.js` tìm `k` câu hỏi có vector embedding
+     gần nhất với câu hỏi "mẫu" (anchor question) trong không gian vector.
+   - Đây là một dạng Item-based Recommendation, giúp tìm các câu hỏi "tương tự"
+     về mặt ngữ nghĩa để user luyện tập thêm.
+ SỬ DỤNG:
    python predict_hybrid_unified.py
 
-📅 Created: 2025-10-08
-👤 Author: AI Assistant
-🔗 Related files: 
+ Created: 2025-10-08
+
+ Related files: 
    - train_unified_model.py (train unified model)
    - predict_unified.py (standalone test)
    - predict_hybrid.py (version cũ với personal model)
@@ -199,7 +206,7 @@ def predict_hybrid_unified(userId: int):
 
     results = {}
     print("\n" + "="*80)
-    print(f"📊 DỰ ĐOÁN KỸ NĂNG CHO USER {userId} (HYBRID UNIFIED STRATEGY)")
+    print(f" DỰ ĐOÁN KỸ NĂNG CHO USER {userId} (HYBRID UNIFIED STRATEGY)")
     print("="*80)
     
     # Predict cho từng skill
@@ -223,12 +230,12 @@ def predict_hybrid_unified(userId: int):
             y_pred = global_model.predict(X_global)[0]
             y_proba = global_model.predict_proba(X_global)[0]
             
-            print(f"   🤖 Model: GLOBAL (do attempts < 10)")
-            print(f"   📊 Xác suất dự đoán:")
+            print(f"    Model: GLOBAL (do attempts < 10)")
+            print(f"     Xác suất dự đoán:")
             print(f"      - P(Strong) = {y_proba[0]:.2%}")
             print(f"      - P(Weak) = {y_proba[1]:.2%}")
-            print(f"   ✅ Kết luận: {'WEAK' if y_pred == 1 else 'STRONG'}")
-            print(f"   💡 Lý do: Ít data, dùng pattern chung từ tất cả users")
+            print(f"    Kết luận: {'WEAK' if y_pred == 1 else 'STRONG'}")
+            print(f"     Lý do: Ít data, dùng pattern chung từ tất cả users")
             
             results[skillName] = "Weak (global)" if y_pred == 1 else "Strong (global)"
         
@@ -238,22 +245,22 @@ def predict_hybrid_unified(userId: int):
             y_pred = unified_model.predict(X_unified)[0]
             y_proba = unified_model.predict_proba(X_unified)[0]
             
-            print(f"   🤖 Model: UNIFIED (do attempts >= 10)")
-            print(f"   📊 User context:")
+            print(f"    Model: UNIFIED (do attempts >= 10)")
+            print(f"    User context:")
             print(f"      - User Level: {['Beginner', 'Intermediate', 'Advanced'][int(X_unified['user_level'].iloc[0])]}")
             print(f"      - Total Tests: {int(X_unified['total_tests'].iloc[0])}")
             print(f"      - Overall Accuracy: {X_unified['overall_accuracy'].iloc[0]:.2%}")
             print(f"      - Days Active: {int(X_unified['days_active'].iloc[0])}")
             
-            print(f"   📊 Xác suất dự đoán:")
+            print(f"    Xác suất dự đoán:")
             if y_proba.shape[0] >= 2:
                 print(f"      - P(Strong) = {y_proba[0]:.2%}")
                 print(f"      - P(Weak) = {y_proba[1]:.2%}")
             else:
                 print(f"      - Model chỉ thấy 1 class = 100%")
             
-            print(f"   ✅ Kết luận: {'WEAK' if y_pred == 1 else 'STRONG'}")
-            print(f"   💡 Lý do: Model học từ context của user này + pattern chung")
+            print(f"    Kết luận: {'WEAK' if y_pred == 1 else 'STRONG'}")
+            print(f"    Lý do: Model học từ context của user này + pattern chung")
             
             results[skillName] = "Weak (unified)" if y_pred == 1 else "Strong (unified)"
     

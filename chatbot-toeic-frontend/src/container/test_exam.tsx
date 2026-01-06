@@ -32,9 +32,37 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set());
   const [showStartPopup, setShowStartPopup] = useState(mode === "exam"); // ✅ Only show popup for exam mode
   const [startTime, setStartTime] = useState<Date | null>(null);
+  const [durationSeconds, setDurationSeconds] = useState<number | null>(null);
   const [score, setScore] = useState<number>(0);
   const [totalQuestions, setTotalQuestions] = useState<number>(0);
   const [globalAudio, setGlobalAudio] = useState<string | null>(null);
+
+  // Derived counts for result UI
+  // Backend convention: skipped = selectedOption NULL  → selectedAnswer empty string in incorrectAnswers
+  const skippedIdSet = new Set(
+    incorrectAnswers
+      .filter((a) => !a.selectedAnswer || a.selectedAnswer.trim() === '')
+      .map((a) => a.questionId)
+  );
+  const incorrectIdSet = new Set(
+    incorrectAnswers
+      .filter((a) => a.selectedAnswer && a.selectedAnswer.trim() !== '')
+      .map((a) => a.questionId)
+  );
+  const skippedCount = skippedIdSet.size;
+  const incorrectCount = incorrectIdSet.size;
+
+  const resultStatusByNumber: Record<number, 'correct' | 'incorrect' | 'skipped'> = {};
+  questionData.forEach((q, idx) => {
+    const num = idx + 1;
+    if (skippedIdSet.has(q.id)) {
+      resultStatusByNumber[num] = 'skipped';
+    } else if (incorrectIdSet.has(q.id)) {
+      resultStatusByNumber[num] = 'incorrect';
+    } else {
+      resultStatusByNumber[num] = 'correct';
+    }
+  });
   
   // ✅ Parts state and filtering
   const [parts, setParts] = useState<Part[]>([]);
@@ -48,7 +76,9 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
   const userTestIdNum = Number(userTestId);
   const navigate = useNavigate();
   const location = useLocation();
-  const testTitle = location.state?.title || "New Economy TOEIC Test";
+  const [testTitle, setTestTitle] = useState<string>(
+    location.state?.title || "New Economy TOEIC Test"
+  );
 
   // Fetch data
   useEffect(() => {
@@ -64,6 +94,10 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
         if (mode === "review" && userTestId) {
           const data = await getUserTestDetailByIdAPI(userTestIdNum);
           console.log('📥 Review mode received data:', data);
+
+          if (!location.state?.title && data.testTitle) {
+            setTestTitle(data.testTitle);
+          }
 
           // format questionData từ backend với media support
           const formattedQuestions = data.details.map(detail => ({
@@ -170,6 +204,7 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
         } else if (mode === "practice") {
           // ✅ Practice mode: questions passed via location.state
           const practiceQuestions = location.state?.questions || [];
+          const practiceDurationSeconds = location.state?.durationSeconds;
           console.log('📥 Practice mode received questions:', practiceQuestions);
           
           if (practiceQuestions.length > 0) {
@@ -188,6 +223,11 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
             
             setQuestionData(practiceQuestions);
             setTotalQuestions(practiceQuestions.length);
+            if (typeof practiceDurationSeconds === 'number' && Number.isFinite(practiceDurationSeconds)) {
+              setDurationSeconds(Math.max(60, Math.floor(practiceDurationSeconds)));
+            } else {
+              setDurationSeconds(null);
+            }
             setStartTime(new Date()); // ✅ Start timer immediately for practice
           } else {
             console.warn('⚠️ No questions provided for practice mode');
@@ -342,7 +382,10 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
       if (mode === "practice") {
         // ✅ Practice mode: gọi submitPracticeAPI (không cần testId)
         console.log("📝 Submitting practice results...");
-        result = await submitPracticeAPI(answersArray);
+        const durationSecondsSpent = startTime
+          ? Math.max(1, Math.floor((Date.now() - new Date(startTime).getTime()) / 1000))
+          : undefined;
+        result = await submitPracticeAPI(answersArray, durationSecondsSpent);
       } else {
         // ✅ Exam mode: gọi submitTestAPI (cần testId)
         if (!id) {
@@ -452,11 +495,11 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
                           </div>
                           <div className="status incorrect">
                             <span>✘ Trả lời sai</span>
-                            <p>{incorrectAnswers.length} câu hỏi</p>
+                            <p>{incorrectCount} câu hỏi</p>
                           </div>
                           <div className="status skipped">
                             <span>➖ Bỏ qua</span>
-                            <p>{questionData.length - correctCount - incorrectAnswers.length} câu hỏi</p>
+                            <p>{skippedCount} câu hỏi</p>
                           </div>
                         </div>
                       </div>
@@ -559,6 +602,8 @@ export default function TestExam({ mode = "exam" }: TestExamProps) {
                   totalQuestions={totalQuestions > 0 ? totalQuestions : questionData.length}
                   score={score}
                   startTime={startTime}
+                  durationSeconds={mode === 'practice' ? (durationSeconds ?? undefined) : undefined}
+                  resultStatusByNumber={showResult ? resultStatusByNumber : undefined}
                 />
               </div>
             </div>

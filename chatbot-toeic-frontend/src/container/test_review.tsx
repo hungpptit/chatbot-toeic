@@ -14,7 +14,7 @@ export default function TestReview() {
   const { testId } = useParams(); // ✅ lấy testId từ URL
   console.log("🔍 testId:", testId);
   const location = useLocation();
-  const testTitle = location.state?.title || "New Economy TOEIC Test";
+  const [testTitle, setTestTitle] = useState<string>(location.state?.title || "New Economy TOEIC Test");
 
   const [history, setHistory] = useState<UserTestHistory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,9 +23,13 @@ export default function TestReview() {
     const fetchHistory = async () => {
       if (!testId) return;
       try {
-        const data = await getUserTestHistoryByTestIdAPI(Number(testId));
-        console.log("✅ History fetched:", data); // ✅ Debug
-        setHistory(data);
+        const res = await getUserTestHistoryByTestIdAPI(Number(testId));
+        console.log("✅ History fetched:", res); // ✅ Debug
+        setHistory(res.history);
+
+        if (!location.state?.title && res.testTitle) {
+          setTestTitle(res.testTitle);
+        }
       } catch (error) {
         console.error("❌ Lỗi lấy lịch sử:", error);
       } finally {
@@ -34,7 +38,7 @@ export default function TestReview() {
     };
 
     fetchHistory();
-  }, [testId]);
+  }, [testId, location.state?.title]);
 
   return (
     <div className="review-page">

@@ -6,12 +6,13 @@ import {getUserTestStats,
 
 const getUserTestStatsController = async (req, res) => {
   const userId = req.user?.id; 
+  const days = req.query.days != null ? parseInt(req.query.days) : undefined;
 
     if (isNaN(userId)) {
     return res.status(400).json({ message: "userId không hợp lệ." });
   }
   try {
-    const stats = await getUserTestStats(userId);
+    const stats = await getUserTestStats(userId, days);
     res.status(200).json(stats);
   } catch (error) {
     console.error('Error fetching user test stats:', error);
@@ -21,13 +22,14 @@ const getUserTestStatsController = async (req, res) => {
 
 const getPartStatisticsByUserController = async (req, res) => {
   const userId = req.user?.id;
+  const days = req.query.days != null ? parseInt(req.query.days) : undefined;
 
   if (isNaN(userId)) {
     return res.status(400).json({ message: "userId không hợp lệ." });
   }
 
   try {
-    const stats = await getPartStatisticsByUser(userId);
+    const stats = await getPartStatisticsByUser(userId, days);
     res.status(200).json(stats);
   } catch (error) {
     console.error("Error fetching part statistics:", error);
@@ -53,12 +55,13 @@ const getAccuracyOverTimeController = async (req, res) => {
 const getUserTestHistoryController = async (req, res) => {
   try {
     const userId = req.user.id; // Lấy từ middleware xác thực JWT
+    const days = req.query.days != null ? parseInt(req.query.days) : undefined;
 
     if (!userId) {
       return res.status(401).json({ message: 'Người dùng chưa đăng nhập.' });
     }
 
-    const history = await getUserTestHistory(userId);
+    const history = await getUserTestHistory(userId, days);
 
     res.status(200).json({
       message: 'Lấy lịch sử làm bài thành công.',
