@@ -25,22 +25,25 @@ TRAIN UNIFIED MODEL (1 MODEL FOR ALL USERS) - VERSION 2.0
      bài toán phân loại điểm yếu (weak/strong) với các features
      đã được tính toán sẵn.
 
- INPUT FEATURES (9 features):
-   USER CONTEXT (6 features):
-   - userId_hash: Mã hóa user ID (0-9999)
+ INPUT FEATURES (7 features):
+     USER CONTEXT (5 features):
    - user_level: Trình độ (0=Beginner, 1=Intermediate, 2=Advanced)
    - total_tests: Tổng số bài test đã làm
    - total_questions: Tổng số câu hỏi đã làm
    - overall_accuracy: Accuracy tổng quát
    - days_active: Số ngày kể từ lần đầu làm bài
    
-   SKILL CONTEXT (3 features - giữ nguyên từ personal model):
+    SKILL CONTEXT (2 features - giữ nguyên từ personal model):
    - attempts: Số lần thử skill này
    - correct: Số câu đúng skill này
-   - skill_accuracy: Accuracy skill này
+     - skill_accuracy: Accuracy skill này (chỉ dùng để tính nhãn isWeak, KHÔNG đưa vào features)
 
  TARGET:
-   - isWeak: 1 nếu accuracy < 60%, 0 nếu accuracy >= 60%
+     - isWeak: gán nhãn theo rule động (cá nhân hoá) nếu đủ dữ liệu,
+             attempts >= 5 và user có >= 3 skills:
+                 isWeak = (skill_accuracy < avg_user_skill_acc - 1.0 * std_user_skill_acc)
+         ngược lại fallback về rule cứng:
+                 isWeak = (skill_accuracy < 0.6)
 
  KHI NÀO RETRAIN:
    - Mỗi tuần/tháng khi có thêm users mới
@@ -115,11 +118,7 @@ def train_unified_model():
             qs.skillId,
             COUNT(*) AS attempts,
             SUM(CASE WHEN ur.isCorrect = 1 THEN 1 ELSE 0 END) AS correct,
-            CAST(SUM(CASE WHEN ur.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS skill_accuracy,
-            CASE 
-                WHEN CAST(SUM(CASE WHEN ur.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) < 0.6 
-                THEN 1 ELSE 0 
-            END AS isWeak
+            CAST(SUM(CASE WHEN ur.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS skill_accuracy
         FROM UserResults ur
         JOIN QuestionSkills qs ON ur.questionId = qs.questionId
         WHERE ur.userId IS NOT NULL
@@ -136,8 +135,7 @@ def train_unified_model():
         -- SKILL FEATURES (GIỮ NGUYÊN)
         ss.attempts,
         ss.correct,
-        ss.skill_accuracy,
-        ss.isWeak
+        ss.skill_accuracy
     FROM SkillStats ss
     JOIN UserStats us ON ss.userId = us.userId
     """
@@ -150,23 +148,45 @@ def train_unified_model():
     print("\n📊 Sample data:")
     print(df.head())
     
-    # Feature Engineering: Thêm userId hash và user level
-    df['userId_hash'] = df['userId'].apply(lambda x: hash(x) % 10000)
+    # Feature Engineering: user_level (KHÔNG dùng userId_hash để tránh model học theo "ID")
     df['user_level'] = df['overall_accuracy'].apply(
         lambda x: 0 if x < 0.5 else (1 if x < 0.7 else 2)  # 0=Beginner, 1=Intermediate, 2=Advanced
     )
+
+    # ---------------------------------------------------------------------
+    # Labeling: isWeak (KHÔNG dùng skill_accuracy trong feature vector)
+    # ---------------------------------------------------------------------
+    min_attempts_for_dynamic = 5
+    min_skills_for_dynamic = 3
+    k_std = 1.0
+    fallback_threshold = 0.6
+
+    user_num_skills = df.groupby('userId')['skillId'].transform('nunique')
+    user_avg_skill_acc = df.groupby('userId')['skill_accuracy'].transform('mean')
+    user_std_skill_acc = df.groupby('userId')['skill_accuracy'].transform(lambda s: s.std(ddof=0))
+
+    dynamic_ok = (
+        (df['attempts'] >= min_attempts_for_dynamic)
+        & (user_num_skills >= min_skills_for_dynamic)
+        & (user_std_skill_acc.notna())
+        & (user_std_skill_acc > 1e-12)
+    )
+
+    dynamic_threshold = user_avg_skill_acc - k_std * user_std_skill_acc
+    df['isWeak'] = ((df['skill_accuracy'] < dynamic_threshold) & dynamic_ok) | (
+        (df['skill_accuracy'] < fallback_threshold) & (~dynamic_ok)
+    )
+    df['isWeak'] = df['isWeak'].astype(int)
     
     # Prepare features
     feature_columns = [
-        'userId_hash',      # Identity (mã hóa user)
         'user_level',       # Trình độ tổng quát
         'total_tests',      # Số bài test đã làm
         'total_questions',  # Số câu hỏi đã làm
         'overall_accuracy', # Accuracy tổng quát
         'days_active',      # Số ngày hoạt động
         'attempts',         # Số lần làm skill này
-        'correct',          # Số câu đúng skill này
-        'skill_accuracy'    # Accuracy skill này
+        'correct'           # Số câu đúng skill này
     ]
     
     X = df[feature_columns]
@@ -175,9 +195,14 @@ def train_unified_model():
     print(f"\n🎯 Feature matrix shape: {X.shape}")
     print("Features:", feature_columns)
     
-    # Split train/test
+    # Split train/test (guard against tiny / single-class datasets)
+    can_stratify = (y.nunique() >= 2) and (y.value_counts().min() >= 2)
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+        X,
+        y,
+        test_size=0.2,
+        random_state=42,
+        stratify=y if can_stratify else None,
     )
     
     print(f"\n📊 Train: {len(X_train)} samples | Test: {len(X_test)} samples")
@@ -218,7 +243,14 @@ def train_unified_model():
         'trained_at': datetime.now().isoformat(),
         'total_samples': len(df),
         'total_users': df['userId'].nunique(),
-        'test_accuracy': accuracy
+        'test_accuracy': accuracy,
+        'labeling': {
+            'type': 'dynamic_per_user_mean_std_with_fallback',
+            'min_attempts_for_dynamic': min_attempts_for_dynamic,
+            'min_skills_for_dynamic': min_skills_for_dynamic,
+            'k_std': k_std,
+            'fallback_threshold': fallback_threshold,
+        },
     }
     info_path = os.path.join(model_dir, "unified_model_info.pkl")
     joblib.dump(feature_info, info_path)

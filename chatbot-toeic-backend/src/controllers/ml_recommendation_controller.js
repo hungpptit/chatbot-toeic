@@ -25,6 +25,9 @@ const __dirname = path.dirname(__filename);
 export const getRecommendations = async (req, res) => {
     try {
         const { userId } = req.params;
+        const force = String(req.query.force || '').toLowerCase();
+        const forceRecompute = force === '1' || force === 'true' || force === 'yes';
+        const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes time
 
         if (!userId) {
             return res.status(400).json({
@@ -38,22 +41,37 @@ export const getRecommendations = async (req, res) => {
             where: { userId }
         });
 
-        if (prediction) {
-            console.log(`✅ Returning cached ML result for user ${userId} (from database)`);
-            return res.status(200).json({
-                code: 200,
-                message: "Recommendations retrieved successfully (from cache)",
-                data: {
-                    userId: prediction.userId,
-                    weakSkills: prediction.weakSkills,
-                    questionIds: prediction.questionIds,
-                    confidence: prediction.confidence,
-                    updatedAt: prediction.updatedAt
-                }
-            });
+        if (prediction && !forceRecompute) {
+            const weakSkills = prediction.weakSkills || [];
+            const questionIds = prediction.questionIds || [];
+            const updatedAt = prediction.updatedAt ? new Date(prediction.updatedAt) : null;
+
+            const isFresh = updatedAt ? (Date.now() - updatedAt.getTime() <= CACHE_TTL_MS) : false;
+            const hasData = weakSkills.length > 0 || questionIds.length > 0;
+
+            if (isFresh && hasData) {
+                console.log(`✅ Returning cached ML result for user ${userId} (from database)`);
+                return res.status(200).json({
+                    code: 200,
+                    message: "Recommendations retrieved successfully (from cache)",
+                    data: {
+                        userId: prediction.userId,
+                        weakSkills,
+                        questionIds,
+                        confidence: prediction.confidence,
+                        updatedAt: prediction.updatedAt
+                    }
+                });
+            }
+
+            console.log(
+                `🔄 Cached ML result for user ${userId} is ${isFresh ? 'fresh' : 'stale'} and ${hasData ? 'has data' : 'empty'}; recomputing...`
+            );
+        } else if (prediction && forceRecompute) {
+            console.log(`🔁 Force recompute requested for user ${userId}; recomputing...`);
         }
 
-        console.log(`🔄 No cached prediction for user ${userId}, running Python script...`);
+        console.log(`🔄 No usable cached prediction for user ${userId}, running Python script...`);
 
         // ✅ 2. Run Python script to generate prediction
         const mlScriptPath = path.join(__dirname, '../../ml/predict_hybrid_unified.py');

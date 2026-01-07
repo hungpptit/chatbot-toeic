@@ -61,7 +61,8 @@ except Exception:
         pass
 
 # Load biến môi trường từ file .env (ở thư mục gốc backend)
-load_dotenv(dotenv_path="./.env")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"))
 
 # Lấy biến môi trường
 DB_HOST = os.getenv("DB_HOST")
@@ -97,6 +98,7 @@ FROM UserResults ur
 JOIN QuestionSkills qs ON ur.questionId = qs.questionId
 WHERE ur.userId IS NOT NULL
 GROUP BY ur.userId, qs.skillId
+
 """
 df = pd.read_sql(query, conn)
 print("✅ Dữ liệu từ DB:")

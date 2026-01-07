@@ -66,8 +66,9 @@ def predict_unified(userId: int):
     Predict weak skills cho user với unified model
     """
     # Load model và feature info
-    model_path = os.path.join(os.path.dirname(__file__), "unified_model.pkl")
-    info_path = os.path.join(os.path.dirname(__file__), "unified_model_info.pkl")
+    model_dir = os.path.join(os.path.dirname(__file__), "model")
+    model_path = os.path.join(model_dir, "unified_model.pkl")
+    info_path = os.path.join(model_dir, "unified_model_info.pkl")
     
     if not os.path.exists(model_path):
         print("❌ Unified model chưa được train!")
@@ -132,7 +133,6 @@ def predict_unified(userId: int):
         return []
     
     # Feature engineering (giống lúc train)
-    df['userId_hash'] = df['userId'].apply(lambda x: hash(x) % 10000)
     df['user_level'] = df['overall_accuracy'].apply(
         lambda x: 0 if x < 0.5 else (1 if x < 0.7 else 2)
     )

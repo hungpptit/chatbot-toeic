@@ -17,9 +17,9 @@ PREDICT HYBRID WITH UNIFIED MODEL (VERSION 2.0)
       → Dùng GLOBAL MODEL (weak_skill_model.pkl)
       → Input: [attempts, correct, accuracy] (3 features)
    ELSE:
-      → Dùng UNIFIED MODEL (unified_model.pkl)
-      → Input: [userId_hash, user_level, total_tests, total_questions, 
-                overall_accuracy, days_active, attempts, correct, skill_accuracy] (9 features)
+    → Dùng UNIFIED MODEL (unified_model.pkl)
+    → Input: [user_level, total_tests, total_questions,
+            overall_accuracy, days_active, attempts, correct] (7 features)
 
  ƯU ĐIỂM:
    - Scalable: 1 model cho 10k users thay vì 10k models
@@ -96,7 +96,7 @@ conn_str = (
 # ============================================================================
 def prepare_unified_features(userId: int, skillId: int, attempts: int, correct: int, accuracy: float, conn):
     """
-    Chuẩn bị 9 features cho Unified Model
+    Chuẩn bị features cho Unified Model
     
     Args:
         userId: ID của user
@@ -107,9 +107,9 @@ def prepare_unified_features(userId: int, skillId: int, attempts: int, correct: 
         conn: Database connection
     
     Returns:
-        DataFrame với 9 features:
-        [userId_hash, user_level, total_tests, total_questions, 
-         overall_accuracy, days_active, attempts, correct, skill_accuracy]
+        DataFrame với 7 features:
+        [user_level, total_tests, total_questions,
+         overall_accuracy, days_active, attempts, correct]
     
     📝 NOTE: Features này PHẢI GIỐNG HỆT với lúc train unified model!
     """
@@ -126,25 +126,22 @@ def prepare_unified_features(userId: int, skillId: int, attempts: int, correct: 
     user_stats = pd.read_sql(query, conn).iloc[0]
     
     # Feature Engineering (giống train_unified_model.py)
-    userId_hash = hash(userId) % 10000  # Mã hóa user ID
     user_level = 0 if user_stats['overall_accuracy'] < 0.5 else (
         1 if user_stats['overall_accuracy'] < 0.7 else 2
     )  # 0=Beginner, 1=Intermediate, 2=Advanced
     
-    # Tạo feature vector (9 features)
+    # Tạo feature vector (7 features)
     X = pd.DataFrame([[
-        userId_hash,
         user_level,
         int(user_stats['total_tests']),
         int(user_stats['total_questions']),
         float(user_stats['overall_accuracy']),
         int(user_stats['days_active']),
         attempts,
-        correct,
-        accuracy
+        correct
     ]], columns=[
-        'userId_hash', 'user_level', 'total_tests', 'total_questions',
-        'overall_accuracy', 'days_active', 'attempts', 'correct', 'skill_accuracy'
+        'user_level', 'total_tests', 'total_questions',
+        'overall_accuracy', 'days_active', 'attempts', 'correct'
     ])
     
     return X

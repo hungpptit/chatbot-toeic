@@ -6,10 +6,9 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ⚠️ TEST MODE: Auto-retrain ML models every 3 minutes (for testing)
-// Production: "0 */6 * * *" = At minute 0 past every 6th hour
+// Production: "0 */6 * * *" = At minute 0 past every 6th hour (0h, 6h, 12h, 18h)
 // Test mode: "*/3 * * * *" = Every 3 minutes
-cron.schedule("0 */6 * * *", async () => {
+cron.schedule("*/5 * * * *", async () => {
   console.log("⏰ Cron Job: ML Model Retraining started at:", new Date().toLocaleString('vi-VN'));
   
   try {
@@ -20,19 +19,41 @@ cron.schedule("0 */6 * * *", async () => {
   }
 });
 
-console.log("🤖 [TEST MODE] ML Retrain Cron Job initialized - Running every 3 minutes");
+console.log("🤖 [PRODUCTION MODE] ML Retrain Cron Job initialized - Running every 6 hours (0h, 6h, 12h, 18h)");
 
-// Retrain all ML models by running Python script
+// Retrain all ML models by running Python scripts sequentially
 async function retrainModels() {
+  const mlPath = path.resolve(__dirname, '../../ml');
+  const globalModelScript = path.join(mlPath, 'train_model.py');
+  const unifiedModelScript = path.join(mlPath, 'train_unified_model.py');
+  
+  try {
+    // Train global model first
+    console.log('🐍 Training global model...');
+    await runPythonScript(globalModelScript, mlPath);
+    console.log('✅ Global model trained successfully');
+    
+    // Then train unified model
+    console.log('🐍 Training unified model...');
+    await runPythonScript(unifiedModelScript, mlPath);
+    console.log('✅ Unified model trained successfully');
+    
+    return { success: true };
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Helper function to run Python script
+function runPythonScript(scriptPath, workingDir) {
   return new Promise((resolve, reject) => {
-    const mlPath = path.resolve(__dirname, '../../ml');
-    const scriptPath = path.join(mlPath, 'train_model.py');
-    
-    console.log('🐍 Running Python script:', scriptPath);
-    
     const pythonProcess = spawn('python', [scriptPath], {
-      cwd: mlPath,
-      stdio: 'pipe'
+      cwd: workingDir,
+      stdio: 'pipe',
+      env: {
+        ...process.env,
+        PYTHONIOENCODING: 'utf-8'  // Fix UTF-8 encoding for emoji/Unicode in Python
+      }
     });
     
     let stdout = '';
@@ -58,10 +79,8 @@ async function retrainModels() {
     
     pythonProcess.on('close', (code) => {
       if (code === 0) {
-        console.log('✅ Model retraining completed successfully');
         resolve({ success: true, stdout, stderr });
       } else {
-        console.error('❌ Model retraining failed with exit code:', code);
         reject(new Error(`Python process exited with code ${code}\n${stderr}`));
       }
     });

@@ -87,8 +87,12 @@ export default function MLRecommendationsPage() {
 
   if (loading || !user) {
     return (
-      <div style={{ padding: 40, textAlign: 'center' }}>
-        <p>Đang phân tích kỹ năng của bạn...</p>
+      <div className="ml-loading-state" role="status" aria-live="polite">
+        <div className="ml-spinner" aria-hidden="true" />
+        <p className="ml-loading-text">
+          Đang phân tích kỹ năng của bạn
+          <span className="ml-loading-dots" aria-hidden="true" />
+        </p>
       </div>
     );
   }
