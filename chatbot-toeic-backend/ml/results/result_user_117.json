@@ -1,0 +1,129 @@
+{
+  "weak_skills": [
+    "Reading"
+  ],
+  "recommendations": {
+    "Reading": [
+      {
+        "id": 461,
+        "question": "Please provide three _____ of identification at check-in."
+      },
+      {
+        "id": 504,
+        "question": "Please provide three [blank] of identification at check-in."
+      },
+      {
+        "id": 547,
+        "question": "Please provide three _____ of identification at check-in. (Please select the most appropriate answer.)"
+      },
+      {
+        "id": 460,
+        "question": "Protective equipment _____ in all laboratory areas."
+      },
+      {
+        "id": 503,
+        "question": "Protective equipment _____ in all laboratory areas. (Pick the most suitable choice.)"
+      },
+      {
+        "id": 546,
+        "question": "Protective equipment (blank) in all laboratory areas."
+      },
+      {
+        "id": 459,
+        "question": "The morning session was highly _____ thanks to clear objectives."
+      },
+      {
+        "id": 502,
+        "question": "The morning session was highly _____ thanks to clear objectives. (Please select the most appropriate answer.)"
+      },
+      {
+        "id": 545,
+        "question": "The morning session was highly _____ thanks to clear objectives. (Select the correct response.)"
+      },
+      {
+        "id": 458,
+        "question": "The new coordinator will be responsible _____ organizing the annual fair."
+      },
+      {
+        "id": 501,
+        "question": "The new coordinator will be responsible ________ organizing the annual fair."
+      },
+      {
+        "id": 544,
+        "question": "The new coordinator will be responsible _____ organizing the annual fair. (Please select the most appropriate answer.)"
+      },
+      {
+        "id": 457,
+        "question": "To minimize the _____ delays, please confirm the schedule in advance."
+      },
+      {
+        "id": 500,
+        "question": "In the workplace, to minimize the _____ delays, please confirm the schedule in advance."
+      },
+      {
+        "id": 543,
+        "question": "[Question 2] To minimize the _____ delays, please confirm the schedule in advance."
+      },
+      {
+        "id": 456,
+        "question": "Neither the suppliers nor the warehouse manager _____ available today."
+      },
+      {
+        "id": 499,
+        "question": "For business purposes, neither the suppliers nor the warehouse manager _____ available today."
+      },
+      {
+        "id": 542,
+        "question": "Neither the suppliers nor the warehouse manager _____ available today. (Please select the most appropriate answer.)"
+      },
+      {
+        "id": 455,
+        "question": "Each employee must submit _____ own performance review."
+      },
+      {
+        "id": 498,
+        "question": "Based on the situation, each employee must submit _____ own performance review."
+      },
+      {
+        "id": 541,
+        "question": "Each employee must submit [blank] own performance review."
+      },
+      {
+        "id": 454,
+        "question": "By the time the auditor arrived, the team _____ the inventory."
+      },
+      {
+        "id": 497,
+        "question": "Based on the situation, by the time the auditor arrived, the team _____ the inventory."
+      },
+      {
+        "id": 540,
+        "question": "Item 2: By the time the auditor arrived, the team _____ the inventory."
+      },
+      {
+        "id": 453,
+        "question": "Our sales _____ steadily since the online campaign began."
+      },
+      {
+        "id": 496,
+        "question": "According to company policy, our sales _____ steadily since the online campaign began."
+      },
+      {
+        "id": 539,
+        "question": "Our sales _____ steadily since the online campaign began. (Choose the best option.)"
+      },
+      {
+        "id": 452,
+        "question": "The new strategy focuses on reducing costs, improving quality, and _____ delivery times."
+      },
+      {
+        "id": 495,
+        "question": "The new strategy focuses on reducing costs, improving quality, and _____ delivery times. (Choose the best option.)"
+      },
+      {
+        "id": 536,
+        "question": "The new strategy focuses on reducing costs, improving quality, and _____ delivery times. (Pick the most suitable choice.)"
+      }
+    ]
+  }
+}

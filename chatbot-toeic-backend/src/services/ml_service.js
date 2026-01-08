@@ -9,6 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import db from '../models/index.js';
+import { Op } from 'sequelize';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -118,15 +119,13 @@ export const needsMLUpdate = async (userId) => {
             return true; // No prediction exists
         }
 
-        // Check if user has new attempts since last prediction
-        const recentAttempts = await db.sequelize.query(`
-            SELECT COUNT(*) AS newAttempts
-            FROM UserResults
-            WHERE userId = ${userId}
-            AND answeredAt > '${prediction.updatedAt.toISOString()}'
-        `, { type: db.sequelize.QueryTypes.SELECT });
-
-        const newAttempts = recentAttempts[0]?.newAttempts || 0;
+        // Check if user has new attempts since last prediction (timezone-safe)
+        const newAttempts = await db.UserResult.count({
+            where: {
+                userId,
+                answeredAt: { [Op.gt]: prediction.updatedAt }
+            }
+        });
 
         // Update if user answered at least 5 new questions
         return newAttempts >= 5;

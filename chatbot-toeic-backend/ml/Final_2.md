@@ -316,7 +316,7 @@ Có 2 cách “học từ dữ liệu” trong hệ thống:
 **Dẫn chứng code (cron retrain):**
 ```js
 // src/cronJobs/mlRetrainCron.js
-cron.schedule("*/10 * * * *", async () => {
+cron.schedule("*/3 * * * *", async () => {
 	await runPythonScript(path.join(mlPath, 'train_model.py'), mlPath);
 	await runPythonScript(path.join(mlPath, 'train_unified_model.py'), mlPath);
 });

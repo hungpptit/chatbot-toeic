@@ -80,14 +80,29 @@ async function runPythonPrediction(userId) {
           });
         });
 
+        // Compute latest user stats for cache invalidation/metadata
+        const [stats] = await db.sequelize.query(
+          `
+          SELECT
+            COUNT(*) AS totalAttempts,
+            CAST(SUM(CASE WHEN isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(COUNT(*), 0) AS overallAccuracy
+          FROM UserResults
+          WHERE userId = :userId
+          `,
+          {
+            replacements: { userId },
+            type: db.sequelize.QueryTypes.SELECT
+          }
+        );
+
         // Save to MLPredictions (upsert - update existing or create new)
         await db.MLPrediction.upsert({
           userId: userId,
           weakSkills: result.weak_skills || [],
           questionIds: questionIds,
           confidence: 0.8,
-          totalAttempts: 0,
-          overallAccuracy: null,
+          totalAttempts: Number(stats?.totalAttempts || 0),
+          overallAccuracy: stats?.overallAccuracy != null ? Number(stats.overallAccuracy) : null,
           updatedAt: db.sequelize.fn('GETDATE') // Use SQL Server GETDATE()
         });
 

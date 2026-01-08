@@ -436,13 +436,13 @@ File: `src/cronJobs/mlRetrainCron.js`
   - `ml/train_unified_model.py` (unified)
 
 Ghi chú:
-- Trong file có comment “production = mỗi 6 giờ”, nhưng cron hiện đang là `*/10 * * * *` (mỗi 10 phút). Nếu muốn đúng production schedule, cần chỉnh về `0 */6 * * *`.
+- Trong file có comment “production = mỗi 6 giờ”, nhưng cron hiện đang là `*/3 * * * *` (mỗi 3 phút, test mode). Nếu muốn đúng production schedule, cần chỉnh về `0 */6 * * *`.
 
 Đoạn code quan trọng (rút gọn):
 
 ```js
 // src/cronJobs/mlRetrainCron.js
-cron.schedule("*/10 * * * *", async () => {
+cron.schedule("*/3 * * * *", async () => {
   await runPythonScript('train_model.py');
   await runPythonScript('train_unified_model.py');
 });
@@ -603,7 +603,7 @@ Có 2 endpoint chính:
 
 ```bash
 python predict_hybrid_unified.py 3
-python predict_hybrid_unified.py 116 --quiet --out result_user_116.json
+python predict_hybrid_unified.py 116 --quiet --out results/result_user_116.json
 ```
 
 ### 6.2 Train models (manual)

@@ -25,11 +25,12 @@ const __dirname = path.dirname(__filename);
 export const getRecommendations = async (req, res) => {
     try {
         const { userId } = req.params;
+        const userIdNum = Number.parseInt(String(userId), 10);
         const force = String(req.query.force || '').toLowerCase();
         const forceRecompute = force === '1' || force === 'true' || force === 'yes';
         const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes time
 
-        if (!userId) {
+        if (!userId || !Number.isFinite(userIdNum)) {
             return res.status(400).json({
                 code: 400,
                 message: "userId is required"
@@ -38,7 +39,7 @@ export const getRecommendations = async (req, res) => {
 
         // ✅ 1. Check database first (instant read)
         let prediction = await db.MLPrediction.findOne({
-            where: { userId }
+            where: { userId: userIdNum }
         });
 
         if (prediction && !forceRecompute) {
@@ -46,14 +47,58 @@ export const getRecommendations = async (req, res) => {
             const questionIds = prediction.questionIds || [];
             const updatedAt = prediction.updatedAt ? new Date(prediction.updatedAt) : null;
 
-            const isFresh = updatedAt ? (Date.now() - updatedAt.getTime() <= CACHE_TTL_MS) : false;
+            let isFresh = updatedAt ? (Date.now() - updatedAt.getTime() <= CACHE_TTL_MS) : false;
             const hasData = weakSkills.length > 0 || questionIds.length > 0;
 
+            // ✅ Robust invalidation: if user has more attempts than prediction captured, recompute.
+            // This avoids datetimeoffset/timezone comparison issues.
+            try {
+                const currentAttempts = await db.UserResult.count({ where: { userId: userIdNum } });
+                const predictedAttempts = Number(prediction.totalAttempts || 0);
+                if (Number.isFinite(currentAttempts) && currentAttempts > predictedAttempts) {
+                    isFresh = false;
+                }
+            } catch (e) {
+                // Ignore and fall back to other invalidation mechanisms
+            }
+
+            // ✅ If the user has submitted answers AFTER this prediction was computed,
+            // treat cache as stale even if within TTL (re-prediction after submit).
+            // NOTE: UserResults.answeredAt may be datetimeoffset in SQL Server; compare safely in SQL.
+            try {
+                if (updatedAt) {
+                    const rows = await db.sequelize.query(
+                        `
+                        SELECT
+                            CASE
+                                WHEN MAX(CAST(answeredAt AS datetime2)) > CAST(:predUpdatedAt AS datetime2) THEN 1
+                                ELSE 0
+                            END AS hasNewAnswers
+                        FROM UserResults
+                        WHERE userId = :userId
+                        `,
+                        {
+                            replacements: { userId: userIdNum, predUpdatedAt: updatedAt },
+                            type: db.sequelize.QueryTypes.SELECT
+                        }
+                    );
+
+                    const hasNewAnswers = Number(rows?.[0]?.hasNewAnswers || 0);
+                    if (hasNewAnswers === 1) {
+                        isFresh = false;
+                    }
+                }
+            } catch (e) {
+                // If this check fails, fall back to TTL-only caching.
+            }
+
             if (isFresh && hasData) {
-                console.log(`✅ Returning cached ML result for user ${userId} (from database)`);
+                console.log(
+                    `✅ Returning ML result from database for user ${userIdNum} (updatedAt=${prediction.updatedAt})`
+                );
                 return res.status(200).json({
                     code: 200,
-                    message: "Recommendations retrieved successfully (from cache)",
+                    message: "Recommendations retrieved successfully (from database)",
                     data: {
                         userId: prediction.userId,
                         weakSkills,
@@ -75,10 +120,10 @@ export const getRecommendations = async (req, res) => {
 
         // ✅ 2. Run Python script to generate prediction
         const mlScriptPath = path.join(__dirname, '../../ml/predict_hybrid_unified.py');
-        const outFileName = `result_user_${userId}_${Date.now()}.json`;
+        const outFileName = `result_user_${userIdNum}_${Date.now()}.json`;
         const outPath = path.join(os.tmpdir(), outFileName);
 
-        const pythonArgs = [mlScriptPath, userId.toString(), '--quiet', '--out', outPath];
+        const pythonArgs = [mlScriptPath, userIdNum.toString(), '--quiet', '--out', outPath];
         
         const pythonProcess = spawn('python', pythonArgs, {
             stdio: ['ignore', 'ignore', 'pipe']
@@ -115,13 +160,27 @@ export const getRecommendations = async (req, res) => {
                 });
 
                 // ✅ 4. Save to database (upsert) - Let Sequelize handle timestamps
+                const [stats] = await db.sequelize.query(
+                    `
+                    SELECT
+                      COUNT(*) AS totalAttempts,
+                      CAST(SUM(CASE WHEN isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(COUNT(*), 0) AS overallAccuracy
+                    FROM UserResults
+                    WHERE userId = :userId
+                    `,
+                    {
+                        replacements: { userId: userIdNum },
+                        type: db.sequelize.QueryTypes.SELECT
+                    }
+                );
+
                 const [savedPrediction] = await db.MLPrediction.upsert({
-                    userId: userId,
+                    userId: userIdNum,
                     weakSkills: result.weak_skills || [],
                     questionIds: questionIds,
                     confidence: 0.8, // TODO: Calculate from model
-                    totalAttempts: 0, // TODO: Query from UserResults
-                    overallAccuracy: null
+                    totalAttempts: Number(stats?.totalAttempts || 0),
+                    overallAccuracy: stats?.overallAccuracy != null ? Number(stats.overallAccuracy) : null
                     // Don't manually set createdAt/updatedAt - Sequelize handles it
                 });
 
@@ -134,7 +193,7 @@ export const getRecommendations = async (req, res) => {
                     code: 200,
                     message: "Recommendations retrieved successfully",
                     data: {
-                        userId: userId,
+                        userId: userIdNum,
                         weakSkills: result.weak_skills || [],
                         questionIds: questionIds,
                         updatedAt: new Date()

@@ -2,7 +2,6 @@
 import { RandomQuestionsByTestId,updateQuestion, SubmitTestResult, SubmitPracticeResult, CheckUserHasDoneTestDetailed, GetUserTestDetailById, GetUserTestHistoryByTestId,StartUserTest,
   createQuestion
 }  from '../services/question_test_service.js';
-import { triggerMLPredictionAsync } from '../services/mlPredictionService.js';
 
 // Controller: Lấy danh sách câu hỏi ngẫu nhiên theo testId
 const getQuestionsByTest = async (req, res) => {
@@ -92,9 +91,6 @@ const submitTest = async (req, res) => {
 
     const result = await SubmitTestResult({ userId, testId, answers });
 
-    // ✅ Trigger ML prediction in background (không blocking response)
-    triggerMLPredictionAsync(userId);
-
     res.status(200).json({
       message: 'Submit successful',
       userTestId: result.userTestId,  
@@ -129,9 +125,6 @@ const submitPractice = async (req, res) => {
     const result = await SubmitPracticeResult({ userId, answers, durationSeconds });
 
     console.log('✅ Practice submitted successfully:', result);
-
-    // ✅ Trigger ML prediction in background (không blocking response)
-    triggerMLPredictionAsync(userId);
 
     res.status(200).json({
       message: 'Practice completed',

@@ -21,19 +21,16 @@ Sự thông minh của hệ thống thể hiện ở hai khía cạnh chính: **
 1.  **Thu thập dữ liệu:** Sau mỗi lần người dùng làm bài kiểm tra, hệ thống sẽ lưu lại kết quả chi tiết của từng câu trả lời vào bảng `UserResults`. Dữ liệu này bao gồm `userId`, `questionId`, và quan trọng nhất là `isCorrect` (đúng hay sai).
 
 2.  **Kích hoạt mô hình AI:** Khi có đủ dữ liệu, một tiến trình nền được kích hoạt để chạy mô hình Machine Learning.
-    *   **Dẫn chứng code:** Trong file `chatbot-toeic-backend/src/services/ml_service.js`, hàm `triggerMLPrediction` sẽ được gọi sau khi người dùng hoàn thành một bài thi. Hàm này sử dụng `child_process.spawn` để thực thi một script Python.
+    *   **Dẫn chứng code (đúng theo repo hiện tại):** Sau khi user submit test/practice, backend trigger chạy Python `ml/predict_hybrid_unified.py` ở chế độ background và ghi kết quả vào DB.
 
     ```javascript
-    // File: chatbot-toeic-backend/src/services/ml_service.js
+    // File: src/services/mlPredictionService.js (core idea)
+    const mlScriptPath = path.join(__dirname, '../../ml/predict_hybrid_unified.py');
+    const outPath = path.join(os.tmpdir(), `result_user_${userId}_${Date.now()}.json`);
+    const pythonArgs = [mlScriptPath, userId.toString(), '--quiet', '--out', outPath];
 
-    export const triggerMLPrediction = (userId) => {
-        console.log(`🤖 [Background] Triggering ML prediction for user ${userId}...`);
-        const pythonProcess = spawn('python', [
-            './src/services/predict_adapter.py', // Script trung gian
-            userId
-        ]);
-        // ... xử lý output từ script Python
-    };
+    const pythonProcess = spawn('python', pythonArgs, { stdio: ['ignore', 'ignore', 'pipe'] });
+    // ... on close: read outPath -> JSON.parse -> upsert MLPredictions (+ history)
     ```
 
 3.  **Phân tích và dự đoán:** Script Python (`predict_hybrid_unified.py`) sẽ:
@@ -68,48 +65,44 @@ Khi người dùng gặp khó khăn với một câu hỏi cụ thể, hệ th�
     *   **Dẫn chứng code:**
 
     ```javascript
-    // File: chatbot-toeic-backend/src/services/embeddingService.js
-
+    // File: src/services/embeddingService.js (core idea)
     import { pipeline } from '@xenova/transformers';
 
-    class EmbeddingService {
-        static instance;
-        static async getInstance() {
-            if (!this.instance) {
-                // Dùng mô hình 'glove-wiki-gigaword-50' để tạo vector
-                this.instance = await pipeline('feature-extraction', 'Xenova/glove-wiki-gigaword-50');
-            }
-            return this.instance;
-        }
-        // ...
-    }
+    // Load model 1 lần
+    const miniLM = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+    const output = await miniLM(questionText, { pooling: 'mean', normalize: true });
+    const vector = Array.from(output.data);
+        const dim = vector.length;
+        // ... upsert vào QuestionEmbeddings (model='all-MiniLM-L6-v2', dim, vector CSV)
     ```
+
+        **Lưu ý quan trọng (để tránh hiểu nhầm):**
+        - Trong code hiện tại có **2 identifier** được dùng để load MiniLM L6 v2:
+            - `src/services/embeddingService.js` dùng `Xenova/all-MiniLM-L6-v2` để **sinh embedding và lưu DB** (trường `model` trong bảng `QuestionEmbeddings` được lưu là chuỗi `all-MiniLM-L6-v2`).
+            - `findSimilar.js` dùng `sentence-transformers/all-MiniLM-L6-v2` để **tạo embedding cho input text** (khi input không phải `questionId`).
+        - Dù khác prefix, hai identifier này đang trỏ tới cùng họ model MiniLM L6 v2 trong hệ sinh thái `@xenova/transformers`.
+        - **Số chiều vector không nên đoán cố định**: hệ thống lưu trực tiếp `dim = vector.length` vào DB (`QuestionEmbeddings.dim`). Nếu đổi model embedding, cần regenerate lại embeddings để đồng bộ `dim`.
 
 2.  **Tìm kiếm dựa trên sự tương đồng vector:** Khi cần tìm câu hỏi tương tự, hệ thống sẽ:
     *   Lấy vector embedding của câu hỏi gốc.
     *   So sánh vector này với tất cả các vector của các câu hỏi khác trong cơ sở dữ liệu.
     *   Phép so sánh này thường dùng "cosine similarity" để đo lường khoảng cách/sự giống nhau về mặt ngữ nghĩa.
     *   Những câu hỏi có vector gần nhất với vector của câu hỏi gốc sẽ được xem là tương tự nhất.
-    *   **Dẫn chứng code:** Logic này được xử lý trong `question_service.js` (hàm `findSimilarQuestions`).
+    *   **Dẫn chứng code (đúng theo repo hiện tại):** Việc tính cosine similarity + lấy top-k đang nằm trong script Node `findSimilar.js` (được Python gọi qua `subprocess.run`).
 
-    ```javascript
-    // File: chatbot-toeic-backend/src/services/question_service.js
-
-    async function findSimilarQuestions(questionId) {
-        const originEmbedding = await db.QuestionEmbeddings.findOne({ where: { questionId } });
-        // ...
-        const allEmbeddings = await db.QuestionEmbeddings.findAll();
-
-        const similarities = allEmbeddings.map(emb => {
-            const similarity = cosineSimilarity(originEmbedding.embedding, emb.embedding);
-            return { questionId: emb.questionId, similarity };
-        });
-
-        // Sắp xếp và lấy ra các câu hỏi có độ tương đồng cao nhất
-        similarities.sort((a, b) => b.similarity - a.similarity);
-        // ...
-    }
-    ```
+        ```javascript
+        // File: findSimilar.js (core idea)
+        function cosineSimilarity(vecA, vecB) {
+            let dot = 0, normA = 0, normB = 0;
+            for (let i = 0; i < vecA.length; i++) {
+                dot += vecA[i] * vecB[i];
+                normA += vecA[i] * vecA[i];
+                normB += vecB[i] * vecB[i];
+            }
+            return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+        }
+        // ... load embeddings từ DB -> sort theo score -> lấy top-k
+        ```
 
 ---
 
@@ -158,47 +151,19 @@ Việc tái huấn luyện định kỳ là yếu tố then chốt quyết đị
     Hệ thống có một file chuyên dụng để định nghĩa các tác vụ chạy nền theo lịch. File này sẽ thiết lập một lịch trình (ví dụ: "chạy vào lúc 2 giờ sáng Chủ Nhật hàng tuần") để tự động thực thi các script huấn luyện mô hình.
 
 *   **Dẫn chứng code:**
-    Mặc dù hiện tại chưa có file cron job cụ thể cho việc tái huấn luyện trong thư mục `cronJobs`, nhưng đây là cách nó **sẽ được triển khai** để hoàn thiện vòng lặp cải tiến:
+    ✅ Repo hiện tại đã có cron retrain tại `src/cronJobs/mlRetrainCron.js` (dùng `node-cron`) để chạy tuần tự `ml/train_model.py` và `ml/train_unified_model.py`.
 
-    Một file mới, ví dụ `mlRetrainJob.js`, sẽ được tạo trong `src/cronJobs/` với nội dung tương tự như sau:
+    (Lưu ý: file có comment production 6 giờ, nhưng cron expression có thể đang để test mode. Có thể chỉnh về `0 */6 * * *` khi deploy.)
 
     ```javascript
-    // File: src/cronJobs/mlRetrainJob.js (Ví dụ minh họa)
-
-    import cron from 'node-cron';
-    import { spawn } from 'child_process';
-    import path from 'path';
-
-    // Lên lịch chạy vào 2:00 sáng Chủ Nhật hàng tuần
-    cron.schedule('0 2 * * 0', () => {
-        console.log('🚀 [CRON] Bắt đầu tác vụ tự động tái huấn luyện mô hình AI...');
-
-        const trainUnifiedScript = path.join(__dirname, '../../ml/train_unified_model.py');
-
-        // Chạy script huấn luyện mô hình Unified
-        const pythonProcess = spawn('python', [trainUnifiedScript]);
-
-        pythonProcess.stdout.on('data', (data) => {
-            console.log(`[TRAIN_LOG]: ${data}`);
-        });
-
-        pythonProcess.stderr.on('data', (data) => {
-            console.error(`[TRAIN_ERROR]: ${data}`);
-        });
-
-        pythonProcess.on('close', (code) => {
-            if (code === 0) {
-                console.log('✅ [CRON] Tác vụ tái huấn luyện đã hoàn tất thành công.');
-            } else {
-                console.error(`❌ [CRON] Tác vụ tái huấn luyện thất bại với mã lỗi ${code}.`);
-            }
-        });
+    // File: src/cronJobs/mlRetrainCron.js (rút gọn)
+    cron.schedule("*/3 * * * *", async () => {
+      await runPythonScript(globalModelScript, mlPath);
+      await runPythonScript(unifiedModelScript, mlPath);
     });
-
-    console.log('👍 Cron job để tự động tái huấn luyện AI đã được lên lịch.');
     ```
 
-*   **Ý nghĩa:** Đoạn code trên cho thấy thiết kế của hệ thống đã tính đến việc tự động hóa. Khi file này được thêm vào và server backend khởi động, nó sẽ tự động chạy các script `train_unified_model.py` và `train_model.py` theo lịch đã định. Điều này đảm bảo các mô hình AI luôn được làm mới với dữ liệu mới nhất, giúp hệ thống liên tục thông minh hơn mà không cần bất kỳ thao tác thủ công nào.
+*   **Ý nghĩa:** Cron retrain được import khi backend khởi động (xem `src/server.js`), nên model sẽ được làm mới theo lịch mà không cần thao tác thủ công.
 
 ### d. Mở rộng mô hình trong tương lai:
 
@@ -229,8 +194,8 @@ Dưới đây là giải thích về các bảng (models) quan trọng phục v�
 
 *   **`Questions`**: Lưu trữ toàn bộ ngân hàng câu hỏi.
     *   `id`: Khóa chính, định danh câu hỏi.
-    *   `content`: Nội dung câu hỏi.
-    *   `skillId`: Liên kết tới kỹ năng mà câu hỏi này kiểm tra (ví dụ: Ngữ pháp, Từ vựng).
+    *   `question`: Nội dung câu hỏi.
+    *   Mapping skill nằm ở bảng trung gian `QuestionSkills` (n-n), không có cột `skillId` trực tiếp trên `Questions`.
 
 *   **`UserResults`**: **Bảng quan trọng nhất**, ghi lại chi tiết từng câu trả lời của người dùng. Đây là đầu vào chính cho mô hình AI.
     *   `userId`: Người dùng nào đã trả lời.
@@ -240,7 +205,9 @@ Dưới đây là giải thích về các bảng (models) quan trọng phục v�
 
 *   **`QuestionEmbeddings`**: Lưu trữ vector ngữ nghĩa của các câu hỏi.
     *   `questionId`: Liên kết tới câu hỏi.
-    *   `embedding`: Một chuỗi/blob chứa vector số học đại diện cho ngữ nghĩa của câu hỏi.
+    *   `model`: tên model đang lưu (hiện tại ghi là `all-MiniLM-L6-v2`).
+    *   `dim`: số chiều vector (được set từ `vector.length` khi sinh embedding).
+    *   `vector`: Chuỗi CSV chứa vector số học.
 
 *   **`MLPredictions`**: Lưu trữ **kết quả dự đoán mới nhất** về điểm yếu của người dùng.
     *   `userId`: Khóa chính, kết quả này là của người dùng nào.
@@ -306,7 +273,7 @@ Khi chạy lệnh trên, script `predict_hybrid_unified.py` sẽ thực hiện c
 
 3.  **Áp dụng chiến lược "Hybrid":** Script lặp qua từng kỹ năng của người dùng và quyết định mô hình nào sẽ được sử dụng.
     *   **Nếu người dùng mới (ít hơn 10 attempts cho kỹ năng đó):** Script sẽ sử dụng **mô hình global**. Dữ liệu đầu vào cho mô hình này rất đơn giản, chỉ gồm 3 giá trị: `[attempts, correct, accuracy]`.
-    *   **Nếu người dùng có đủ dữ liệu (>= 10 attempts):** Script sẽ sử dụng **mô hình hợp nhất**. Trước khi dự đoán, nó sẽ gọi hàm `prepare_unified_features` để chuẩn bị một vector đầu vào phức tạp hơn gồm 9 giá trị, bao gồm cả thông tin tổng quan về người dùng (như `user_level`, `total_tests`, `days_active`) và thông tin về kỹ năng hiện tại.
+    *   **Nếu người dùng có đủ dữ liệu (>= 10 attempts):** Script sẽ sử dụng **mô hình hợp nhất**. Trước khi dự đoán, nó gọi `prepare_unified_features` để tạo vector đầu vào **10 features** (user context 8 + skill context 2) và áp `StandardScaler` đúng như lúc train (nếu scaler tồn tại).
     *   **Dẫn chứng code:**
     ```python
     # File: chatbot-toeic-backend/ml/predict_hybrid_unified.py
@@ -320,8 +287,9 @@ Khi chạy lệnh trên, script `predict_hybrid_unified.py` sẽ thực hiện c
             results[skill_name] = "Weak (global)" if prediction == 1 else "Strong (global)"
         else:
             # Dùng Unified Model
-            X_unified = prepare_unified_features(userId, row['skillId'], ...)
-            prediction = unified_model.predict(X_unified)[0]
+            X_unified_raw = prepare_unified_features(userId, row['skillId'], ...)
+            # reorder cột theo unified_model_info.pkl + apply unified_model_scaler.pkl (nếu có)
+            prediction = unified_model.predict(X_for_model)[0]
             results[skill_name] = "Weak (unified)" if prediction == 1 else "Strong (unified)"
     ```
 
@@ -378,8 +346,8 @@ Mô hình này phức tạp và mang tính cá nhân hóa cao hơn.
 python train_unified_model.py
 ```
 
-*   **Cách thức hoạt động:**
-    1.  **Query dữ liệu nâng cao:** Câu lệnh SQL trong script này phức tạp hơn. Nó không chỉ lấy `attempts` và `correct` cho từng kỹ năng, mà còn kết hợp (JOIN) để lấy thêm các thông tin tổng quan của người dùng như `total_tests`, `total_questions`, `overall_accuracy`, `days_active`.
+*   **Cách thức hoạt động (đúng theo code hiện tại):**
+    1.  **Query dữ liệu nâng cao:** Query lấy user context + skill context, bao gồm thêm các tín hiệu `learning_velocity`, `consistency`, `recency_bias`.
         *   **Dẫn chứng code:**
         ```python
         # File: chatbot-toeic-backend/ml/train_unified_model.py
@@ -391,9 +359,9 @@ python train_unified_model.py
         """
         df = pd.read_sql(query, conn)
         ```
-    2.  **Kỹ thuật đặc trưng (Feature Engineering):** Script tạo thêm 2 feature mới là `userId_hash` (mã hóa ID người dùng để mô hình coi đó là một đặc trưng) và `user_level` (phân loại người dùng thành Beginner, Intermediate, Advanced dựa trên `overall_accuracy`).
-    3.  **Chuẩn bị dữ liệu:** Script chọn ra 9 cột feature để làm `X` và `isWeak` làm `y`.
-    4.  **Huấn luyện và Lưu:** Tương tự như mô hình global, mô hình `GaussianNB` được huấn luyện và lưu lại thành file `ml/model/unified_model.pkl`.
+    2.  **Feature Engineering:** Có `user_level` (0/1/2 theo `overall_accuracy`). Không dùng `userId_hash`.
+    3.  **Chuẩn bị dữ liệu:** Feature vector hiện tại là **10 features** (khớp `train_unified_model.py`).
+    4.  **Scaling + Train + Save:** Script áp `StandardScaler`, train `GaussianNB`, và lưu cả model + scaler + metadata (`unified_model.pkl`, `unified_model_scaler.pkl`, `unified_model_info.pkl`).
 
 *   **Công dụng:** Cải thiện chất lượng dự đoán cá nhân hóa. Nên chạy thường xuyên hơn (ví dụ: hàng tuần) để mô hình luôn cập nhật với sự tiến bộ của người dùng.
 

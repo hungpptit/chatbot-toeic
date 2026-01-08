@@ -25,15 +25,18 @@ TRAIN UNIFIED MODEL (1 MODEL FOR ALL USERS) - VERSION 2.0
      bài toán phân loại điểm yếu (weak/strong) với các features
      đã được tính toán sẵn.
 
- INPUT FEATURES (7 features):
-     USER CONTEXT (5 features):
+ INPUT FEATURES (10 features):
+         USER CONTEXT (8 features):
    - user_level: Trình độ (0=Beginner, 1=Intermediate, 2=Advanced)
    - total_tests: Tổng số bài test đã làm
    - total_questions: Tổng số câu hỏi đã làm
    - overall_accuracy: Accuracy tổng quát
    - days_active: Số ngày kể từ lần đầu làm bài
+     - learning_velocity: overall_accuracy - first_30d_accuracy
+     - consistency: STDEV(skill_accuracy) theo user
+     - recency_bias: recent_50_accuracy - overall_accuracy
    
-    SKILL CONTEXT (2 features - giữ nguyên từ personal model):
+        SKILL CONTEXT (2 features - giữ nguyên từ personal model):
    - attempts: Số lần thử skill này
    - correct: Số câu đúng skill này
      - skill_accuracy: Accuracy skill này (chỉ dùng để tính nhãn isWeak, KHÔNG đưa vào features)

@@ -6,7 +6,7 @@ const userId = parseInt(process.argv[2]) || 3;
 
 async function forceUpdateML() {
   try {
-    const resultFile = `./ml/result_user_${userId}.json`;
+    const resultFile = `./ml/results/result_user_${userId}.json`;
     const raw = await fs.readFile(resultFile, 'utf-8');
     const result = JSON.parse(raw);
 

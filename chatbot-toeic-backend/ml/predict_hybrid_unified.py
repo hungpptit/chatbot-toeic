@@ -17,9 +17,11 @@ PREDICT HYBRID WITH UNIFIED MODEL (VERSION 2.0)
       → Dùng GLOBAL MODEL (weak_skill_model.pkl)
       → Input: [attempts, correct, accuracy] (3 features)
    ELSE:
-    → Dùng UNIFIED MODEL (unified_model.pkl)
-    → Input: [user_level, total_tests, total_questions,
-            overall_accuracy, days_active, attempts, correct] (7 features)
+        → Dùng UNIFIED MODEL (unified_model.pkl)
+        → Input (10 features):
+            [user_level, total_tests, total_questions,
+             overall_accuracy, days_active, learning_velocity,
+             consistency, recency_bias, attempts, correct]
 
  ƯU ĐIỂM:
    - Scalable: 1 model cho 10k users thay vì 10k models
@@ -433,28 +435,67 @@ def full_pipeline(userId: int, k: int = 3):
     
     for skill in weak_skills:
         print(f"\n📚 Đang tìm câu hỏi gợi ý cho skill: {skill}...")
-        
-        # Query questions thuộc skill này
-        query = f"""
+        safe_skill = str(skill).replace("'", "''")
+
+        # 1) Prefer anchors from questions the user got WRONG in this skill (more personalized)
+        wrong_query = f"""
+        SELECT TOP 50
+            ur.questionId AS id,
+            q.question AS question
+        FROM UserResults ur
+        JOIN Questions q ON ur.questionId = q.id
+        JOIN QuestionSkills qs ON ur.questionId = qs.questionId
+        JOIN Skills s ON qs.skillId = s.id
+        WHERE ur.userId = {userId}
+          AND ur.isCorrect = 0
+          AND s.name = '{safe_skill}'
+        GROUP BY ur.questionId, q.question
+        ORDER BY MAX(CAST(ur.answeredAt AS datetime2)) DESC
+        """
+        wrong_df = pd.read_sql(wrong_query, conn)
+
+        # 2) Fallback pool: random questions from this skill
+        pool_query = f"""
         SELECT TOP 50 q.id, q.question
         FROM Questions q
         JOIN QuestionSkills qs ON q.id = qs.questionId
         JOIN Skills s ON qs.skillId = s.id
-        WHERE s.name = '{skill}'
+        WHERE s.name = '{safe_skill}'
         ORDER BY NEWID()
         """
-        questions_df = pd.read_sql(query, conn)
-        
-        if questions_df.empty:
+        pool_df = pd.read_sql(pool_query, conn)
+
+        if wrong_df.empty and pool_df.empty:
             print(f"   ⚠️ Không tìm thấy câu hỏi cho skill {skill}")
             continue
+
+        # Build anchor list: wrong first, then random fill (dedupe by questionId)
+        anchor_ids = []
+        seen_anchor_ids = set()
+
+        for _, qrow in wrong_df.iterrows():
+            qid = int(qrow['id'])
+            if qid not in seen_anchor_ids:
+                anchor_ids.append(qid)
+                seen_anchor_ids.add(qid)
+            if len(anchor_ids) >= 20:
+                break
+
+        if len(anchor_ids) < 20:
+            for _, qrow in pool_df.iterrows():
+                qid = int(qrow['id'])
+                if qid not in seen_anchor_ids:
+                    anchor_ids.append(qid)
+                    seen_anchor_ids.add(qid)
+                if len(anchor_ids) >= 20:
+                    break
         
         # Recommend similar questions
         all_suggestions = {}  # Key: question ID
         seen_content = set()  # Track unique content
         
-        for _, q in questions_df.head(20).iterrows():  # Tăng lên 20 anchor để đảm bảo đủ 30 unique
-            similar_json = recommend_questions(q['id'], k=k)
+        for anchor_id in anchor_ids:  # up to 20 anchors
+            similar_json = recommend_questions(anchor_id, k=k)
             if similar_json:
                 try:
                     similar = json.loads(similar_json)
@@ -492,7 +533,7 @@ def full_pipeline(userId: int, k: int = 3):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Predict weak skills and recommend questions (Hybrid Unified)')
     parser.add_argument('userId', nargs='?', type=int, default=3, help='User ID to predict')
-    parser.add_argument('--out', '-o', help='Output JSON file path (default: ml/result_user_<userId>.json)')
+    parser.add_argument('--out', '-o', help='Output JSON file path (default: ml/results/result_user_<userId>.json)')
     parser.add_argument('--quiet', action='store_true', help='Suppress verbose console output')
     parser.add_argument('--k', type=int, default=3, help='Number of recommendations per anchor (default 3)')
 
@@ -500,22 +541,23 @@ if __name__ == "__main__":
 
     userId = args.userId
 
-    # If quiet, suppress stdout/stderr to avoid huge console output
+    # If quiet, suppress stdout to avoid huge console output.
+    # Keep stderr intact so callers (Node.js) can capture tracebacks on failure.
     if args.quiet:
         try:
             devnull = open(os.devnull, 'w', encoding='utf-8')
             sys.stdout.flush()
-            sys.stderr.flush()
             sys.stdout = devnull
-            sys.stderr = devnull
         except Exception:
             pass
 
     # Run full pipeline
     result = full_pipeline(userId, k=args.k)
 
-    # Determine output path
-    default_out = os.path.join(os.path.dirname(__file__), f"result_user_{userId}.json")
+    # Determine output path (store under ml/results/)
+    results_dir = os.path.join(os.path.dirname(__file__), "results")
+    os.makedirs(results_dir, exist_ok=True)
+    default_out = os.path.join(results_dir, f"result_user_{userId}.json")
     out_path = args.out if args.out else default_out
 
     # Write JSON result to file (UTF-8)

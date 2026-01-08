@@ -153,7 +153,7 @@ export default function MLRecommendationsPage() {
 
   return (
     <div className="ml-recommendations-page">
-      <h1>📊 Phân tích kỹ năng & Gợi ý luyện tập</h1>
+      <h1>Phân tích kỹ năng & Gợi ý luyện tập</h1>
       
       {weakSkills.length > 0 ? (
         <>

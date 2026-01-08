@@ -2,7 +2,7 @@ import db from '../models/index.js';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
-import { triggerMLUpdate, needsMLUpdate } from './ml_service.js';
+import { triggerMLPredictionAsync } from './mlPredictionService.js';
 import { toToeicScore } from '../utils/toeicScoring.js';
 
 
@@ -393,16 +393,8 @@ export const SubmitTestResult = async ({ userId, testId, answers }) => {
         VALUES (src.questionId, src.attempts, src.correct);
     `, { transaction });
 
-    // ✅ Trigger ML update (async, non-blocking)
-    setImmediate(async () => {
-      const shouldUpdate = await needsMLUpdate(userId);
-      if (shouldUpdate) {
-        console.log(`🎯 Triggering ML update for user ${userId} after exam`);
-        await triggerMLUpdate(userId);
-      } else {
-        console.log(`⏭️ Skipping ML update for user ${userId} (not enough new data)`);
-      }
-    });
+    // ✅ Trigger ML re-prediction in background (non-blocking)
+    triggerMLPredictionAsync(userId);
 
     return {
       userTestId: userTest.id,
@@ -522,16 +514,8 @@ export const SubmitPracticeResult = async ({ userId, answers, durationSeconds })
       score 
     });
 
-    // ✅ Trigger ML update (async, non-blocking)
-    setImmediate(async () => {
-      const shouldUpdate = await needsMLUpdate(userId);
-      if (shouldUpdate) {
-        console.log(`🎯 Triggering ML update for user ${userId} after practice`);
-        await triggerMLUpdate(userId);
-      } else {
-        console.log(`⏭️ Skipping ML update for user ${userId} (not enough new data)`);
-      }
-    });
+    // ✅ Trigger ML re-prediction in background (non-blocking)
+    triggerMLPredictionAsync(userId);
 
     return {
       userTestId: userTest.id, // ✅ Return userTestId để frontend có thể dùng
