@@ -70,15 +70,16 @@ ml/
 │
 ├── 🧪 UTILITY FILES (Debug & Testing)
 │   ├── predict_unified.py        [Standalone test unified model]
-│   ├── check_user_skills.py      [Check 1 user cụ thể]
-│   ├── check_skills_distribution.py [Check tất cả skills trong DB]
-│   ├── find_best_user.py         [Tìm user tốt để test]
-│   └── demo_scalability.py       [Demo unified vs personal scaling]
+│   ├── check_data_stats.py       [Statistics: Total records, users, distribution]
+│   ├── demo_scalability.py       [Demo unified vs personal scaling]
 │
-├── 📦 DEPRECATED FILES (Không dùng nữa)
-│   ├── train_personal_model.py   [OLD - 1 model/user approach]
-│   ├── predict_personal.py       [OLD - Personal model only]
-│   └── predict.py                [OLD - Không dùng]
+├── 📦 DEPRECATED/MISSING FILES
+│   ├── predict_hybrid.py         ⚠️  [Không tồn tại - được replace bởi predict_hybrid_unified.py]
+│   ├── train_personal_model.py   ⚠️  [Không tồn tại - được replace bởi train_unified_model.py]
+│   ├── check_user_skills.py      ⚠️  [Không tồn tại]
+│   ├── find_best_user.py         ⚠️  [Không tồn tại]
+│   ├── predict_personal.py       ⚠️  [Không tồn tại]
+│   └── predict.py                ⚠️  [Không tồn tại]
 │
 └── 💾 MODEL FILES (.pkl)
     ├── weak_skill_model.pkl      [Global model]
@@ -137,7 +138,10 @@ python predict_hybrid_unified.py 3  # Với userId=3
 **Mục đích:** Train Unified Model (1 model cho tất cả users)
 
 **Features:**
-- 9 features: `[userId_hash, user_level, total_tests, total_questions, overall_accuracy, days_active, attempts, correct, skill_accuracy]`
+- 10 features: `[user_level, total_tests, total_questions, overall_accuracy, days_active, learning_velocity, consistency, recency_bias, attempts, correct]`
+  - **Original 7:** user_level, total_tests, total_questions, overall_accuracy, days_active, attempts, correct
+  - **New 3:** learning_velocity (current - 30d_first), consistency (std of skill accuracies), recency_bias (last50 - overall)
+- **Scaling:** StandardScaler (mean=0, std=1) áp dụng cho tất cả 10 features
 
 **Sử dụng:**
 ```bash
@@ -147,6 +151,7 @@ python train_unified_model.py --compare  # So sánh với personal model
 
 **Output:**
 - `unified_model.pkl`: Model file
+- `unified_model_scaler.pkl`: StandardScaler (dùng cho prediction)
 - `unified_model_info.pkl`: Metadata
 
 **Khi nào retrain:**
@@ -177,24 +182,73 @@ python train_model.py
 
 ---
 
-### ⚠️ `predict_hybrid.py` [OLD VERSION]
+### ✅ `check_data_stats.py` [UTILITY - DATA STATISTICS]
 
-**Mục đích:** Predict với Personal Model approach (cũ)
+**Mục đích:** Thống kê dữ liệu UserResults hiện tại trong database
 
-**Strategy:**
-```python
-IF attempts < 10:
-    → Global Model
-ELSE:
-    → Personal Model (user_{userId}_model.pkl)  # 10k models cho 10k users
+**Thông tin:**
+- Tổng số records trong UserResults
+- Tổng số users
+- Records per user distribution
+- Training data stats (aggregated by userId + skillId)
+
+**Sử dụng:**
+```bash
+python check_data_stats.py
 ```
 
-**Vấn đề:**
-- ❌ 10,000 users = 10,000 files
-- ❌ Retrain 14 giờ
-- ❌ Khó maintain
+**Khi nào dùng:**
+- Kiểm tra dữ liệu sau khi import database
+- Verify data sufficiency trước khi train
+- Check class distribution (weak vs strong skills)
 
-**Khuyến nghị:** Dùng `predict_hybrid_unified.py` thay thế!
+---
+
+### ✅ `predict_unified.py` [UTILITY - STANDALONE TEST]
+
+**Mục đích:** Test Unified Model độc lập (không hybrid)
+
+**Sử dụng:**
+```bash
+python predict_unified.py 3
+python predict_unified.py 3 --compare  # So sánh với personal model
+```
+
+**Khi nào dùng:**
+- Debug unified model
+- Test model output
+- Compare với personal model approach
+
+---
+
+### ✅ `demo_scalability.py` [UTILITY - SCALABILITY DEMO]
+
+**Mục đích:** Demo khả năng scale của Unified Model vs Personal Model
+
+**Sử dụng:**
+```bash
+python demo_scalability.py           # All scenarios
+python demo_scalability.py 10000     # Specific: 10,000 users
+```
+
+**Output:**
+```
+PERSONAL MODEL (10k users):
+  - 10,000 files
+  - 488 MB storage
+  - 14 hours retrain
+
+UNIFIED MODEL (10k users):
+  - 1 file
+  - 0.1 MB storage
+  - 2-3 hours retrain
+  → Tiết kiệm 99.98% storage!
+```
+
+**Khi nào dùng:**
+- Presentation cho stakeholders
+- Decision making
+- Documentation
 
 ---
 
@@ -219,74 +273,28 @@ python predict_unified.py 3 --compare  # So sánh với personal model
 
 ---
 
-### `check_user_skills.py`
+### `check_data_stats.py`
 
-**Mục đích:** Check skills của 1 user cụ thể
+**Mục đích:** Thống kê dữ liệu UserResults hiện tại
 
 **Sử dụng:**
 ```bash
-python check_user_skills.py  # Default userId=3
+python check_data_stats.py
 ```
 
 **Output:**
 ```
-User 3:
-  Skill 1 (Vocabulary): 60 attempts, 6 correct, 10% accuracy
-  Skill 2 (Grammar): 8 attempts, 2 correct, 25% accuracy
-  ...
+📊 STATISTICS: UserResults DATA
+1️⃣  Total UserResults records: 24
+2️⃣  Total unique users: 6
+3️⃣  Records per user: [userId → count]
+4️⃣  Training data aggregated: [userId + skillId → attempts, correct, accuracy]
 ```
 
 **Khi nào dùng:**
-- Debug: User không có weak skills
-- Verify: Sau khi user làm bài test mới
-- Analysis: Hiểu user behavior
-
----
-
-### `check_skills_distribution.py`
-
-**Mục đích:** Xem tất cả skills trong database
-
-**Sử dụng:**
-```bash
-python check_skills_distribution.py
-```
-
-**Output:**
-```
-Skill 1 (Vocabulary): 500 questions
-Skill 2 (Grammar): 450 questions
-Skill 3 (Reading): 300 questions
-...
-```
-
-**Khi nào dùng:**
-- Setup ban đầu
-- Data quality check
+- Verify data sufficiency trước khi train
+- Check data quality
 - Phát hiện data imbalance
-
----
-
-### `find_best_user.py`
-
-**Mục đích:** Tìm user "tốt nhất" để test (nhiều skills + nhiều attempts)
-
-**Sử dụng:**
-```bash
-python find_best_user.py
-```
-
-**Output:**
-```
-User 3: 3 skills, 96 total attempts ← BEST
-User 6: 1 skill, 160 attempts
-User 7: 2 skills, 50 attempts
-```
-
-**Khi nào dùng:**
-- Tìm user để demo
-- Test model với user có đủ data
-- Debug recommendation system
 
 ---
 
@@ -305,12 +313,12 @@ python demo_scalability.py 10000     # Specific: 10,000 users
 PERSONAL MODEL (10k users):
   - 10,000 files
   - 488 MB storage
-  - 1.4 hours retrain
+  - 14 hours retrain
 
 UNIFIED MODEL (10k users):
   - 1 file
   - 0.1 MB storage
-  - 1.6 hours retrain
+  - 2-3 hours retrain
   → Tiết kiệm 99.98% storage!
 ```
 
@@ -321,21 +329,26 @@ UNIFIED MODEL (10k users):
 
 ---
 
-## 📦 DEPRECATED FILES (Không dùng nữa)
+## 📦 DEPRECATED FILES (Không tồn tại)
 
 ### ❌ `train_personal_model.py`
+
+**Status:** Không tồn tại - được replace bởi `train_unified_model.py`
 
 **Mục đích:** Train personal model cho từng user (1 model/user)
 
 **Vấn đề:**
 - 10,000 users = 10,000 files
 - Không scale tốt
+- Retrain 14 giờ
 
-**Thay thế:** `train_unified_model.py`
+**Thay thế:** `train_unified_model.py` (scalable approach)
 
 ---
 
 ### ❌ `predict_personal.py`
+
+**Status:** Không tồn tại - được replace bởi `predict_unified.py` hoặc `predict_hybrid_unified.py`
 
 **Mục đích:** Predict với personal model standalone
 
@@ -345,13 +358,29 @@ UNIFIED MODEL (10k users):
 
 ---
 
-### ❌ `predict.py`
+### ❌ `predict_hybrid.py`
 
-**Mục đích:** Load global model và predict đơn giản (dự định cho Node.js gọi)
+**Status:** Không tồn tại - được replace bởi `predict_hybrid_unified.py`
 
-**Status:** KHÔNG DÙNG NỮA, giữ lại để tham khảo
+**Mục đích:** Predict với Personal Model approach (cũ)
 
-**Thay thế:** `predict_hybrid.py` hoặc `predict_hybrid_unified.py`
+**Strategy:**
+```python
+IF attempts < 10:
+    → Global Model
+ELSE:
+    → Personal Model (user_{userId}_model.pkl)  # 10k files
+```
+
+**Thay thế:** `predict_hybrid_unified.py` (unified approach)
+
+---
+
+### ❌ Các file khác (check_user_skills.py, check_skills_distribution.py, find_best_user.py)
+
+**Status:** Không tồn tại trong folder hiện tại
+
+**Thay thế:** Dùng `check_data_stats.py` và `demo_scalability.py` thay thế
 
 ---
 
@@ -364,27 +393,37 @@ UNIFIED MODEL (10k users):
 - **Usage:** Dùng cho users có <10 attempts
 - **Train by:** `train_model.py`
 - **Used by:** All predict scripts
+- **Status:** ✅ Hoạt động
 
 ### `unified_model.pkl`
 
 - **Type:** Unified Naive Bayes Model
-- **Features:** 9 (user context + skill context)
+- **Features:** 10 (user_level, total_tests, total_questions, overall_accuracy, days_active, learning_velocity, consistency, recency_bias, attempts, correct)
 - **Usage:** Dùng cho users có ≥10 attempts
 - **Train by:** `train_unified_model.py`
 - **Used by:** `predict_hybrid_unified.py`, `predict_unified.py`
+- **Status:** ✅ Hoạt động
+
+### `unified_model_scaler.pkl`
+
+- **Type:** StandardScaler
+- **Purpose:** Normalize/scale features trước khi predict
+- **Train by:** `train_unified_model.py`
+- **Used by:** `predict_hybrid_unified.py`, `predict_unified.py` (SHOULD BE - cần verify)
+- **Status:** ✅ Được tạo trong training
 
 ### `unified_model_info.pkl`
 
-- **Type:** Metadata
-- **Content:** Feature names, training time, accuracy, total users
+- **Type:** Metadata dictionary
+- **Content:** Feature names, training time, accuracy, total users trained
 - **Used by:** `predict_unified.py`, `predict_hybrid_unified.py`
+- **Status:** ✅ Hoạt động
 
-### `user_{userId}_model.pkl`
+### `user_{userId}_model.pkl` (DEPRECATED)
 
-- **Type:** Personal Naive Bayes Model (deprecated)
-- **Features:** 3 (attempts, correct, accuracy)
-- **Usage:** OLD approach - 1 model per user
-- **Status:** DEPRECATED, không khuyến nghị dùng
+- **Type:** Personal Naive Bayes Model
+- **Status:** ❌ DEPRECATED - Không còn tạo/dùng nữa
+- **Thay thế:** Dùng unified_model.pkl thay thế
 
 ---
 
@@ -393,15 +432,14 @@ UNIFIED MODEL (10k users):
 ### 1. Setup lần đầu
 
 ```bash
+# Check dữ liệu
+python check_data_stats.py
+
 # Train global model
 python train_model.py
 
 # Train unified model
 python train_unified_model.py
-
-# Check database
-python check_skills_distribution.py
-python find_best_user.py
 ```
 
 ### 2. Production Usage (AUTOMATED ✅)
@@ -436,8 +474,8 @@ python train_unified_model.py   # Unified model
 ### 4. Debug & Testing
 
 ```bash
-# Check user data
-python check_user_skills.py
+# Check data stats
+python check_data_stats.py
 
 # Test unified model
 python predict_unified.py 3
@@ -468,9 +506,8 @@ Bạn muốn làm gì?
 │  └─> predict_unified.py
 │
 ├─ DEBUG: Check data
-│  ├─> Check 1 user → check_user_skills.py
-│  ├─> Check all skills → check_skills_distribution.py
-│  └─> Find test user → find_best_user.py
+│  ├─> Check data stats → check_data_stats.py ⭐
+│  └─> Demo scalability → demo_scalability.py
 │
 └─ DEMO: Show scalability
    └─> demo_scalability.py
@@ -484,41 +521,41 @@ Bạn muốn làm gì?
 |------|---------|--------|
 | **✅ Auto-predict** | `Auto (mlPredictionService.js)` | MLPredictions + MLPredictionHistory |
 | **✅ Auto-retrain** | `Auto (mlRetrainCron.js)` | Models every 6 hours |
+| **Check data** | `python check_data_stats.py` | Data statistics |
 | **Train global** | `python train_model.py` | weak_skill_model.pkl |
-| **Train unified** | `python train_unified_model.py` | unified_model.pkl |
+| **Train unified** | `python train_unified_model.py` | unified_model.pkl + scaler |
 | **Predict (manual)** | `python predict_hybrid_unified.py 3` | Weak skills + recommendations |
 | **Test unified** | `python predict_unified.py 3` | Weak skills only |
-| **Check user** | `python check_user_skills.py` | User skills distribution |
-| **Check DB** | `python check_skills_distribution.py` | All skills in DB |
-| **Find user** | `python find_best_user.py` | Best user for testing |
 | **Demo scale** | `python demo_scalability.py 10000` | Scalability comparison |
 
 ---
 
 ## 📅 VERSION HISTORY
 
-### Version 3.0 (2025-01-09) ⭐ CURRENT - AUTOMATION UPDATE
+### Version 3.1 (2026-01-08) ⭐ CURRENT - FEATURES UPDATE
+- **Updated: Feature engineering in train_unified_model.py**
+  - Added 3 new features: learning_velocity, consistency, recency_bias
+  - Total features: 10 (was 9)
+  - Added StandardScaler for feature normalization
+- **Updated: Model files**
+  - Added `unified_model_scaler.pkl` for prediction
+- **Updated: Documentation**
+  - Fixed: Deprecated files status (predict_hybrid.py, train_personal_model.py - không tồn tại)
+  - Added: check_data_stats.py documentation
+  - Updated: Features list (10 instead of 9)
+
+### Version 3.0 (2025-01-09) - AUTOMATION UPDATE
 - **Added: Node.js Automation**
   - `backend/services/mlPredictionService.js` - Auto-predict after submit
   - `backend/cronJobs/mlRetrainCron.js` - Auto-retrain every 6 hours
 - **Added: Database caching**
   - `MLPredictions` - Cache table (1 record/user, instant reads)
   - `MLPredictionHistory` - Tracking table (multiple records, trends)
-- **Workflow: Fully automated**
-  - Submit → Background predict → Update cache
-  - Every 6 hours → Auto retrain models
 
 ### Version 2.0 (2025-10-08) - UNIFIED MODEL
 - Added: `predict_hybrid_unified.py` (production-ready)
 - Added: `train_unified_model.py` (scalable approach)
-- Added: `predict_unified.py` (standalone test)
-- Added: Utility files (check_*, find_*, demo_*)
 - Strategy: Global + Unified (1 model for all users)
-
-### Version 1.0 (Original) - PERSONAL MODEL
-- Files: `predict_hybrid.py`, `train_personal_model.py`
-- Strategy: Global + Personal (1 model per user)
-- Issue: Không scale với nhiều users
 
 ---
 
@@ -531,6 +568,6 @@ Nếu quên file nào làm gì:
 
 ---
 
-**Last Updated:** 2025-10-08  
+**Last Updated:** 2026-01-08  
 **Author:** AI Assistant  
 **Purpose:** Tránh quên files làm gì sau này! 😄

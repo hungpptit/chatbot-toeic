@@ -1,0 +1,63 @@
+{
+  "title": "Mixed Test Sample - Reading + Listening",
+  "courseId": 1,
+  "audioPath": "D:/Chatbot_Toeic/test_images/SongGio.mp3",
+  "readingQuestions": [
+    {
+      "question": "The company announced that it _____ a new office in downtown next month.",
+      "optionA": "will open",
+      "optionB": "opens",
+      "optionC": "opened",
+      "optionD": "has opened",
+      "correctAnswer": "A",
+      "explanation": "Future tense 'will open' is correct because the action will happen next month.",
+      "typeId": 1,
+      "skillId": 2,
+      "partId": 5
+    },
+    {
+      "question": "According to the passage, what is the main benefit of the new policy?",
+      "optionA": "Increased productivity",
+      "optionB": "Better work-life balance",
+      "optionC": "Higher salaries",
+      "optionD": "More vacation days",
+      "correctAnswer": "B",
+      "explanation": "The passage clearly states that the new policy aims to improve work-life balance for employees.",
+      "typeId": 2,
+      "skillId": 4,
+      "partId": 7
+    }
+  ],
+  "listeningQuestions": [
+    {
+      "question": "What does the man suggest?",
+      "optionA": "Postponing the meeting",
+      "optionB": "Canceling the order",
+      "optionC": "Hiring more staff",
+      "optionD": "Changing the venue",
+      "correctAnswer": "A",
+      "explanation": "In the conversation, the man clearly suggests postponing the meeting to next week.",
+      "typeId": 3,
+      "skillId": 1,
+      "partId": 3,
+      "imagePath": "D:/Chatbot_Toeic/test_images/question2.jpg",
+      "startSecond": 0,
+      "endSecond": 15
+    },
+    {
+      "question": "Where most likely are the speakers?",
+      "optionA": "In a restaurant",
+      "optionB": "In an office",
+      "optionC": "At a conference",
+      "optionD": "In a store",
+      "correctAnswer": "B",
+      "explanation": "The context clues indicate they are discussing work matters in an office setting.",
+      "typeId": 4,
+      "skillId": 1,
+      "partId": 4,
+      "imagePath": "D:/Chatbot_Toeic/test_images/question2.jpg",
+      "startSecond": 15,
+      "endSecond": 30
+    }
+  ]
+}

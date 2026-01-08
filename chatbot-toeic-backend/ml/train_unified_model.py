@@ -69,6 +69,7 @@ import pandas as pd
 from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score
+from sklearn.preprocessing import StandardScaler
 import joblib
 from dotenv import load_dotenv
 from datetime import datetime
@@ -106,13 +107,24 @@ def train_unified_model():
             COUNT(DISTINCT ur.userTestId) AS total_tests,
             COUNT(*) AS total_questions,
             CAST(SUM(CASE WHEN ur.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS overall_accuracy,
-            DATEDIFF(DAY, MIN(ur.answeredAt), GETDATE()) AS days_active
+            DATEDIFF(DAY, MIN(ur.answeredAt), GETDATE()) AS days_active,
+            -- Learning Velocity: Accuracy từ 30 ngày đầu
+            (SELECT CAST(SUM(CASE WHEN ur2.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) 
+             FROM UserResults ur2 
+             WHERE ur2.userId = ur.userId 
+             AND ur2.answeredAt <= DATEADD(DAY, 30, MIN(ur.answeredAt))) AS first_30d_accuracy,
+            -- Recency Bias: Accuracy 50 câu gần nhất
+            (SELECT CAST(SUM(CASE WHEN recent.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+             FROM (SELECT TOP 50 isCorrect FROM UserResults ur3
+                   WHERE ur3.userId = ur.userId
+                   ORDER BY ur3.answeredAt DESC) recent
+             WHERE recent.isCorrect IS NOT NULL) AS recent_50_accuracy
         FROM UserResults ur
         WHERE ur.userId IS NOT NULL
         GROUP BY ur.userId
     ),
     SkillStats AS (
-        -- Tính toán stats per skill (GIỮ NGUYÊN LOGIC CŨ)
+        -- Tính toán stats per skill + consistency
         SELECT 
             ur.userId,
             qs.skillId,
@@ -123,21 +135,34 @@ def train_unified_model():
         JOIN QuestionSkills qs ON ur.questionId = qs.questionId
         WHERE ur.userId IS NOT NULL
         GROUP BY ur.userId, qs.skillId
+    ),
+    UserConsistency AS (
+        -- Tính consistency: std dev của skill accuracy per user
+        SELECT 
+            userId,
+            STDEV(skill_accuracy) AS skill_consistency
+        FROM SkillStats
+        GROUP BY userId
     )
     SELECT 
         ss.userId,
         ss.skillId,
-        -- USER FEATURES (MỚI THÊM)
+        -- USER FEATURES (ORIGINAL)
         us.total_tests,
         us.total_questions,
         us.overall_accuracy,
         us.days_active,
+        -- NEW FEATURES (3 cái)
+        ISNULL(us.overall_accuracy - us.first_30d_accuracy, 0) AS learning_velocity,
+        ISNULL(uc.skill_consistency, 0) AS consistency,
+        ISNULL(us.recent_50_accuracy - us.overall_accuracy, 0) AS recency_bias,
         -- SKILL FEATURES (GIỮ NGUYÊN)
         ss.attempts,
         ss.correct,
         ss.skill_accuracy
     FROM SkillStats ss
     JOIN UserStats us ON ss.userId = us.userId
+    LEFT JOIN UserConsistency uc ON ss.userId = uc.userId
     """
     
     print("🔍 Đang query database...")
@@ -185,6 +210,9 @@ def train_unified_model():
         'total_questions',  # Số câu hỏi đã làm
         'overall_accuracy', # Accuracy tổng quát
         'days_active',      # Số ngày hoạt động
+        'learning_velocity',# Tốc độ cải thiện (NEW)
+        'consistency',      # Độ ổn định kỹ năng (NEW)
+        'recency_bias',     # Trend gần đây (NEW)
         'attempts',         # Số lần làm skill này
         'correct'           # Số câu đúng skill này
     ]
@@ -195,10 +223,21 @@ def train_unified_model():
     print(f"\n🎯 Feature matrix shape: {X.shape}")
     print("Features:", feature_columns)
     
+    # ========================================================================
+    # FEATURE SCALING (StandardScaler)
+    # ========================================================================
+    print("\n🔄 Scaling features...")
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    X_scaled_df = pd.DataFrame(X_scaled, columns=feature_columns)
+    
+    print(f"✅ Features scaled (mean=0, std=1)")
+    print(f"   Sample scaled values:\n{X_scaled_df.head()}")
+    
     # Split train/test (guard against tiny / single-class datasets)
     can_stratify = (y.nunique() >= 2) and (y.value_counts().min() >= 2)
     X_train, X_test, y_train, y_test = train_test_split(
-        X,
+        X_scaled_df,
         y,
         test_size=0.2,
         random_state=42,
@@ -236,6 +275,11 @@ def train_unified_model():
     model_path = os.path.join(model_dir, "unified_model.pkl")
     joblib.dump(model, model_path)
     print(f"\n💾 Model saved at: {model_path}")
+    
+    # Save scaler (IMPORTANT for prediction)
+    scaler_path = os.path.join(model_dir, "unified_model_scaler.pkl")
+    joblib.dump(scaler, scaler_path)
+    print(f"💾 Scaler saved at: {scaler_path}")
     
     # Save feature names for later prediction
     feature_info = {

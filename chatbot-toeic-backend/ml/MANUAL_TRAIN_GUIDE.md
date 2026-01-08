@@ -25,29 +25,40 @@ Tài liệu chi tiết hướng dẫn train lại models sau khi xóa data hoặ
 
 ```bash
 # Windows PowerShell
-cd D:\Chatbot_Toeic\chatbot-toeic-backend
+cd D:\Chatbot_Toeic\chatbot-toeic-backend\ml
 
 # Hoặc Git Bash / CMD
-cd /d/Chatbot_Toeic/chatbot-toeic-backend
+cd /d/Chatbot_Toeic/chatbot-toeic-backend/ml
 ```
 
-### **Bước 2: Train cả 2 models**
+### **Bước 2: Check dữ liệu trước**
+
+```bash
+# Check dữ liệu hiện tại
+python check_data_stats.py
+```
+
+### **Bước 3: Train cả 2 models**
 
 ```bash
 # Train Global Model (30 giây)
-python ml/train_model.py
+python train_model.py
 
 # Train Unified Model (1-2 phút)
-python ml/train_unified_model.py
+python train_unified_model.py
 ```
 
-### **Bước 3: Verify models đã tạo**
+### **Bước 4: Verify models đã tạo**
 
 ```bash
 # Kiểm tra files model đã được tạo chưa
-ls ml/model/
+ls model/
 
 # Output mong đợi (models được lưu trong thư mục ml/model/):
+# weak_skill_model.pkl
+# unified_model.pkl
+# unified_model_scaler.pkl      ← NEW (Scaler cho prediction)
+# unified_model_info.pkl
 # weak_skill_model.pkl          ← Global model
 # unified_model.pkl             ← Unified model
 # unified_model_info.pkl        ← Metadata
@@ -62,21 +73,19 @@ ls ml/model/
 ### **Bước 1: Check database có data chưa**
 
 ```bash
-cd D:\Chatbot_Toeic\chatbot-toeic-backend
+cd D:\Chatbot_Toeic\chatbot-toeic-backend\ml
 
-# Xem tất cả skills trong DB
-python ml/check_skills_distribution.py
+# Xem statistics dữ liệu hiện tại
+python check_data_stats.py
 ```
 
 **Output mong đợi:**
 ```
-📊 Skills Distribution:
-Skill 1 (Vocabulary): 500 questions
-Skill 2 (Grammar): 450 questions
-Skill 4 (Reading): 300 questions
-Skill 6 (Listening): 250 questions
-
-Total: 1500 questions across 4 skills
+📊 STATISTICS: UserResults DATA
+1️⃣  Total UserResults records: 245
+2️⃣  Total unique users: 15
+3️⃣  Records per user: [Danh sách từng user]
+4️⃣  Training data aggregated by userId + skillId
 ```
 
 **Nếu không có output hoặc lỗi:**
@@ -88,7 +97,7 @@ Total: 1500 questions across 4 skills
 ### **Bước 2: Train Global Model**
 
 ```bash
-python ml/train_model.py
+python train_model.py
 ```
 
 **Output mong đợi:**
@@ -98,19 +107,19 @@ TRAIN GLOBAL MODEL - For users with <10 attempts per skill
 ================================================================================
 
 📊 Loading data from database...
-   Server: localhost\SQLEXPRESS
-   Database: ChatbotToeic
+   DB_HOST: localhost
+   DB_PORT: 1433
+   DB_NAME: ChatbotToeic
 
 📊 Data loaded:
-   - Total users: 15
-   - Total skills: 4
    - Total records: 245
+   - Weak skills: 125 (51%)
+   - Strong skills: 120 (49%)
 
 📊 Training data:
    Features: ['attempts', 'correct', 'accuracy']
    Samples: 245
-   Weak skills: 125 (51%)
-   Strong skills: 120 (49%)
+   Train/Test split: 196/49
 
 🤖 Training Naive Bayes model...
 
@@ -123,7 +132,7 @@ TRAIN GLOBAL MODEL - For users with <10 attempts per skill
    F1-Score: 0.73
 
 💾 Saving model...
-   ✅ Model saved: ml/model/weak_skill_model.pkl
+   ✅ Model saved: model/weak_skill_model.pkl
 
 ================================================================================
 ✅ TRAINING COMPLETE - Global Model Ready!
@@ -131,16 +140,16 @@ TRAIN GLOBAL MODEL - For users with <10 attempts per skill
 ```
 
 **Nếu gặp lỗi:**
-- `ModuleNotFoundError: No module named 'sklearn'` → Chạy: `pip install scikit-learn pandas pyodbc`
-- `Connection failed` → Check .env: `DB_SERVER`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`
-- `No data found` → Database chưa có UserResults/Questions
+- `ModuleNotFoundError: No module named 'sklearn'` → Chạy: `pip install scikit-learn pandas pyodbc python-dotenv`
+- `Connection failed` → Check .env: `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASS`, `DB_NAME`
+- `No data found` → Database chưa có UserResults hoặc dữ liệu quá ít
 
 ---
 
 ### **Bước 3: Train Unified Model**
 
 ```bash
-python ml/train_unified_model.py
+python train_unified_model.py
 ```
 
 **Output mong đợi:**
@@ -151,25 +160,29 @@ TRAIN UNIFIED MODEL - One model for all users
 
 📊 Loading data from database...
 
-📊 Building user profiles...
+📊 Building user profiles with features...
    Users with data: 15
 
-📊 Creating training data with 9 features:
-   - userId_hash
+📊 Creating training data with 10 features:
    - user_level
    - total_tests
    - total_questions
    - overall_accuracy
    - days_active
+   - learning_velocity (NEW)
+   - consistency (NEW)
+   - recency_bias (NEW)
    - attempts (skill-specific)
    - correct (skill-specific)
-   - skill_accuracy (skill-specific)
 
 📊 Training data:
    Samples: 245
-   Features: 9
+   Features: 10
    Weak skills: 125 (51%)
    Strong skills: 120 (49%)
+
+🤖 Scaling features with StandardScaler...
+   ✅ Features scaled (mean=0, std=1)
 
 🤖 Training Unified Naive Bayes model...
 
@@ -182,14 +195,16 @@ TRAIN UNIFIED MODEL - One model for all users
    F1-Score: 0.78
 
 💾 Saving models...
-   ✅ Model saved: ml/model/unified_model.pkl
-   ✅ Info saved: ml/model/unified_model_info.pkl
+   ✅ Model saved: model/unified_model.pkl
+   ✅ Scaler saved: model/unified_model_scaler.pkl (NEW)
+   ✅ Info saved: model/unified_model_info.pkl
 
 📊 Model info:
    Total users trained: 15
    Total samples: 245
    Accuracy: 82%
-   Training time: 2025-11-04 10:30:45
+   Features: ['user_level', 'total_tests', 'total_questions', ...]
+   Training time: 2026-01-08 10:30:45
 
 ================================================================================
 ✅ TRAINING COMPLETE - Unified Model Ready!
@@ -197,46 +212,29 @@ TRAIN UNIFIED MODEL - One model for all users
 ```
 
 **Nếu gặp lỗi:**
-- Tương tự như Global Model
-- `Not enough data` → Cần ít nhất 5 users có ≥10 attempts
+- `ModuleNotFoundError: No module named 'sklearn'` → Chạy: `pip install scikit-learn pandas pyodbc python-dotenv`
+- `Connection failed` → Check .env file
+- `Not enough data` → Cần ít nhất 5 users hoặc 50 training records
 
 ---
 
 ### **Bước 4: Test models đã hoạt động chưa**
 
-#### **Test 4.1: Find user để test**
+#### **Test 4.1: Predict với user cụ thể**
 
 ```bash
-python ml/find_best_user.py
-```
-
-**Output:**
-```
-🔍 Finding users with most skills and attempts...
-
-Top users for testing:
-User 6: 3 skills, 160 attempts ← BEST
-User 3: 3 skills, 96 attempts
-User 7: 2 skills, 50 attempts
-
-💡 Recommended: Use userId=6 for testing
-```
-
-#### **Test 4.2: Predict với user đó**
-
-```bash
-# Thay 6 bằng userId từ bước trên
-python ml/predict_hybrid_unified.py 6
+# Test predict cho userId=3 (hoặc userId khác có dữ liệu)
+python predict_hybrid_unified.py 3
 ```
 
 **Output mong đợi:**
 ```
 ================================================================================
-USER 6 - WEAK SKILLS PREDICTION
+USER 3 - WEAK SKILLS PREDICTION
 ================================================================================
 
 📊 User Statistics:
-   Total attempts: 160
+   Total attempts: 96
    Total skills: 3
    Overall accuracy: 45%
    Strategy: UNIFIED MODEL (≥10 attempts)
@@ -275,20 +273,25 @@ USER 6 - WEAK SKILLS PREDICTION
 ### **Tạo script train_all.bat (Windows)**
 
 ```bash
-# Tạo file train_all.bat
+# Tạo file train_all.bat trong thư mục ml
 notepad train_all.bat
 ```
 
 **Nội dung file:**
 ```batch
 @echo off
+cd /d %~dp0
 echo ========================================
 echo TRAINING ALL ML MODELS
 echo ========================================
 echo.
 
-echo [1/2] Training Global Model...
-python ml/train_model.py
+echo [0/3] Checking data stats...
+python check_data_stats.py
+echo.
+
+echo [1/3] Training Global Model...
+python train_model.py
 if %errorlevel% neq 0 (
     echo ERROR: Global model training failed!
     pause
@@ -296,8 +299,8 @@ if %errorlevel% neq 0 (
 )
 echo.
 
-echo [2/2] Training Unified Model...
-python ml/train_unified_model.py
+echo [2/3] Training Unified Model...
+python train_unified_model.py
 if %errorlevel% neq 0 (
     echo ERROR: Unified model training failed!
     pause
@@ -308,13 +311,19 @@ echo.
 echo ========================================
 echo ALL MODELS TRAINED SUCCESSFULLY!
 echo ========================================
+echo Models saved in: model/
+echo  - weak_skill_model.pkl
+echo  - unified_model.pkl
+echo  - unified_model_scaler.pkl
+echo  - unified_model_info.pkl
+echo ========================================
 pause
 ```
 
 **Cách dùng:**
 ```bash
 # Chỉ cần double-click file train_all.bat
-# Hoặc chạy trong terminal:
+# Hoặc chạy trong terminal (từ thư mục ml):
 .\train_all.bat
 ```
 
@@ -325,32 +334,36 @@ pause
 ### **Check 1: Model files đã tồn tại**
 
 ```bash
-ls ml/model/
+ls model/
 
-# Phải có 3 files:
-# weak_skill_model.pkl          ← 50-200 KB
-# unified_model.pkl             ← 100-300 KB
-# unified_model_info.pkl        ← 1-5 KB
+# Phải có 4 files (mới):
+# weak_skill_model.pkl          ← Global model (50-200 KB)
+# unified_model.pkl             ← Unified model (100-300 KB)
+# unified_model_scaler.pkl      ← StandardScaler (NEW) (10-50 KB)
+# unified_model_info.pkl        ← Metadata (1-5 KB)
 ```
 
 ### **Check 2: Predict hoạt động**
 
 ```bash
-# Test với userId=6 (hoặc userId khác có nhiều data)
-python ml/predict_hybrid_unified.py 6
+# Test predict cho userId=3 (hoặc userId khác có dữ liệu)
+python predict_hybrid_unified.py 3
 
-# Phải có output weak skills + recommendations
+# Output phải chứa:
+# - User Statistics
+# - Weak Skills Detected
+# - Recommendations: X questions total
 ```
 
 ### **Check 3: Backend có nhận models không**
 
 ```bash
-# Start backend
+# Trong thư mục backend (parent folder)
 npm start
 
 # Làm 1 bài test bất kỳ
 # Check backend console:
-# ✅ [Background] ML prediction completed for user 6
+# ✅ [Background] ML prediction completed for user 3
 ```
 
 ---
@@ -370,12 +383,13 @@ pip install scikit-learn pandas pyodbc python-dotenv
 
 **Giải pháp:**
 
-1. Check file `.env` trong `chatbot-toeic-backend/`:
+1. Check file `.env` trong `chatbot-toeic-backend/` (parent folder):
 ```env
-DB_SERVER=localhost\\SQLEXPRESS
-DB_DATABASE=ChatbotToeic
-DB_USER=sa
-DB_PASSWORD=sa
+DB_HOST=localhost
+DB_PORT=1433
+DB_USERNAME=sa
+DB_PASS=sa
+DB_NAME=ChatbotToeic
 ```
 
 2. Test connection:
@@ -394,14 +408,64 @@ python -c "import pyodbc; print(pyodbc.drivers())"
 
 1. Check database có data chưa:
 ```bash
-python ml/check_skills_distribution.py
+python check_data_stats.py
 ```
 
 2. Cần ít nhất:
    - Global model: ≥50 records (tổng tất cả users)
-   - Unified model: ≥5 users có ≥10 attempts
+   - Unified model: ≥50 training samples
+   - Khuyến nghị: ≥150-200 records cho results tốt
 
-3. Nếu chưa đủ → Import thêm data hoặc tạo test users
+3. Nếu chưa đủ → Tạo fake data:
+```bash
+python generate_fake_data.py       # Tạo fake users
+python check_data_stats.py         # Verify
+python train_model.py              # Train lại
+python train_unified_model.py
+```
+
+---
+
+### **Lỗi: `File not found: unified_model.pkl`**
+
+**Giải pháp:**
+
+1. Check thư mục `model/` có tồn tại không:
+```bash
+ls model/
+```
+
+2. Nếu không tồn tại, tạo thư mục:
+```bash
+mkdir model
+```
+
+3. Train lại models:
+```bash
+python train_model.py
+python train_unified_model.py
+```
+
+---
+
+### **Lỗi: `Scaler not found` khi predict**
+
+**Giải pháp:**
+
+1. Đảm bảo `unified_model_scaler.pkl` đã được tạo sau train:
+```bash
+ls model/unified_model_scaler.pkl
+```
+
+2. Nếu không có, train lại:
+```bash
+python train_unified_model.py
+```
+
+3. Verify scaler được dùng trong predict script:
+```bash
+grep -n "scaler" predict_hybrid_unified.py
+```
 
 ---
 
@@ -409,14 +473,14 @@ python ml/check_skills_distribution.py
 
 **Giải pháp:**
 
-1. Check thư mục `ml/model/` có tồn tại không:
+1. Check thư mục `model/` có tồn tại không:
 ```bash
-mkdir ml/model
+mkdir model
 ```
 
 2. Train lại:
 ```bash
-python ml/train_model.py
+python train_model.py
 ```
 
 ---
@@ -425,11 +489,12 @@ python ml/train_model.py
 
 - [ ] File `weak_skill_model.pkl` đã được tạo (50-200 KB)
 - [ ] File `unified_model.pkl` đã được tạo (100-300 KB)
+- [ ] File `unified_model_scaler.pkl` đã được tạo (10-50 KB) - NEW
 - [ ] File `unified_model_info.pkl` đã được tạo (1-5 KB)
-- [ ] Test predict với userId bất kỳ: `python ml/predict_hybrid_unified.py 6`
+- [ ] Test predict với userId bất kỳ: `python predict_hybrid_unified.py 3`
 - [ ] Output có weak skills + recommendations
-- [ ] Backend server chạy được (npm start)
-- [ ] Làm test → Submit → Check backend console có log ML prediction
+- [ ] Backend server chạy được: `npm start` (từ backend folder)
+- [ ] Làm 1 bài test → Submit → Check backend console có log ML prediction
 
 **Nếu tất cả đều ✅ → Hệ thống sẵn sàng! 🎉**
 
@@ -441,7 +506,7 @@ Sau khi train thủ công lần đầu, hệ thống sẽ **tự động train l
 
 - **Schedule:** 0h, 6h, 12h, 18h mỗi ngày
 - **File:** `backend/cronJobs/mlRetrainCron.js`
-- **Command:** `python ml/train_model.py`
+- **Command:** Chạy `train_model.py` + `train_unified_model.py`
 - **Auto-start:** Khi backend server khởi động
 
 **Bạn KHÔNG CẦN train thủ công nữa!** ✅
@@ -450,13 +515,13 @@ Sau khi train thủ công lần đầu, hệ thống sẽ **tự động train l
 
 ## 📚 **TÀI LIỆU LIÊN QUAN**
 
-- `QUICK_START.md` - Commands nhanh
 - `ML_FILES_README.md` - Giải thích tất cả files
-- `SETUP_SUMMARY.md` - Tóm tắt setup
-- `WHEN_TO_RETRAIN.md` - Khi nào cần retrain
+- `QUICK_START.md` - Commands nhanh
+- `AI_DOCUMENTATION.md` - Tài liệu chi tiết về AI system
+- `FEATURE_EXTRACTION_UPDATE.md` - Feature engineering details
 
 ---
 
-**Last Updated:** 2025-11-04  
+**Last Updated:** 2026-01-08  
 **Author:** AI Assistant  
-**Purpose:** Hướng dẫn train thủ công sau khi xóa data
+**Purpose:** Hướng dẫn train thủ công sau khi xóa data hoặc setup lần đầu

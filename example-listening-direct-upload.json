@@ -1,0 +1,29 @@
+{
+  "title": "TOEIC Listening Part 1 - Direct Upload",
+  "courseId": 1,
+  "partId": 1,
+  "questions": [
+    {
+      "question": "Look at the picture. What is the man doing?",
+      "optionA": "He is walking on the street",
+      "optionB": "He is sitting at a desk",
+      "optionC": "He is reading a book",
+      "optionD": "He is talking on the phone",
+      "correctAnswer": "A",
+      "explanation": "The man is clearly walking on the street in the picture.",
+      "typeId": 1,
+      "skillId": 6
+    },
+    {
+      "question": "Look at the picture. Where are the people?",
+      "optionA": "In a restaurant",
+      "optionB": "In an office",
+      "optionC": "In a park",
+      "optionD": "In a library",
+      "correctAnswer": "C",
+      "explanation": "The picture shows people in a park with trees and benches.",
+      "typeId": 1,
+      "skillId": 6
+    }
+  ]
+}

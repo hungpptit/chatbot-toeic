@@ -27,7 +27,7 @@ export const getRecommendations = async (req, res) => {
         const { userId } = req.params;
         const force = String(req.query.force || '').toLowerCase();
         const forceRecompute = force === '1' || force === 'true' || force === 'yes';
-        const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes time
+        const CACHE_TTL_MS = 10 * 60 * 1000; // 2 minutes time
 
         if (!userId) {
             return res.status(400).json({
