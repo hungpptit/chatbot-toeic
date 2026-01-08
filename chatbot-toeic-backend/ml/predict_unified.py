@@ -42,6 +42,7 @@ import joblib
 from dotenv import load_dotenv
 from datetime import datetime
 import numpy as np
+import warnings
 
 # Load environment
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -153,7 +154,15 @@ def predict_unified(userId: int):
     LEFT JOIN UserConsistency uc ON ss.userId = uc.userId
     """
     
-    df = pd.read_sql(query, conn)
+    # Pandas may emit a UserWarning when using raw DBAPI connections like pyodbc.
+    # In PowerShell this can surface as a NativeCommandError even though the script succeeds.
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=r"pandas only supports SQLAlchemy connectable.*",
+            category=UserWarning,
+        )
+        df = pd.read_sql(query, conn)
     conn.close()
     
     if df.empty:
@@ -185,6 +194,27 @@ def predict_unified(userId: int):
     predictions = model.predict(X)
     probabilities = model.predict_proba(X)
 
+    # ------------------------------------------------------------------
+    # Explainability: compute the same rule-based label used in training
+    # (dynamic threshold when enough data; otherwise fallback threshold 0.6)
+    # ------------------------------------------------------------------
+    min_attempts_for_dynamic = 5
+    min_skills_for_dynamic = 3
+    k_std = 1.0
+    fallback_threshold = 0.6
+
+    user_num_skills = int(df['skillId'].nunique())
+    user_avg_skill_acc = float(df['skill_accuracy'].mean())
+    # match training: population std (ddof=0)
+    user_std_skill_acc = float(df['skill_accuracy'].std(ddof=0)) if user_num_skills > 1 else float('nan')
+
+    dynamic_ok_user = (
+        user_num_skills >= min_skills_for_dynamic
+        and not np.isnan(user_std_skill_acc)
+        and user_std_skill_acc > 1e-12
+    )
+    dynamic_threshold = user_avg_skill_acc - k_std * user_std_skill_acc if dynamic_ok_user else fallback_threshold
+
     # Map probability column by class label (do NOT assume class order)
     weak_class = 1
     weak_idx = None
@@ -199,9 +229,22 @@ def predict_unified(userId: int):
     weak_skills = []
     print(f"\n[RESULTS] Weak Skill Detection Results:")
     print("-" * 70)
+    print(
+        f"[BASELINE] Label rule (same as training): "
+        f"{'dynamic' if dynamic_ok_user else 'fallback'} threshold = {dynamic_threshold:.2%} "
+        f"(avg={user_avg_skill_acc:.2%}, std={user_std_skill_acc:.2%} over {user_num_skills} skills)"
+    )
     
     for pos, (_, row) in enumerate(df.iterrows()):
         is_weak = int(predictions[pos])
+
+        # Baseline label explanation
+        dynamic_ok_row = dynamic_ok_user and (float(row['attempts']) >= min_attempts_for_dynamic)
+        baseline_is_weak = (
+            float(row['skill_accuracy']) < dynamic_threshold
+            if dynamic_ok_row
+            else float(row['skill_accuracy']) < fallback_threshold
+        )
         
         # Handle edge case: model chỉ học 1 class
         if probabilities.shape[1] == 1:
@@ -218,6 +261,10 @@ def predict_unified(userId: int):
         print(f"Skill {row['skillId']}: {status}")
         print(f"   Attempts: {row['attempts']}, Correct: {row['correct']}, Accuracy: {row['skill_accuracy']:.2%}")
         print(f"   Weak Probability: {weak_prob:.2%}")
+        print(
+            f"   Baseline (rule) label: {'WEAK' if baseline_is_weak else 'STRONG'} "
+            f"({'dynamic' if dynamic_ok_row else 'fallback'})"
+        )
         
         if is_weak == 1:
             weak_skills.append({

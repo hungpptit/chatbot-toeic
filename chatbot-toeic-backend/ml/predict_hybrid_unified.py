@@ -390,8 +390,40 @@ def full_pipeline(userId: int, k: int = 3):
     weak_skills = [skill for skill, status in results.items() if "Weak" in status]
 
     if not weak_skills:
-        print("✅ User không có skill yếu!")
-        return {"weak_skills": [], "recommendations": {}}
+        # Fallback: vẫn trả gợi ý luyện tập cho user mới / ít dữ liệu.
+        # Lý do: với dataset nhỏ hoặc model bias về STRONG, có thể không có skill nào bị gắn nhãn WEAK.
+        # Khi đó, chọn skill có accuracy thấp nhất trong lịch sử user để gợi ý luyện tập.
+        try:
+            conn_fb = pyodbc.connect(conn_str)
+            fb_query = f"""
+            SELECT TOP 1
+                s.name AS skillName,
+                CAST(SUM(CASE WHEN ur.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS skill_accuracy,
+                COUNT(*) AS attempts
+            FROM UserResults ur
+            JOIN QuestionSkills qs ON ur.questionId = qs.questionId
+            JOIN Skills s ON qs.skillId = s.id
+            WHERE ur.userId = {userId}
+            GROUP BY s.name
+            ORDER BY skill_accuracy ASC, attempts DESC
+            """
+            fb_df = pd.read_sql(fb_query, conn_fb)
+            conn_fb.close()
+
+            if not fb_df.empty:
+                fallback_skill = str(fb_df.iloc[0]['skillName'])
+                fallback_acc = float(fb_df.iloc[0]['skill_accuracy'])
+                print(
+                    f"✅ User không có skill bị gắn nhãn WEAK; fallback gợi ý luyện tập theo skill thấp nhất: "
+                    f"{fallback_skill} (acc={fallback_acc:.2%})"
+                )
+                weak_skills = [fallback_skill]
+            else:
+                print("✅ User không có skill yếu và cũng không đủ mapping skill để gợi ý.")
+                return {"weak_skills": [], "recommendations": {}}
+        except Exception as e:
+            print(f"⚠️ Fallback recommendation failed: {e}")
+            return {"weak_skills": [], "recommendations": {}}
 
     print(f"\n🎯 Weak Skills: {weak_skills}")
     

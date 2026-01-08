@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 // Production: "0 */6 * * *" = At minute 0 past every 6th hour (0h, 6h, 12h, 18h)
 // Test mode: "*/3 * * * *" = Every 3 minutes
-cron.schedule("*/10 * * * *", async () => {
+cron.schedule("*/3 * * * *", async () => {
   console.log("⏰ Cron Job: ML Model Retraining started at:", new Date().toLocaleString('vi-VN'));
   
   try {
