@@ -4,11 +4,63 @@ import { useNavigate } from 'react-router-dom';
 import { getMLRecommendationDetailsAPI } from '../services/mlRecommendation_services';
 import '../styles/MLRecommendationsPage.css';
 
+const SKILL_ORDER = ['listening', 'reading', 'grammar', 'vocabulary'] as const;
+
+const toTitleCase = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/(^|\s)([a-z])/g, (_, prefix: string, ch: string) => `${prefix}${ch.toUpperCase()}`);
+
+const extractBaseSkills = (skills: string[]) => {
+  const base = new Set<string>();
+
+  for (const raw of skills) {
+    if (!raw) continue;
+    const parts = String(raw)
+      .toLowerCase()
+      .trim()
+      .split(/[^a-z]+/)
+      .filter(Boolean);
+
+    for (const part of parts) {
+      if ((SKILL_ORDER as readonly string[]).includes(part)) {
+        base.add(part);
+      }
+    }
+  }
+
+  const ordered = SKILL_ORDER.filter((s) => base.has(s));
+  return ordered.length > 0 ? ordered : Array.from(new Set(skills.filter(Boolean)));
+};
+
+type RecommendationQuestion = {
+  id: number;
+  question?: string;
+  partId?: number;
+  typeId?: number;
+  part?: { id: number; name?: string } | null;
+  questionType?: { id: number; name?: string } | null;
+  mediaMappings?: Array<unknown>;
+};
+
+const inferSkillLabel = (q: RecommendationQuestion) => {
+  const partId = Number(q.partId);
+  const hasAudio = Array.isArray(q.mediaMappings) && q.mediaMappings.length > 0;
+
+  if (Number.isFinite(partId)) {
+    if (partId >= 1 && partId <= 4) return 'Listening';
+    if (partId >= 5 && partId <= 7) return 'Reading';
+  }
+
+  if (hasAudio) return 'Listening';
+  return 'Unknown';
+};
+
 export default function MLRecommendationsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [weakSkills, setWeakSkills] = useState<string[]>([]);
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<RecommendationQuestion[]>([]);
   const [showPracticeOptions, setShowPracticeOptions] = useState(false);
   const [selectedQuestionCount, setSelectedQuestionCount] = useState<number>(0);
   const [selectedMinutes, setSelectedMinutes] = useState<number>(45);
@@ -97,6 +149,8 @@ export default function MLRecommendationsPage() {
     );
   }
 
+  const displaySkills = extractBaseSkills(weakSkills);
+
   return (
     <div className="ml-recommendations-page">
       <h1>📊 Phân tích kỹ năng & Gợi ý luyện tập</h1>
@@ -106,9 +160,9 @@ export default function MLRecommendationsPage() {
           <div className="ml-weak-skills-box">
             <h3>🎯 Kỹ năng cần cải thiện:</h3>
             <div className="ml-skills-container">
-              {weakSkills.map((skill, i) => (
+              {displaySkills.map((skill, i) => (
                 <span key={i} className="ml-skill-badge">
-                  {skill}
+                  {toTitleCase(skill)}
                 </span>
               ))}
             </div>
@@ -120,7 +174,7 @@ export default function MLRecommendationsPage() {
               Hệ thống đã phân tích kết quả của bạn và chọn {questions.length} câu hỏi phù hợp để bạn luyện tập.
               Các câu hỏi thuộc kỹ năng{' '}
               <strong style={{ color: '#e74c3c', fontWeight: 'bold' }}>
-                {weakSkills.join(', ')}
+                {displaySkills.map(toTitleCase).join(', ')}
               </strong>{' '}
               để giúp bạn cải thiện kỹ năng yếu.
             </p>
@@ -178,18 +232,53 @@ export default function MLRecommendationsPage() {
 
               <div className="ml-scrollable-container">
                 <ul className="ml-questions-list">
-                  {questions.map((q, i) => (
-                    <li key={q.id} className="ml-question-item">
-                      <span className="ml-question-number">#{i + 1}</span>
-                      <span className="ml-question-part">Part {q.partId}</span>
-                      <span className="ml-question-text">
-                        {q.question.substring(0, 80)}...
-                      </span>
-                      {q.mediaMappings && q.mediaMappings.length > 0 && (
-                        <span className="ml-audio-badge">🎵 Có audio</span>
-                      )}
-                    </li>
-                  ))}
+                  {questions.map((q, i) => {
+                    const questionText = (q.question || '').trim();
+                    const safePreview =
+                      questionText.length > 80 ? `${questionText.substring(0, 80)}...` : questionText;
+
+                    const questionTypeName = q.questionType?.name?.trim() || (q.typeId ? `Type ${q.typeId}` : '');
+                    const partLabel = q.part?.name?.trim() || (q.partId ? `Part ${q.partId}` : '');
+                    const skillLabel = inferSkillLabel(q);
+                    const hasAudio = Array.isArray(q.mediaMappings) && q.mediaMappings.length > 0;
+
+                    return (
+                      <li key={q.id ?? i} className="ml-question-item">
+                        <span className="ml-question-number">#{i + 1}</span>
+                        <span className="ml-question-text">{safePreview}</span>
+
+                        <span className="ml-question-tags" aria-label="Question classification tags">
+                          {questionTypeName && (
+                            <span className="ml-question-tag" title="Question type">
+                              {questionTypeName}
+                            </span>
+                          )}
+                          {partLabel && (
+                            <span className="ml-question-tag" title="Part">
+                              {partLabel}
+                            </span>
+                          )}
+                          {skillLabel && (
+                            <span
+                              className={
+                                skillLabel === 'Reading'
+                                  ? 'ml-question-tag ml-question-tag-skill-reading'
+                                  : 'ml-question-tag'
+                              }
+                              title="Skill"
+                            >
+                              {skillLabel}
+                            </span>
+                          )}
+                          {hasAudio && (
+                            <span className="ml-question-tag ml-question-tag-audio" title="Has audio">
+                              🎵 Audio
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             </details>

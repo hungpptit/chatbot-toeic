@@ -336,6 +336,32 @@
   margin-left: 5px;
 }
 
+.ml-question-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.ml-question-tag {
+  display: inline-block;
+  background-color: #f8aa2c;
+  color: #ffffff;
+  padding: 2px 8px;
+  font-size: 12px;
+  border-radius: 999px;
+  line-height: 1.4;
+}
+
+.ml-question-tag-audio {
+  background-color: #e67e22;
+}
+
+.ml-question-tag-skill-reading {
+  background-color: #1a73e8;
+}
+
 .ml-audio-badge {
   margin-left: 10px;
   color: #e67e22;
