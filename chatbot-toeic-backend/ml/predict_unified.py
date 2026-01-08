@@ -69,24 +69,31 @@ def predict_unified(userId: int):
     model_dir = os.path.join(os.path.dirname(__file__), "model")
     model_path = os.path.join(model_dir, "unified_model.pkl")
     info_path = os.path.join(model_dir, "unified_model_info.pkl")
+    scaler_path = os.path.join(model_dir, "unified_model_scaler.pkl")
     
     if not os.path.exists(model_path):
-        print("❌ Unified model chưa được train!")
-        print("   → Chạy: python train_unified_model.py")
+        print("[ERROR] Unified model chưa được train!")
+        print("   -> Chay: python train_unified_model.py")
         return None
     
     model = joblib.load(model_path)
     feature_info = joblib.load(info_path)
     feature_columns = feature_info['feature_columns']
+
+    scaler = None
+    if os.path.exists(scaler_path):
+        scaler = joblib.load(scaler_path)
+    else:
+        print("[WARNING] unified_model_scaler.pkl not found; predicting on unscaled features (may be inaccurate)")
     
-    print(f"📂 Loaded unified model (trained: {feature_info['trained_at']})")
+    print(f"[INFO] Loaded unified model (trained: {feature_info['trained_at']})")
     print(f"   Total users in training: {feature_info['total_users']}")
     print(f"   Training accuracy: {feature_info['test_accuracy']:.4f}")
     
     # Query user data
     conn = pyodbc.connect(conn_str)
     
-    # Query giống hệt lúc train
+    # Query giống hệt lúc train (với 3 features mới: learning_velocity, consistency, recency_bias)
     query = f"""
     WITH UserStats AS (
         SELECT 
@@ -94,7 +101,17 @@ def predict_unified(userId: int):
             COUNT(DISTINCT ur.userTestId) AS total_tests,
             COUNT(*) AS total_questions,
             CAST(SUM(CASE WHEN ur.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS overall_accuracy,
-            DATEDIFF(DAY, MIN(ur.answeredAt), GETDATE()) AS days_active
+            DATEDIFF(DAY, MIN(ur.answeredAt), GETDATE()) AS days_active,
+            -- Learning Velocity: Accuracy từ 30 ngày đầu
+            (SELECT CAST(SUM(CASE WHEN ur2.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) 
+             FROM UserResults ur2 
+             WHERE ur2.userId = {userId}
+             AND ur2.answeredAt <= DATEADD(DAY, 30, (SELECT MIN(answeredAt) FROM UserResults WHERE userId = {userId}))) AS first_30d_accuracy,
+            -- Recency Bias: Accuracy 50 câu gần nhất
+            (SELECT CAST(SUM(CASE WHEN recent.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+             FROM (SELECT TOP 50 isCorrect FROM UserResults ur3
+                   WHERE ur3.userId = {userId}
+                   ORDER BY ur3.answeredAt DESC) recent) AS recent_50_accuracy
         FROM UserResults ur
         WHERE ur.userId = {userId}
         GROUP BY ur.userId
@@ -110,6 +127,13 @@ def predict_unified(userId: int):
         JOIN QuestionSkills qs ON ur.questionId = qs.questionId
         WHERE ur.userId = {userId}
         GROUP BY ur.userId, qs.skillId
+    ),
+    UserConsistency AS (
+        SELECT 
+            userId,
+            STDEV(skill_accuracy) AS skill_consistency
+        FROM SkillStats
+        GROUP BY userId
     )
     SELECT 
         ss.userId,
@@ -118,18 +142,22 @@ def predict_unified(userId: int):
         us.total_questions,
         us.overall_accuracy,
         us.days_active,
+        ISNULL(us.overall_accuracy - us.first_30d_accuracy, 0) AS learning_velocity,
+        ISNULL(uc.skill_consistency, 0) AS consistency,
+        ISNULL(us.recent_50_accuracy - us.overall_accuracy, 0) AS recency_bias,
         ss.attempts,
         ss.correct,
         ss.skill_accuracy
     FROM SkillStats ss
     JOIN UserStats us ON ss.userId = us.userId
+    LEFT JOIN UserConsistency uc ON ss.userId = uc.userId
     """
     
     df = pd.read_sql(query, conn)
     conn.close()
     
     if df.empty:
-        print(f"⚠️ User {userId} chưa có dữ liệu")
+        print(f"[WARNING] User {userId} chưa có dữ liệu")
         return []
     
     # Feature engineering (giống lúc train)
@@ -139,8 +167,13 @@ def predict_unified(userId: int):
     
     # Prepare features theo đúng thứ tự
     X = df[feature_columns]
+
+    # Apply the same scaling as training (StandardScaler)
+    if scaler is not None:
+        X_scaled = scaler.transform(X)
+        X = pd.DataFrame(X_scaled, columns=feature_columns)
     
-    print(f"\n👤 User {userId} Profile:")
+    print(f"\n[USER] User {userId} Profile:")
     print(f"   Total Tests: {df['total_tests'].iloc[0]}")
     print(f"   Total Questions: {df['total_questions'].iloc[0]}")
     print(f"   Overall Accuracy: {df['overall_accuracy'].iloc[0]:.2%}")
@@ -151,27 +184,42 @@ def predict_unified(userId: int):
     # Predict
     predictions = model.predict(X)
     probabilities = model.predict_proba(X)
+
+    # Map probability column by class label (do NOT assume class order)
+    weak_class = 1
+    weak_idx = None
+    try:
+        classes = list(getattr(model, 'classes_', []))
+        if len(classes) >= 2 and weak_class in classes:
+            weak_idx = classes.index(weak_class)
+    except Exception:
+        weak_idx = None
     
     # Get weak skills
     weak_skills = []
-    print(f"\n🎯 Weak Skill Detection Results:")
+    print(f"\n[RESULTS] Weak Skill Detection Results:")
     print("-" * 70)
     
-    for idx, row in df.iterrows():
-        is_weak = predictions[idx]
+    for pos, (_, row) in enumerate(df.iterrows()):
+        is_weak = int(predictions[pos])
         
         # Handle edge case: model chỉ học 1 class
         if probabilities.shape[1] == 1:
-            weak_prob = 1.0 if is_weak else 0.0
+            # Only one class learned; probability is degenerate
+            weak_prob = 1.0 if is_weak == 1 else 0.0
         else:
-            weak_prob = probabilities[idx][1]  # Probability of being weak
+            if weak_idx is None:
+                # Fallback: assume class label 1 is at index 1 (legacy behavior)
+                weak_prob = float(probabilities[pos][1])
+            else:
+                weak_prob = float(probabilities[pos][weak_idx])
         
-        status = "❌ WEAK" if is_weak else "✅ STRONG"
+        status = "[WEAK]" if is_weak == 1 else "[STRONG]"
         print(f"Skill {row['skillId']}: {status}")
         print(f"   Attempts: {row['attempts']}, Correct: {row['correct']}, Accuracy: {row['skill_accuracy']:.2%}")
         print(f"   Weak Probability: {weak_prob:.2%}")
         
-        if is_weak:
+        if is_weak == 1:
             weak_skills.append({
                 'skillId': int(row['skillId']),
                 'attempts': int(row['attempts']),
@@ -181,7 +229,7 @@ def predict_unified(userId: int):
             })
     
     print("-" * 70)
-    print(f"\n📊 Summary: {len(weak_skills)}/{len(df)} skills are WEAK")
+    print(f"\n[SUMMARY] Summary: {len(weak_skills)}/{len(df)} skills are WEAK")
     
     return weak_skills
 
@@ -278,4 +326,5 @@ if __name__ == "__main__":
         compare_unified_vs_personal(userId)
     else:
         weak_skills = predict_unified(userId)
-        print(f"\n🎯 Final Result: {weak_skills}")
+        print(f"\n[FINAL] Final Result: {weak_skills}")
+

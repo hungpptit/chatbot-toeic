@@ -107,21 +107,58 @@ def prepare_unified_features(userId: int, skillId: int, attempts: int, correct: 
         conn: Database connection
     
     Returns:
-        DataFrame với 7 features:
+        DataFrame với 10 features (giống như lúc train model):
         [user_level, total_tests, total_questions,
-         overall_accuracy, days_active, attempts, correct]
+         overall_accuracy, days_active, learning_velocity, 
+         consistency, recency_bias, attempts, correct]
     
     📝 NOTE: Features này PHẢI GIỐNG HỆT với lúc train unified model!
     """
-    # Query user stats (tổng quan về user)
+    # Query user stats (tổng quan về user) + thêm features mới
     query = f"""
+    WITH UserStats AS (
+        SELECT 
+            COUNT(DISTINCT userTestId) AS total_tests,
+            COUNT(*) AS total_questions,
+            CAST(SUM(CASE WHEN isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS overall_accuracy,
+            DATEDIFF(DAY, MIN(answeredAt), GETDATE()) AS days_active,
+            -- Learning Velocity: Accuracy từ 30 ngày đầu
+            (SELECT CAST(SUM(CASE WHEN ur2.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) 
+             FROM UserResults ur2 
+             WHERE ur2.userId = {userId}
+             AND ur2.answeredAt <= DATEADD(DAY, 30, (SELECT MIN(answeredAt) FROM UserResults WHERE userId = {userId}))) AS first_30d_accuracy,
+            -- Recency Bias: Accuracy 50 câu gần nhất
+            (SELECT CAST(SUM(CASE WHEN recent.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+             FROM (SELECT TOP 50 isCorrect FROM UserResults ur3
+                   WHERE ur3.userId = {userId}
+                   ORDER BY ur3.answeredAt DESC) recent) AS recent_50_accuracy
+        FROM UserResults
+        WHERE userId = {userId}
+    ),
+    SkillStats AS (
+        SELECT 
+            skillId,
+            CAST(SUM(CASE WHEN isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS skill_accuracy
+        FROM UserResults ur
+        JOIN QuestionSkills qs ON ur.questionId = qs.questionId
+        WHERE ur.userId = {userId}
+        GROUP BY qs.skillId
+    ),
+    UserConsistency AS (
+        SELECT 
+            STDEV(skill_accuracy) AS skill_consistency
+        FROM SkillStats
+    )
     SELECT 
-        COUNT(DISTINCT userTestId) AS total_tests,
-        COUNT(*) AS total_questions,
-        CAST(SUM(CASE WHEN isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS overall_accuracy,
-        DATEDIFF(DAY, MIN(answeredAt), GETDATE()) AS days_active
-    FROM UserResults
-    WHERE userId = {userId}
+        us.total_tests,
+        us.total_questions,
+        us.overall_accuracy,
+        us.days_active,
+        ISNULL(us.overall_accuracy - us.first_30d_accuracy, 0) AS learning_velocity,
+        ISNULL(uc.skill_consistency, 0) AS consistency,
+        ISNULL(us.recent_50_accuracy - us.overall_accuracy, 0) AS recency_bias
+    FROM UserStats us
+    CROSS JOIN UserConsistency uc
     """
     user_stats = pd.read_sql(query, conn).iloc[0]
     
@@ -130,18 +167,22 @@ def prepare_unified_features(userId: int, skillId: int, attempts: int, correct: 
         1 if user_stats['overall_accuracy'] < 0.7 else 2
     )  # 0=Beginner, 1=Intermediate, 2=Advanced
     
-    # Tạo feature vector (7 features)
+    # Tạo feature vector (10 features)
     X = pd.DataFrame([[
         user_level,
         int(user_stats['total_tests']),
         int(user_stats['total_questions']),
         float(user_stats['overall_accuracy']),
         int(user_stats['days_active']),
+        float(user_stats['learning_velocity']),
+        float(user_stats['consistency']),
+        float(user_stats['recency_bias']),
         attempts,
         correct
     ]], columns=[
         'user_level', 'total_tests', 'total_questions',
-        'overall_accuracy', 'days_active', 'attempts', 'correct'
+        'overall_accuracy', 'days_active', 'learning_velocity',
+        'consistency', 'recency_bias', 'attempts', 'correct'
     ])
     
     return X
@@ -201,6 +242,24 @@ def predict_hybrid_unified(userId: int):
     global_model = joblib.load(global_model_path)
     unified_model = joblib.load(unified_model_path)
 
+    # Load scaler + feature columns for unified model (trained with StandardScaler)
+    unified_info_path = os.path.join(model_dir, "unified_model_info.pkl")
+    unified_scaler_path = os.path.join(model_dir, "unified_model_scaler.pkl")
+    unified_feature_columns = None
+    unified_scaler = None
+
+    try:
+        if os.path.exists(unified_info_path):
+            unified_feature_columns = joblib.load(unified_info_path).get('feature_columns')
+    except Exception:
+        unified_feature_columns = None
+
+    if os.path.exists(unified_scaler_path):
+        try:
+            unified_scaler = joblib.load(unified_scaler_path)
+        except Exception:
+            unified_scaler = None
+
     results = {}
     print("\n" + "="*80)
     print(f" DỰ ĐOÁN KỸ NĂNG CHO USER {userId} (HYBRID UNIFIED STRATEGY)")
@@ -238,23 +297,47 @@ def predict_hybrid_unified(userId: int):
         
         # STRATEGY 2: Dùng Unified Model (đủ data)
         else:
-            X_unified = prepare_unified_features(userId, skillId, attempts, correct, accuracy, conn)
-            y_pred = unified_model.predict(X_unified)[0]
-            y_proba = unified_model.predict_proba(X_unified)[0]
+            X_unified_raw = prepare_unified_features(userId, skillId, attempts, correct, accuracy, conn)
+
+            # Ensure column order matches training, then apply scaler
+            X_for_model = X_unified_raw
+            if unified_feature_columns:
+                X_for_model = X_unified_raw[unified_feature_columns]
+            if unified_scaler is not None:
+                X_scaled = unified_scaler.transform(X_for_model)
+                X_for_model = pd.DataFrame(X_scaled, columns=list(X_for_model.columns))
+
+            y_pred = int(unified_model.predict(X_for_model)[0])
+            y_proba = unified_model.predict_proba(X_for_model)[0]
             
             print(f"    Model: UNIFIED (do attempts >= 10)")
             print(f"    User context:")
-            print(f"      - User Level: {['Beginner', 'Intermediate', 'Advanced'][int(X_unified['user_level'].iloc[0])]}")
-            print(f"      - Total Tests: {int(X_unified['total_tests'].iloc[0])}")
-            print(f"      - Overall Accuracy: {X_unified['overall_accuracy'].iloc[0]:.2%}")
-            print(f"      - Days Active: {int(X_unified['days_active'].iloc[0])}")
+            print(f"      - User Level: {['Beginner', 'Intermediate', 'Advanced'][int(X_unified_raw['user_level'].iloc[0])]}")
+            print(f"      - Total Tests: {int(X_unified_raw['total_tests'].iloc[0])}")
+            print(f"      - Overall Accuracy: {X_unified_raw['overall_accuracy'].iloc[0]:.2%}")
+            print(f"      - Days Active: {int(X_unified_raw['days_active'].iloc[0])}")
             
             print(f"    Xác suất dự đoán:")
-            if y_proba.shape[0] >= 2:
-                print(f"      - P(Strong) = {y_proba[0]:.2%}")
-                print(f"      - P(Weak) = {y_proba[1]:.2%}")
-            else:
-                print(f"      - Model chỉ thấy 1 class = 100%")
+            try:
+                classes = list(getattr(unified_model, 'classes_', []))
+                if len(classes) >= 2:
+                    # Print probabilities by label, not by index
+                    p_by_label = {int(classes[i]): float(y_proba[i]) for i in range(len(classes))}
+                    p_strong = p_by_label.get(0, None)
+                    p_weak = p_by_label.get(1, None)
+                    if p_strong is not None:
+                        print(f"      - P(Strong) = {p_strong:.2%}")
+                    if p_weak is not None:
+                        print(f"      - P(Weak) = {p_weak:.2%}")
+                else:
+                    print(f"      - Model chỉ thấy 1 class = 100%")
+            except Exception:
+                # Legacy fallback
+                if getattr(y_proba, 'shape', (0,))[0] >= 2:
+                    print(f"      - P(Strong) = {y_proba[0]:.2%}")
+                    print(f"      - P(Weak) = {y_proba[1]:.2%}")
+                else:
+                    print(f"      - Model chỉ thấy 1 class = 100%")
             
             print(f"    Kết luận: {'WEAK' if y_pred == 1 else 'STRONG'}")
             print(f"    Lý do: Model học từ context của user này + pattern chung")
