@@ -14,6 +14,7 @@ import {
 } from 'chart.js';
 import {getUserTestStatsAPI, getPartStatisticsByUserAPI, type PartStat, getAccuracyOverTimeAPI, type AccuracyPoint, getUserTestHistoryAPI, type UserTestHistoryItem} from '../../services/statisticalService';
 import { getCurrentUser } from '../../services/authService';
+import { useNavigate } from 'react-router-dom';
 // import {getAllPartsAPI, type Part, } from '../../services/adminTestService';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -83,6 +84,7 @@ const chartOptions = {
 
 
 export default function AdminTestAnalyticsPage() {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState(0);
   const [stats, setStats] = useState({
     totalTests: 0,
@@ -230,8 +232,16 @@ export default function AdminTestAnalyticsPage() {
           </div>
           <div className="summary-card">
             <div className="summary-icon">🎯</div>
-            <div className="summary-title">Điểm mục tiêu</div>
-            <div className="summary-value summary-link">Tạo ngay</div>
+            <div className="summary-title">Khám phá kỹ năng yếu</div>
+            <div
+              className="summary-value summary-link"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/ml-recommendations');
+              }}
+            >
+              Xem phân tích ngay!
+            </div>
           </div>
         </div>
         <div className="section-tabs">

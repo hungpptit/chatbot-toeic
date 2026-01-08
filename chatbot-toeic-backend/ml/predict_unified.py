@@ -1,37 +1,38 @@
 """
 ================================================================================
-PREDICT WITH UNIFIED MODEL (STANDALONE TEST)
+DỰ ĐOÁN BẰNG MÔ HÌNH UNIFIED (CHẠY TEST ĐỘC LẬP)
 ================================================================================
 
-📌 MỤC ĐÍCH:
-   Predict weak skills cho user bằng UNIFIED MODEL (standalone - không hybrid).
-   File này dùng để TEST unified model độc lập, KHÔNG dùng trong production.
+MỤC ĐÍCH:
+    Dự đoán kỹ năng yếu cho user bằng mô hình unified (chạy độc lập, không hybrid).
+    File này dùng để kiểm thử unified model, KHÔNG dùng trong production.
 
-⚙️ PRODUCTION: Dùng predict_hybrid_unified.py thay thế!
+LƯU Ý (PRODUCTION):
+    Dùng predict_hybrid_unified.py thay thế.
 
-🎯 CHỨC NĂNG:
-   - Predict weak skills cho 1 user cụ thể
-   - Compare với personal model (optional)
-   - Show chi tiết user profile và probability
+CHỨC NĂNG:
+    - Dự đoán kỹ năng yếu cho 1 user cụ thể
+    - So sánh với personal model (tuỳ chọn)
+    - Hiển thị chi tiết hồ sơ user và xác suất
 
-📊 INPUT:
-   - userId: ID của user cần predict
-   - --compare flag (optional): So sánh với personal model
+ĐẦU VÀO:
+    - userId: ID của user cần dự đoán
+    - --compare (tuỳ chọn): so sánh với personal model
 
-📝 SỬ DỤNG:
-   python predict_unified.py 3
-   # Hoặc: python predict_unified.py 3 --compare (so sánh với personal)
+CÁCH CHẠY:
+    python predict_unified.py 3
+    # Hoặc: python predict_unified.py 3 --compare (so sánh với personal)
 
-🔍 OUTPUT:
-   - User profile (level, total tests, accuracy, days active)
-   - Weak skills với probability
-   - Agreement rate (nếu dùng --compare)
+ĐẦU RA:
+    - Hồ sơ user (level, tổng số test, accuracy, số ngày hoạt động)
+    - Danh sách kỹ năng yếu kèm xác suất
+    - Tỷ lệ đồng thuận (nếu dùng --compare)
 
-📅 Created: 2025-10-08
-👤 Author: AI Assistant
-🔗 Related files:
-   - train_unified_model.py (train model này)
-   - predict_hybrid_unified.py (production version)
+Tạo ngày: 2025-10-08
+
+File liên quan:
+    - train_unified_model.py (huấn luyện mô hình)
+    - predict_hybrid_unified.py (phiên bản production)
 ================================================================================
 """
 
@@ -44,7 +45,7 @@ from datetime import datetime
 import numpy as np
 import warnings
 
-# Load environment
+# Nạp biến môi trường
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"))
 
@@ -64,9 +65,9 @@ conn_str = (
 
 def predict_unified(userId: int):
     """
-    Predict weak skills cho user với unified model
+    Dự đoán kỹ năng yếu cho user bằng unified model
     """
-    # Load model và feature info
+    # Nạp mô hình và thông tin đặc trưng
     model_dir = os.path.join(os.path.dirname(__file__), "model")
     model_path = os.path.join(model_dir, "unified_model.pkl")
     info_path = os.path.join(model_dir, "unified_model_info.pkl")
@@ -91,10 +92,10 @@ def predict_unified(userId: int):
     print(f"   Total users in training: {feature_info['total_users']}")
     print(f"   Training accuracy: {feature_info['test_accuracy']:.4f}")
     
-    # Query user data
+    # Truy vấn dữ liệu của user
     conn = pyodbc.connect(conn_str)
     
-    # Query giống hệt lúc train (với 3 features mới: learning_velocity, consistency, recency_bias)
+    # Truy vấn giống hệt lúc huấn luyện (với 3 đặc trưng mới: learning_velocity, consistency, recency_bias)
     query = f"""
     WITH UserStats AS (
         SELECT 
@@ -154,8 +155,8 @@ def predict_unified(userId: int):
     LEFT JOIN UserConsistency uc ON ss.userId = uc.userId
     """
     
-    # Pandas may emit a UserWarning when using raw DBAPI connections like pyodbc.
-    # In PowerShell this can surface as a NativeCommandError even though the script succeeds.
+    # Pandas có thể phát sinh UserWarning khi dùng raw DBAPI connection như pyodbc.
+    # Trên PowerShell, warning này đôi khi hiển thị như NativeCommandError dù script vẫn chạy.
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
@@ -169,15 +170,15 @@ def predict_unified(userId: int):
         print(f"[WARNING] User {userId} chưa có dữ liệu")
         return []
     
-    # Feature engineering (giống lúc train)
+    # Kỹ thuật đặc trưng (giống lúc huấn luyện)
     df['user_level'] = df['overall_accuracy'].apply(
         lambda x: 0 if x < 0.5 else (1 if x < 0.7 else 2)
     )
     
-    # Prepare features theo đúng thứ tự
+    # Chuẩn bị đặc trưng theo đúng thứ tự
     X = df[feature_columns]
 
-    # Apply the same scaling as training (StandardScaler)
+    # Áp dụng chuẩn hoá giống lúc huấn luyện (StandardScaler)
     if scaler is not None:
         X_scaled = scaler.transform(X)
         X = pd.DataFrame(X_scaled, columns=feature_columns)
@@ -190,13 +191,13 @@ def predict_unified(userId: int):
     level_map = {0: 'Beginner', 1: 'Intermediate', 2: 'Advanced'}
     print(f"   Level: {level_map[df['user_level'].iloc[0]]}")
     
-    # Predict
+    # Dự đoán
     predictions = model.predict(X)
     probabilities = model.predict_proba(X)
 
     # ------------------------------------------------------------------
-    # Explainability: compute the same rule-based label used in training
-    # (dynamic threshold when enough data; otherwise fallback threshold 0.6)
+    # Giải thích: tính lại nhãn theo đúng rule dùng khi huấn luyện
+    # (ngưỡng động nếu đủ dữ liệu; nếu không thì dùng ngưỡng cố định 0.6)
     # ------------------------------------------------------------------
     min_attempts_for_dynamic = 5
     min_skills_for_dynamic = 3
@@ -205,7 +206,7 @@ def predict_unified(userId: int):
 
     user_num_skills = int(df['skillId'].nunique())
     user_avg_skill_acc = float(df['skill_accuracy'].mean())
-    # match training: population std (ddof=0)
+    # Khớp với lúc huấn luyện: độ lệch chuẩn population (ddof=0)
     user_std_skill_acc = float(df['skill_accuracy'].std(ddof=0)) if user_num_skills > 1 else float('nan')
 
     dynamic_ok_user = (
@@ -215,7 +216,7 @@ def predict_unified(userId: int):
     )
     dynamic_threshold = user_avg_skill_acc - k_std * user_std_skill_acc if dynamic_ok_user else fallback_threshold
 
-    # Map probability column by class label (do NOT assume class order)
+    # Ánh xạ cột xác suất theo nhãn class (KHÔNG giả định thứ tự class)
     weak_class = 1
     weak_idx = None
     try:
@@ -225,7 +226,7 @@ def predict_unified(userId: int):
     except Exception:
         weak_idx = None
     
-    # Get weak skills
+    # Lấy danh sách kỹ năng yếu
     weak_skills = []
     print(f"\n[RESULTS] Weak Skill Detection Results:")
     print("-" * 70)
@@ -238,7 +239,7 @@ def predict_unified(userId: int):
     for pos, (_, row) in enumerate(df.iterrows()):
         is_weak = int(predictions[pos])
 
-        # Baseline label explanation
+        # Giải thích nhãn baseline (rule)
         dynamic_ok_row = dynamic_ok_user and (float(row['attempts']) >= min_attempts_for_dynamic)
         baseline_is_weak = (
             float(row['skill_accuracy']) < dynamic_threshold
@@ -246,13 +247,13 @@ def predict_unified(userId: int):
             else float(row['skill_accuracy']) < fallback_threshold
         )
         
-        # Handle edge case: model chỉ học 1 class
+        # Xử lý trường hợp đặc biệt: mô hình chỉ học 1 class
         if probabilities.shape[1] == 1:
-            # Only one class learned; probability is degenerate
+            # Chỉ học 1 class; xác suất bị suy biến
             weak_prob = 1.0 if is_weak == 1 else 0.0
         else:
             if weak_idx is None:
-                # Fallback: assume class label 1 is at index 1 (legacy behavior)
+                # Phương án dự phòng: giả định class 1 nằm ở index 1 (hành vi cũ)
                 weak_prob = float(probabilities[pos][1])
             else:
                 weak_prob = float(probabilities[pos][weak_idx])
@@ -288,11 +289,11 @@ def compare_unified_vs_personal(userId: int):
     print(f"📊 COMPARISON: Unified vs Personal Model for User {userId}")
     print("="*70)
     
-    # Predict with unified model
+    # Dự đoán bằng mô hình unified
     print("\n🔹 UNIFIED MODEL:")
     weak_unified = predict_unified(userId)
     
-    # Predict with personal model (if exists)
+    # Dự đoán bằng mô hình cá nhân (personal) (nếu có)
     print("\n\n🔹 PERSONAL MODEL:")
     personal_model_path = os.path.join(os.path.dirname(__file__), f"user_{userId}_model.pkl")
     
@@ -301,7 +302,7 @@ def compare_unified_vs_personal(userId: int):
         print("   → Train it first: python train_personal_model.py")
         return
     
-    # Load personal model và predict
+    # Nạp mô hình cá nhân (personal) và dự đoán
     personal_model = joblib.load(personal_model_path)
     
     conn = pyodbc.connect(conn_str)
@@ -334,7 +335,7 @@ def compare_unified_vs_personal(userId: int):
             weak_personal.append(int(row['skillId']))
     print("-" * 70)
     
-    # Compare
+    # So sánh
     print("\n📊 COMPARISON SUMMARY:")
     print("-" * 70)
     unified_ids = {s['skillId'] for s in weak_unified}

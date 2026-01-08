@@ -82,7 +82,7 @@ export default function HomePage() {
           <h3 className="username">{user?.email || 'Chưa đăng nhập'}</h3>
           <hr />
           <p className="warning">
-            <span className="icon">⚠️</span> Bạn chưa tạo mục tiêu cho quá trình luyện thi của mình. 
+            <span className="icon">⚠️</span> Bạn đang yếu ở kỹ năng nào?
             <a
               href="#"
               className="link"
@@ -92,7 +92,7 @@ export default function HomePage() {
               }}
             >
               {' '}
-              Tạo ngay.
+               Khám phá ngay!.
             </a>
           </p>
           <button className="result-button" onClick={() => navigate('/test-analytics')}>

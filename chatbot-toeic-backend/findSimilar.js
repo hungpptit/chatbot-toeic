@@ -42,6 +42,28 @@ async function createEmbedding(text) {
   return Array.from(output.data);
 }
 
+function parseVectorCsv(csv) {
+  // DB stores vectors like "0.1,0.2,...". Keep it simple and fast.
+  // Float32Array reduces memory and speeds math.
+  const parts = String(csv).split(",");
+  const vec = new Float32Array(parts.length);
+  for (let i = 0; i < parts.length; i++) vec[i] = Number(parts[i]);
+  return vec;
+}
+
+function vectorNorm(vec) {
+  let sum = 0;
+  for (let i = 0; i < vec.length; i++) sum += vec[i] * vec[i];
+  return Math.sqrt(sum);
+}
+
+function cosineSimilarityWithNorms(vecA, normA, vecB, normB) {
+  let dot = 0;
+  for (let i = 0; i < vecA.length; i++) dot += vecA[i] * vecB[i];
+  const denom = normA * normB;
+  return denom === 0 ? 0 : dot / denom;
+}
+
 // --- Hàm lấy embedding cho input ---
 async function getInputEmbedding(pool, input) {
   // Nếu input là số (questionId) thì thử lấy vector từ DB
@@ -65,42 +87,148 @@ async function getInputEmbedding(pool, input) {
   return await createEmbedding(input);
 }
 
+async function loadAllEmbeddings(pool) {
+  // Only load what we need for similarity math (id + vector).
+  const result = await pool.request().query(`
+    SELECT questionId AS id, vector
+    FROM QuestionEmbeddings
+  `);
+
+  const items = [];
+  for (const row of result.recordset) {
+    if (!row.id || !row.vector) continue;
+    const vec = parseVectorCsv(row.vector);
+    items.push({ id: row.id, vec, norm: vectorNorm(vec) });
+  }
+  return items;
+}
+
+async function loadQuestionsByIds(pool, ids) {
+  if (!ids || ids.length === 0) return new Map();
+  // Chunk to avoid SQL Server parameter limits.
+  const CHUNK = 800;
+  const map = new Map();
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const chunk = ids.slice(i, i + CHUNK);
+    const request = pool.request();
+    const params = chunk
+      .map((id, idx) => {
+        const name = `id${idx}`;
+        request.input(name, sql.Int, id);
+        return `@${name}`;
+      })
+      .join(", ");
+    const res = await request.query(`
+      SELECT id, question
+      FROM Questions
+      WHERE id IN (${params})
+    `);
+    for (const row of res.recordset) {
+      map.set(row.id, row.question);
+    }
+  }
+  return map;
+}
+
+function topKSimilaritiesForEmbedding(allEmbeddings, inputVec, k) {
+  const inputNorm = vectorNorm(inputVec);
+  const sims = [];
+  for (const item of allEmbeddings) {
+    const score = cosineSimilarityWithNorms(inputVec, inputNorm, item.vec, item.norm);
+    sims.push({ id: item.id, score });
+  }
+  sims.sort((a, b) => b.score - a.score);
+
+  const seen = new Set();
+  const unique = [];
+  for (const r of sims) {
+    if (!r.id) continue;
+    if (seen.has(r.id)) continue;
+    seen.add(r.id);
+    unique.push(r);
+    if (unique.length >= k) break;
+  }
+  return unique;
+}
+
+async function getEmbeddingsByQuestionIds(pool, questionIds) {
+  const request = pool.request();
+  const params = questionIds
+    .map((id, idx) => {
+      const name = `qid${idx}`;
+      request.input(name, sql.Int, id);
+      return `@${name}`;
+    })
+    .join(", ");
+
+  const res = await request.query(`
+    SELECT questionId AS id, vector
+    FROM QuestionEmbeddings
+    WHERE questionId IN (${params})
+  `);
+
+  const map = new Map();
+  for (const row of res.recordset) {
+    if (!row.id || !row.vector) continue;
+    map.set(row.id, parseVectorCsv(row.vector));
+  }
+  return map;
+}
+
 // --- Hàm tìm k câu hỏi gần nhất ---
 async function findSimilar(input, k = 5) {
   const pool = await sql.connect(dbConfig);
+  const allEmbeddings = await loadAllEmbeddings(pool);
 
-  // 1. Lấy embedding cho input (DB hoặc MiniLM)
-  const inputEmbedding = await getInputEmbedding(pool, input);
+  // Batch mode: input is JSON array of questionIds
+  if (typeof input === "string" && input.trim().startsWith("[")) {
+    let ids;
+    try {
+      ids = JSON.parse(input);
+    } catch (e) {
+      throw new Error(`Invalid JSON array input: ${e?.message || e}`);
+    }
+    if (!Array.isArray(ids) || ids.length === 0) return {};
 
-  // 2. Lấy toàn bộ embeddings từ DB
-  const result = await pool.request().query(`
-    SELECT q.id, q.question, e.vector
-    FROM Questions q
-    JOIN QuestionEmbeddings e ON q.id = e.questionId
-  `);
+    const questionIds = ids.map((x) => parseInt(x, 10)).filter((x) => Number.isFinite(x));
+    const inputEmbeddings = await getEmbeddingsByQuestionIds(pool, questionIds);
 
-  const similarities = [];
+    // Ensure all requested ids exist
+    for (const qid of questionIds) {
+      if (!inputEmbeddings.has(qid)) {
+        throw new Error(`Không tìm thấy embedding trong DB cho questionId=${qid}`);
+      }
+    }
 
-  // 3. Tính cosine similarity
-  for (const row of result.recordset) {
-    const vec = row.vector.split(",").map(Number);
-    const sim = cosineSimilarity(inputEmbedding, vec);
-    similarities.push({ id: row.id, question: row.question, score: sim });
+    const perAnchorTop = new Map();
+    const neededQuestionIds = new Set();
+
+    for (const qid of questionIds) {
+      const top = topKSimilaritiesForEmbedding(allEmbeddings, inputEmbeddings.get(qid), k);
+      perAnchorTop.set(qid, top);
+      for (const r of top) neededQuestionIds.add(r.id);
+    }
+
+    const questionTextById = await loadQuestionsByIds(pool, Array.from(neededQuestionIds));
+    const out = {};
+    for (const qid of questionIds) {
+      out[qid] = (perAnchorTop.get(qid) || []).map((r) => ({
+        id: r.id,
+        question: questionTextById.get(r.id) || null,
+        score: r.score,
+      })).filter((r) => r.id && r.question);
+    }
+    return out;
   }
 
-  // 4. Sắp xếp theo similarity giảm dần
-  similarities.sort((a, b) => b.score - a.score);
-
-  // 5. Lọc bỏ duplicate theo id
-  const seen = new Set();
-  const unique = similarities.filter((r) => {
-    if (!r.id || !r.question) return false;
-    if (seen.has(r.id)) return false;
-    seen.add(r.id);
-    return true;
-  });
-
-  return unique.slice(0, k);
+  // Single mode (questionId or free text)
+  const inputEmbeddingRaw = await getInputEmbedding(pool, input);
+  const inputVec = inputEmbeddingRaw instanceof Float32Array ? inputEmbeddingRaw : new Float32Array(inputEmbeddingRaw);
+  const top = topKSimilaritiesForEmbedding(allEmbeddings, inputVec, k);
+  const questionTextById = await loadQuestionsByIds(pool, top.map((r) => r.id));
+  return top
+    .map((r) => ({ id: r.id, question: questionTextById.get(r.id) || null, score: r.score }))
+    .filter((r) => r.id && r.question);
 }
 
 // --- CLI mode ---

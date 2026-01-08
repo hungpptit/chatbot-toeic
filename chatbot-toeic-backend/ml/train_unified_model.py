@@ -1,68 +1,65 @@
 """
 ================================================================================
-TRAIN UNIFIED MODEL (1 MODEL FOR ALL USERS) - VERSION 2.0
+HUẤN LUYỆN MÔ HÌNH UNIFIED (1 MÔ HÌNH CHO TẤT CẢ USERS) - PHIÊN BẢN 2.0
 ================================================================================
 
  MỤC ĐÍCH:
-   Train UNIFIED MODEL - 1 model duy nhất cho TẤT CẢ users.
-   Model này thay thế Personal Model approach (10k models → 1 model).
+     Huấn luyện mô hình unified: 1 mô hình duy nhất cho TẤT CẢ users.
+     Mô hình này thay thế cách tiếp cận personal model (10k mô hình -> 1 mô hình).
 
  ƯU ĐIỂM:
-   - Scalable: 1 file cho 10k users thay vì 10k files
-   - Fast retrain: 2-3 phút thay vì 14 giờ
-   - Easy deploy: Copy 1 file thay vì 10k files
-   - User mới: Predict ngay, không cần train
-   - Personalization: Vẫn giữ 95% nhờ user features
+     - Mở rộng tốt: 1 file cho 10k users thay vì 10k files
+     - Huấn luyện lại nhanh: 2-3 phút thay vì 14 giờ
+     - Triển khai dễ: chỉ cần copy 1 file
+     - User mới: dự đoán ngay, không cần huấn luyện riêng
+     - Cá nhân hoá: vẫn giữ ~95% nhờ đặc trưng theo user
 
- OUTPUT:
-   - unified_model.pkl: Unified Naive Bayes model
-   - unified_model_info.pkl: Metadata (features, accuracy, training time)
+ ĐẦU RA:
+     - unified_model.pkl: mô hình Naive Bayes unified
+     - unified_model_info.pkl: metadata (danh sách features, độ chính xác, thời gian train)
 
- ALGORITHM:
-   - Gaussian Naive Bayes: Được chọn vì tốc độ train/predict cực nhanh,
-     hiệu quả với dữ liệu số (numerical features), và yêu cầu ít
-     dữ liệu training so với các model phức tạp hơn. Phù hợp cho
-     bài toán phân loại điểm yếu (weak/strong) với các features
-     đã được tính toán sẵn.
+ THUẬT TOÁN:
+     - Gaussian Naive Bayes: tốc độ train/predict rất nhanh, hiệu quả với đặc trưng
+         dạng số, và cần ít dữ liệu huấn luyện hơn so với các mô hình phức tạp.
+         Phù hợp cho bài toán phân loại weak/strong với features đã tính sẵn.
 
- INPUT FEATURES (10 features):
-         USER CONTEXT (8 features):
-   - user_level: Trình độ (0=Beginner, 1=Intermediate, 2=Advanced)
-   - total_tests: Tổng số bài test đã làm
-   - total_questions: Tổng số câu hỏi đã làm
-   - overall_accuracy: Accuracy tổng quát
-   - days_active: Số ngày kể từ lần đầu làm bài
+ ĐẶC TRƯNG ĐẦU VÀO (10 đặc trưng):
+     NGỮ CẢNH USER (8 đặc trưng):
+     - user_level: trình độ (0=Beginner, 1=Intermediate, 2=Advanced)
+     - total_tests: tổng số bài test đã làm
+     - total_questions: tổng số câu hỏi đã làm
+     - overall_accuracy: độ chính xác tổng quát
+     - days_active: số ngày kể từ lần đầu làm bài
      - learning_velocity: overall_accuracy - first_30d_accuracy
      - consistency: STDEV(skill_accuracy) theo user
      - recency_bias: recent_50_accuracy - overall_accuracy
-   
-        SKILL CONTEXT (2 features - giữ nguyên từ personal model):
-   - attempts: Số lần thử skill này
-   - correct: Số câu đúng skill này
-     - skill_accuracy: Accuracy skill này (chỉ dùng để tính nhãn isWeak, KHÔNG đưa vào features)
 
- TARGET:
+     NGỮ CẢNH KỸ NĂNG (2 đặc trưng - giữ nguyên từ personal model):
+     - attempts: số lần làm kỹ năng này
+     - correct: số câu đúng của kỹ năng này
+     - skill_accuracy: chỉ dùng để gán nhãn isWeak, KHÔNG đưa vào feature vector
+
+ NHÃN ĐẦU RA:
      - isWeak: gán nhãn theo rule động (cá nhân hoá) nếu đủ dữ liệu,
-             attempts >= 5 và user có >= 3 skills:
-                 isWeak = (skill_accuracy < avg_user_skill_acc - 1.0 * std_user_skill_acc)
-         ngược lại fallback về rule cứng:
-                 isWeak = (skill_accuracy < 0.6)
+                        attempts >= 5 và user có >= 3 skills:
+                            isWeak = (skill_accuracy < avg_user_skill_acc - 1.0 * std_user_skill_acc)
+                        ngược lại fallback về rule cứng:
+                            isWeak = (skill_accuracy < 0.6)
 
- KHI NÀO RETRAIN:
-   - Mỗi tuần/tháng khi có thêm users mới
-   - Khi có thêm nhiều data mới (>1000 attempts)
-   - Setup scheduled task
+ KHI NÀO HUẤN LUYỆN LẠI:
+     - Mỗi tuần/tháng khi có thêm user mới
+     - Khi có thêm nhiều dữ liệu mới (ví dụ > 1000 attempts)
+     - Thiết lập scheduled task
 
- SỬ DỤNG:
-   python train_unified_model.py
-   # Hoặc: python train_unified_model.py --compare (so sánh với personal model)
+ CÁCH CHẠY:
+     python train_unified_model.py
+    # Hoặc: python train_unified_model.py --compare (so sánh với mô hình cá nhân)
 
- Created: 2025-10-08
-
-Related files:
-   - predict_unified.py (standalone test)
-   - predict_hybrid_unified.py (tích hợp vào hybrid strategy)
-   - train_personal_model.py (version cũ - deprecated)
+ Tạo ngày: 2025-10-08
+ File liên quan:
+     - predict_unified.py (chạy test độc lập)
+     - predict_hybrid_unified.py (tích hợp vào chiến lược hybrid)
+     - train_personal_model.py (phiên bản cũ - không khuyến nghị)
 ================================================================================
 """
 
@@ -77,7 +74,7 @@ import joblib
 from dotenv import load_dotenv
 from datetime import datetime
 
-# Load biến môi trường
+# Nạp biến môi trường
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"))
 
@@ -97,11 +94,11 @@ conn_str = (
 
 def train_unified_model():
     """
-    Train unified model với user features
+    Huấn luyện unified model với các đặc trưng theo user
     """
     conn = pyodbc.connect(conn_str)
     
-    # Query lấy TOÀN BỘ dữ liệu + user features
+    # Truy vấn lấy TOÀN BỘ dữ liệu + các đặc trưng theo user
     query = """
     WITH UserStats AS (
         -- Tính toán thống kê tổng quát của mỗi user
@@ -176,13 +173,13 @@ def train_unified_model():
     print("\n📊 Sample data:")
     print(df.head())
     
-    # Feature Engineering: user_level (KHÔNG dùng userId_hash để tránh model học theo "ID")
+    # Kỹ thuật đặc trưng: user_level (KHÔNG dùng userId_hash để tránh mô hình học theo "ID")
     df['user_level'] = df['overall_accuracy'].apply(
         lambda x: 0 if x < 0.5 else (1 if x < 0.7 else 2)  # 0=Beginner, 1=Intermediate, 2=Advanced
     )
 
     # ---------------------------------------------------------------------
-    # Labeling: isWeak (KHÔNG dùng skill_accuracy trong feature vector)
+    # Gán nhãn: isWeak (KHÔNG dùng skill_accuracy trong vector đặc trưng)
     # ---------------------------------------------------------------------
     min_attempts_for_dynamic = 5
     min_skills_for_dynamic = 3
@@ -206,7 +203,7 @@ def train_unified_model():
     )
     df['isWeak'] = df['isWeak'].astype(int)
     
-    # Prepare features
+    # Chuẩn bị đặc trưng
     feature_columns = [
         'user_level',       # Trình độ tổng quát
         'total_tests',      # Số bài test đã làm
@@ -227,7 +224,7 @@ def train_unified_model():
     print("Features:", feature_columns)
     
     # ========================================================================
-    # FEATURE SCALING (StandardScaler)
+    # CHUẨN HOÁ ĐẶC TRƯNG (StandardScaler)
     # ========================================================================
     print("\n🔄 Scaling features...")
     scaler = StandardScaler()
@@ -237,7 +234,7 @@ def train_unified_model():
     print(f"✅ Features scaled (mean=0, std=1)")
     print(f"   Sample scaled values:\n{X_scaled_df.head()}")
     
-    # Split train/test (guard against tiny / single-class datasets)
+    # Chia tập huấn luyện/kiểm thử (tránh lỗi khi tập dữ liệu quá nhỏ / chỉ có 1 lớp)
     can_stratify = (y.nunique() >= 2) and (y.value_counts().min() >= 2)
     X_train, X_test, y_train, y_test = train_test_split(
         X_scaled_df,
@@ -251,19 +248,19 @@ def train_unified_model():
     print(f"Train weak ratio: {y_train.mean():.2%}")
     print(f"Test weak ratio: {y_test.mean():.2%}")
     
-    # Train model
+    # Huấn luyện mô hình
     print("\n🚀 Training Unified Model with User Features...")
     model = GaussianNB()
     model.fit(X_train, y_train)
     
-    # Evaluate
+    # Đánh giá
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
     
     print("\n✅ TRAINING COMPLETE!")
     print(f"📈 Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
     
-    # Classification report (handle edge case: ít data)
+    # Classification report (xử lý trường hợp ít dữ liệu)
     unique_classes = len(set(y_test))
     if unique_classes >= 2:
         print("\n📊 Classification Report:")
@@ -271,7 +268,7 @@ def train_unified_model():
     else:
         print(f"\n⚠️ Test set only has {unique_classes} class. Need more diverse data for full report.")
     
-    # Save model (dùng absolute path và tạo thư mục model/ nếu chưa có)
+    # Lưu mô hình (dùng absolute path và tạo thư mục model/ nếu chưa có)
     model_dir = os.path.join(os.path.dirname(__file__), 'model')
     os.makedirs(model_dir, exist_ok=True)
     
@@ -279,12 +276,12 @@ def train_unified_model():
     joblib.dump(model, model_path)
     print(f"\n💾 Model saved at: {model_path}")
     
-    # Save scaler (IMPORTANT for prediction)
+    # Lưu scaler (quan trọng cho bước dự đoán)
     scaler_path = os.path.join(model_dir, "unified_model_scaler.pkl")
     joblib.dump(scaler, scaler_path)
     print(f"💾 Scaler saved at: {scaler_path}")
     
-    # Save feature names for later prediction
+    # Lưu danh sách đặc trưng để dùng lại lúc dự đoán
     feature_info = {
         'feature_columns': feature_columns,
         'trained_at': datetime.now().isoformat(),
@@ -313,10 +310,10 @@ def compare_with_personal_model():
     print("📊 COMPARISON: Unified Model vs Personal Models")
     print("="*60)
     
-    # Giả sử personal model có accuracy ~85% (từ trước)
+    # Giả sử mô hình cá nhân có accuracy ~85% (từ trước)
     personal_accuracy = 0.85
     
-    # Train unified model
+    # Huấn luyện mô hình unified
     _, unified_accuracy = train_unified_model()
     
     print("\n🎯 RESULTS:")

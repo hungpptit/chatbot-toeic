@@ -78,7 +78,7 @@ export const triggerMLUpdate = async (userId) => {
                     userId: userId,
                     weakSkills: result.weak_skills || [],
                     questionIds: questionIds,
-                    confidence: 0.8, // TODO: Calculate from model probabilities
+                    confidence: Number.isFinite(Number(result.confidence)) ? Number(result.confidence) : 0.8,
                     totalAttempts: parseInt(stats.totalAttempts) || 0,
                     overallAccuracy: parseFloat(stats.overallAccuracy) || null,
                     updatedAt: db.sequelize.literal('GETDATE()')

@@ -1,6 +1,6 @@
 """
 ================================================================================
-PREDICT HYBRID WITH UNIFIED MODEL (VERSION 2.0)
+DỰ ĐOÁN HYBRID VỚI MÔ HÌNH UNIFIED (PHIÊN BẢN 2.0)
 ================================================================================
 
  MỤC ĐÍCH:
@@ -12,39 +12,39 @@ PREDICT HYBRID WITH UNIFIED MODEL (VERSION 2.0)
    - predict_hybrid.py (cũ): Global + Personal (10k models cho 10k users)
    - predict_hybrid_unified.py (mới): Global + Unified (chỉ 1 model cho tất cả users)
 
- HYBRID STRATEGY:
-   IF attempts < 10:
-      → Dùng GLOBAL MODEL (weak_skill_model.pkl)
-      → Input: [attempts, correct, accuracy] (3 features)
-   ELSE:
-        → Dùng UNIFIED MODEL (unified_model.pkl)
-        → Input (10 features):
+ CHIẾN LƯỢC HYBRID:
+    Nếu attempts < 10:
+        → Dùng GLOBAL MODEL (weak_skill_model.pkl)
+        → Đầu vào: [attempts, correct, accuracy] (3 đặc trưng)
+    Ngược lại:
+          → Dùng UNIFIED MODEL (unified_model.pkl)
+          → Đầu vào (10 đặc trưng):
             [user_level, total_tests, total_questions,
              overall_accuracy, days_active, learning_velocity,
              consistency, recency_bias, attempts, correct]
 
  ƯU ĐIỂM:
-   - Scalable: 1 model cho 10k users thay vì 10k models
-   - Fast retrain: 2-3 phút thay vì 14 giờ
-   - User mới: Predict ngay, không cần train
-   - Vẫn giữ 95% personalization
+     - Mở rộng tốt: 1 mô hình cho 10k users thay vì 10k mô hình
+     - Huấn luyện lại nhanh: 2-3 phút thay vì 14 giờ
+     - User mới: dự đoán ngay, không cần huấn luyện riêng
+     - Vẫn giữ ~95% mức độ cá nhân hoá
 
- RECOMMENDATION ALGORITHM (kNN):
+ THUẬT TOÁN GỢI Ý (kNN):
    - Sau khi xác định skill yếu bằng Naive Bayes, hệ thống sử dụng
      thuật toán k-Nearest Neighbors (kNN) để gợi ý câu hỏi.
    - Logic: Script `findSimilar.js` tìm `k` câu hỏi có vector embedding
      gần nhất với câu hỏi "mẫu" (anchor question) trong không gian vector.
    - Đây là một dạng Item-based Recommendation, giúp tìm các câu hỏi "tương tự"
      về mặt ngữ nghĩa để user luyện tập thêm.
- SỬ DỤNG:
+ CÁCH CHẠY:
    python predict_hybrid_unified.py
 
- Created: 2025-10-08
+ Tạo ngày: 2025-10-08
 
- Related files: 
-   - train_unified_model.py (train unified model)
-   - predict_unified.py (standalone test)
-   - predict_hybrid.py (version cũ với personal model)
+ File liên quan:
+     - train_unified_model.py (huấn luyện unified model)
+     - predict_unified.py (chạy test độc lập)
+     - predict_hybrid.py (phiên bản cũ với personal model)
 ================================================================================
 """
 
@@ -58,23 +58,23 @@ from sklearn.naive_bayes import GaussianNB
 from dotenv import load_dotenv
 import sys
 
-# Ensure stdout/stderr use UTF-8 on Windows terminals to avoid "charmap" encode errors
+# Đảm bảo stdout/stderr dùng UTF-8 trên terminal Windows để tránh lỗi encode "charmap"
 try:
-    # Python 3.7+: reconfigure if available
+    # Python 3.7+: dùng reconfigure nếu có
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
 except Exception:
-    # Fallback: wrap streams (some environments may not expose buffer)
+    # Phương án dự phòng: bọc lại stream (một số môi trường không có buffer)
     try:
         import io
         sys.stdout = io.TextIOWrapper(getattr(sys.stdout, 'buffer', sys.stdout), encoding='utf-8', errors='replace')
         sys.stderr = io.TextIOWrapper(getattr(sys.stderr, 'buffer', sys.stderr), encoding='utf-8', errors='replace')
     except Exception:
-        # Last resort: ignore and continue — prints may still fail on some consoles
+        # Cuối cùng: bỏ qua và tiếp tục; việc in ra có thể vẫn lỗi trên một số console
         pass
 import argparse
 
-# Load .env từ parent directory
+# Nạp .env từ thư mục cha
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"))
 
@@ -94,7 +94,7 @@ conn_str = (
 )
 
 # ============================================================================
-# HELPER FUNCTION: Chuẩn bị features cho Unified Model
+# HÀM HỖ TRỢ: Chuẩn bị đặc trưng cho Unified Model
 # ============================================================================
 def prepare_unified_features(userId: int, skillId: int, attempts: int, correct: int, accuracy: float, conn):
     """
@@ -114,9 +114,9 @@ def prepare_unified_features(userId: int, skillId: int, attempts: int, correct: 
          overall_accuracy, days_active, learning_velocity, 
          consistency, recency_bias, attempts, correct]
     
-    📝 NOTE: Features này PHẢI GIỐNG HỆT với lúc train unified model!
+    GHI CHÚ: Features này PHẢI GIỐNG HỆT với lúc train unified model.
     """
-    # Query user stats (tổng quan về user) + thêm features mới
+    # Truy vấn thống kê tổng quan của user + các đặc trưng bổ sung
     query = f"""
     WITH UserStats AS (
         SELECT 
@@ -164,12 +164,12 @@ def prepare_unified_features(userId: int, skillId: int, attempts: int, correct: 
     """
     user_stats = pd.read_sql(query, conn).iloc[0]
     
-    # Feature Engineering (giống train_unified_model.py)
+    # Kỹ thuật đặc trưng (giống train_unified_model.py)
     user_level = 0 if user_stats['overall_accuracy'] < 0.5 else (
         1 if user_stats['overall_accuracy'] < 0.7 else 2
     )  # 0=Beginner, 1=Intermediate, 2=Advanced
     
-    # Tạo feature vector (10 features)
+    # Tạo vector đặc trưng (10 đặc trưng)
     X = pd.DataFrame([[
         user_level,
         int(user_stats['total_tests']),
@@ -190,7 +190,7 @@ def prepare_unified_features(userId: int, skillId: int, attempts: int, correct: 
     return X
 
 # ============================================================================
-# MAIN FUNCTION: Predict Hybrid với Unified Model
+# HÀM CHÍNH: Dự đoán Hybrid với Unified Model
 # ============================================================================
 def predict_hybrid_unified(userId: int):
     """
@@ -202,13 +202,13 @@ def predict_hybrid_unified(userId: int):
     Returns:
         dict: {skillName: "Weak (global)" hoặc "Strong (unified)", ...}
     
-    Logic:
-        - Nếu attempts < 10: Dùng Global Model (ít data, chưa đủ tin cậy)
-        - Nếu attempts ≥ 10: Dùng Unified Model (đủ data, personalized)
+    Luồng xử lý:
+        - Nếu attempts < 10: dùng Global Model (ít dữ liệu, chưa đủ tin cậy)
+        - Nếu attempts ≥ 10: dùng Unified Model (đủ dữ liệu, cá nhân hoá)
     """
     conn = pyodbc.connect(conn_str)
     
-    # Query skill stats của user
+    # Truy vấn thống kê theo kỹ năng của user
     query = f"""
     SELECT 
         qs.skillId,
@@ -228,7 +228,7 @@ def predict_hybrid_unified(userId: int):
         conn.close()
         return {}
 
-    # Load models (đọc từ thư mục model/)
+    # Nạp mô hình (đọc từ thư mục model/)
     model_dir = os.path.join(os.path.dirname(__file__), 'model')
     global_model_path = os.path.join(model_dir, "weak_skill_model.pkl")
     unified_model_path = os.path.join(model_dir, "unified_model.pkl")
@@ -244,7 +244,7 @@ def predict_hybrid_unified(userId: int):
     global_model = joblib.load(global_model_path)
     unified_model = joblib.load(unified_model_path)
 
-    # Load scaler + feature columns for unified model (trained with StandardScaler)
+    # Nạp scaler + thứ tự đặc trưng cho unified model (huấn luyện với StandardScaler)
     unified_info_path = os.path.join(model_dir, "unified_model_info.pkl")
     unified_scaler_path = os.path.join(model_dir, "unified_model_scaler.pkl")
     unified_feature_columns = None
@@ -263,67 +263,187 @@ def predict_hybrid_unified(userId: int):
             unified_scaler = None
 
     results = {}
+    proba_by_skill = {}
     print("\n" + "="*80)
     print(f" DỰ ĐOÁN KỸ NĂNG CHO USER {userId} (HYBRID UNIFIED STRATEGY)")
     print("="*80)
-    
-    # Predict cho từng skill
-    for _, row in df.iterrows():
-        skillName = row['skillName']
-        skillId = row['skillId']
-        attempts = row['attempts']
-        correct = row['correct']
-        accuracy = correct / attempts if attempts > 0 else 0
 
-        print(f"\n🔍 Skill: {skillName}")
-        print(f"   📈 Dữ liệu thực tế:")
-        print(f"      - Số lần thử: {attempts}")
-        print(f"      - Số câu đúng: {correct}")
-        print(f"      - Accuracy: {accuracy:.2%}")
-        
-        # STRATEGY 1: Dùng Global Model (ít data)
-        if attempts < 10:
-            X_global = pd.DataFrame([[attempts, correct, accuracy]],
-                                   columns=['attempts', 'correct', 'accuracy'])
-            y_pred = global_model.predict(X_global)[0]
-            y_proba = global_model.predict_proba(X_global)[0]
-            
+    # ------------------------------------------------------------------
+    # TỐI ƯU HIỆU NĂNG: tránh truy vấn lặp các đặc trưng mức user cho từng kỹ năng
+    # (prepare_unified_features trước đây sẽ truy vấn DB mỗi lần).
+    # Tính ngữ cảnh user một lần, sau đó dự đoán theo lô cho từng kỹ năng.
+    # ------------------------------------------------------------------
+    def _get_unified_user_context_once(_userId: int, _conn):
+        query = f"""
+        WITH UserStats AS (
+            SELECT 
+                COUNT(DISTINCT userTestId) AS total_tests,
+                COUNT(*) AS total_questions,
+                CAST(SUM(CASE WHEN isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS overall_accuracy,
+                DATEDIFF(DAY, MIN(answeredAt), GETDATE()) AS days_active,
+                (SELECT CAST(SUM(CASE WHEN ur2.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) 
+                 FROM UserResults ur2 
+                 WHERE ur2.userId = {_userId}
+                 AND ur2.answeredAt <= DATEADD(DAY, 30, (SELECT MIN(answeredAt) FROM UserResults WHERE userId = {_userId}))) AS first_30d_accuracy,
+                (SELECT CAST(SUM(CASE WHEN recent.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+                 FROM (SELECT TOP 50 isCorrect FROM UserResults ur3
+                       WHERE ur3.userId = {_userId}
+                       ORDER BY ur3.answeredAt DESC) recent) AS recent_50_accuracy
+            FROM UserResults
+            WHERE userId = {_userId}
+        ),
+        SkillStats AS (
+            SELECT 
+                qs.skillId,
+                CAST(SUM(CASE WHEN ur.isCorrect = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS skill_accuracy
+            FROM UserResults ur
+            JOIN QuestionSkills qs ON ur.questionId = qs.questionId
+            WHERE ur.userId = {_userId}
+            GROUP BY qs.skillId
+        ),
+        UserConsistency AS (
+            SELECT 
+                STDEV(skill_accuracy) AS skill_consistency
+            FROM SkillStats
+        )
+        SELECT 
+            us.total_tests,
+            us.total_questions,
+            us.overall_accuracy,
+            us.days_active,
+            ISNULL(us.overall_accuracy - us.first_30d_accuracy, 0) AS learning_velocity,
+            ISNULL(uc.skill_consistency, 0) AS consistency,
+            ISNULL(us.recent_50_accuracy - us.overall_accuracy, 0) AS recency_bias
+        FROM UserStats us
+        CROSS JOIN UserConsistency uc
+        """
+
+        user_stats = pd.read_sql(query, _conn).iloc[0]
+        user_level = 0 if user_stats['overall_accuracy'] < 0.5 else (
+            1 if user_stats['overall_accuracy'] < 0.7 else 2
+        )
+
+        return {
+            'user_level': int(user_level),
+            'total_tests': int(user_stats['total_tests']),
+            'total_questions': int(user_stats['total_questions']),
+            'overall_accuracy': float(user_stats['overall_accuracy']),
+            'days_active': int(user_stats['days_active']),
+            'learning_velocity': float(user_stats['learning_velocity']),
+            'consistency': float(user_stats['consistency']),
+            'recency_bias': float(user_stats['recency_bias']),
+        }
+
+    # Chia các skill theo chiến lược
+    df = df.copy()
+    df['attempts'] = df['attempts'].astype(int)
+    df['correct'] = df['correct'].astype(int)
+    df['accuracy'] = df.apply(lambda r: (r['correct'] / r['attempts']) if r['attempts'] > 0 else 0.0, axis=1)
+
+    global_mask = df['attempts'] < 10
+    df_global = df[global_mask]
+    df_unified = df[~global_mask]
+
+    # CHIẾN LƯỢC 1: dự đoán theo lô bằng mô hình toàn cục (global)
+    if not df_global.empty:
+        print(f"\n[GLOBAL] Predicting {len(df_global)} skills (attempts < 10)")
+        X_global = df_global[['attempts', 'correct', 'accuracy']].copy()
+        y_pred_global = global_model.predict(X_global)
+        y_proba_global = global_model.predict_proba(X_global)
+        global_classes = list(getattr(global_model, 'classes_', []))
+
+        for idx, row in enumerate(df_global.itertuples(index=False)):
+            skillName = row.skillName
+            attempts = row.attempts
+            correct = row.correct
+            accuracy = row.accuracy
+
+            print(f"\n🔍 Skill: {skillName}")
+            print(f"   📈 Dữ liệu thực tế:")
+            print(f"      - Số lần thử: {attempts}")
+            print(f"      - Số câu đúng: {correct}")
+            print(f"      - Accuracy: {accuracy:.2%}")
             print(f"    Model: GLOBAL (do attempts < 10)")
             print(f"     Xác suất dự đoán:")
-            print(f"      - P(Strong) = {y_proba[0]:.2%}")
-            print(f"      - P(Weak) = {y_proba[1]:.2%}")
-            print(f"    Kết luận: {'WEAK' if y_pred == 1 else 'STRONG'}")
+            print(f"      - P(Strong) = {y_proba_global[idx][0]:.2%}")
+            print(f"      - P(Weak) = {y_proba_global[idx][1]:.2%}")
+            print(f"    Kết luận: {'WEAK' if y_pred_global[idx] == 1 else 'STRONG'}")
             print(f"     Lý do: Ít data, dùng pattern chung từ tất cả users")
-            
-            results[skillName] = "Weak (global)" if y_pred == 1 else "Strong (global)"
-        
-        # STRATEGY 2: Dùng Unified Model (đủ data)
-        else:
-            X_unified_raw = prepare_unified_features(userId, skillId, attempts, correct, accuracy, conn)
 
-            # Ensure column order matches training, then apply scaler
-            X_for_model = X_unified_raw
-            if unified_feature_columns:
-                X_for_model = X_unified_raw[unified_feature_columns]
-            if unified_scaler is not None:
-                X_scaled = unified_scaler.transform(X_for_model)
-                X_for_model = pd.DataFrame(X_scaled, columns=list(X_for_model.columns))
+            results[skillName] = "Weak (global)" if int(y_pred_global[idx]) == 1 else "Strong (global)"
 
-            y_pred = int(unified_model.predict(X_for_model)[0])
-            y_proba = unified_model.predict_proba(X_for_model)[0]
-            
+            # Ánh xạ xác suất theo nhãn class_ một cách an toàn khi có sẵn
+            try:
+                if len(global_classes) >= 2:
+                    p_by_label = {int(global_classes[i]): float(y_proba_global[idx][i]) for i in range(len(global_classes))}
+                    p_strong = p_by_label.get(0, None)
+                    p_weak = p_by_label.get(1, None)
+                else:
+                    p_strong = float(y_proba_global[idx][0]) if y_proba_global.shape[1] > 0 else None
+                    p_weak = float(y_proba_global[idx][1]) if y_proba_global.shape[1] > 1 else None
+            except Exception:
+                p_strong = None
+                p_weak = None
+
+            proba_by_skill[skillName] = {
+                "model": "global",
+                "pStrong": p_strong,
+                "pWeak": p_weak,
+                "pred": int(y_pred_global[idx])
+            }
+
+    # CHIẾN LƯỢC 2: dự đoán theo lô bằng mô hình unified
+    if not df_unified.empty:
+        print(f"\n[UNIFIED] Predicting {len(df_unified)} skills (attempts >= 10)")
+        user_ctx = _get_unified_user_context_once(userId, conn)
+
+        X_unified_raw = pd.DataFrame({
+            'user_level': [user_ctx['user_level']] * len(df_unified),
+            'total_tests': [user_ctx['total_tests']] * len(df_unified),
+            'total_questions': [user_ctx['total_questions']] * len(df_unified),
+            'overall_accuracy': [user_ctx['overall_accuracy']] * len(df_unified),
+            'days_active': [user_ctx['days_active']] * len(df_unified),
+            'learning_velocity': [user_ctx['learning_velocity']] * len(df_unified),
+            'consistency': [user_ctx['consistency']] * len(df_unified),
+            'recency_bias': [user_ctx['recency_bias']] * len(df_unified),
+            'attempts': df_unified['attempts'].astype(int).tolist(),
+            'correct': df_unified['correct'].astype(int).tolist(),
+        })
+
+        X_for_model = X_unified_raw
+        if unified_feature_columns:
+            X_for_model = X_unified_raw[unified_feature_columns]
+        if unified_scaler is not None:
+            X_scaled = unified_scaler.transform(X_for_model)
+            X_for_model = pd.DataFrame(X_scaled, columns=list(X_for_model.columns))
+
+        y_pred_unified = unified_model.predict(X_for_model)
+        y_proba_unified = unified_model.predict_proba(X_for_model)
+        unified_classes = list(getattr(unified_model, 'classes_', []))
+
+        for idx, row in enumerate(df_unified.itertuples(index=False)):
+            skillName = row.skillName
+            attempts = row.attempts
+            correct = row.correct
+            accuracy = row.accuracy
+            y_pred = int(y_pred_unified[idx])
+            y_proba = y_proba_unified[idx]
+
+            print(f"\n🔍 Skill: {skillName}")
+            print(f"   📈 Dữ liệu thực tế:")
+            print(f"      - Số lần thử: {attempts}")
+            print(f"      - Số câu đúng: {correct}")
+            print(f"      - Accuracy: {accuracy:.2%}")
             print(f"    Model: UNIFIED (do attempts >= 10)")
             print(f"    User context:")
-            print(f"      - User Level: {['Beginner', 'Intermediate', 'Advanced'][int(X_unified_raw['user_level'].iloc[0])]}")
-            print(f"      - Total Tests: {int(X_unified_raw['total_tests'].iloc[0])}")
-            print(f"      - Overall Accuracy: {X_unified_raw['overall_accuracy'].iloc[0]:.2%}")
-            print(f"      - Days Active: {int(X_unified_raw['days_active'].iloc[0])}")
-            
+            print(f"      - User Level: {['Beginner', 'Intermediate', 'Advanced'][int(user_ctx['user_level'])]}")
+            print(f"      - Total Tests: {int(user_ctx['total_tests'])}")
+            print(f"      - Overall Accuracy: {float(user_ctx['overall_accuracy']):.2%}")
+            print(f"      - Days Active: {int(user_ctx['days_active'])}")
             print(f"    Xác suất dự đoán:")
             try:
                 classes = list(getattr(unified_model, 'classes_', []))
                 if len(classes) >= 2:
-                    # Print probabilities by label, not by index
                     p_by_label = {int(classes[i]): float(y_proba[i]) for i in range(len(classes))}
                     p_strong = p_by_label.get(0, None)
                     p_weak = p_by_label.get(1, None)
@@ -334,24 +454,42 @@ def predict_hybrid_unified(userId: int):
                 else:
                     print(f"      - Model chỉ thấy 1 class = 100%")
             except Exception:
-                # Legacy fallback
                 if getattr(y_proba, 'shape', (0,))[0] >= 2:
                     print(f"      - P(Strong) = {y_proba[0]:.2%}")
                     print(f"      - P(Weak) = {y_proba[1]:.2%}")
                 else:
                     print(f"      - Model chỉ thấy 1 class = 100%")
-            
             print(f"    Kết luận: {'WEAK' if y_pred == 1 else 'STRONG'}")
             print(f"    Lý do: Model học từ context của user này + pattern chung")
-            
+
             results[skillName] = "Weak (unified)" if y_pred == 1 else "Strong (unified)"
+
+            # Lưu xác suất để tính confidence ở các bước sau
+            try:
+                if len(unified_classes) >= 2:
+                    p_by_label2 = {int(unified_classes[i]): float(y_proba[i]) for i in range(len(unified_classes))}
+                    p_strong2 = p_by_label2.get(0, None)
+                    p_weak2 = p_by_label2.get(1, None)
+                else:
+                    p_strong2 = float(y_proba[0]) if getattr(y_proba, 'shape', (0,))[0] > 0 else None
+                    p_weak2 = float(y_proba[1]) if getattr(y_proba, 'shape', (0,))[0] > 1 else None
+            except Exception:
+                p_strong2 = None
+                p_weak2 = None
+
+            proba_by_skill[skillName] = {
+                "model": "unified",
+                "pStrong": p_strong2,
+                "pWeak": p_weak2,
+                "pred": y_pred
+            }
     
     print("\n" + "="*80)
     conn.close()
-    return results
+    return results, proba_by_skill
 
 # ============================================================================
-# QUESTION RECOMMENDATION: Gợi ý câu hỏi từ kNN
+# GỢI Ý CÂU HỎI: Gợi ý câu hỏi theo kNN
 # ============================================================================
 def recommend_questions(anchor_id: int, k: int = 2):
     """
@@ -370,8 +508,26 @@ def recommend_questions(anchor_id: int, k: int = 2):
     )
     return result.stdout.strip() if result.stdout else None
 
+
+def recommend_questions_batch(anchor_ids, k: int = 2):
+    """Chế độ batch: gọi Node.js một lần với JSON array các anchor ids.
+
+    Returns:
+        str: Chuỗi JSON map anchorId -> list[{id, question, score}] hoặc None.
+    """
+    try:
+        payload = json.dumps([int(x) for x in anchor_ids])
+    except Exception:
+        payload = json.dumps(list(anchor_ids))
+
+    result = subprocess.run(
+        ["node", FIND_SIMILAR_PATH, payload, str(k)],
+        capture_output=True, text=True
+    )
+    return result.stdout.strip() if result.stdout else None
+
 # ============================================================================
-# FULL PIPELINE: Predict + Recommend
+# PIPELINE ĐẦY ĐỦ: Dự đoán + Gợi ý
 # ============================================================================
 def full_pipeline(userId: int, k: int = 3):
     """
@@ -387,13 +543,40 @@ def full_pipeline(userId: int, k: int = 3):
             "recommendations": {skillName: [questions], ...}
         }
     """
-    # Step 1: Predict weak skills
-    results = predict_hybrid_unified(userId)
+    # Bước 1: Dự đoán kỹ năng yếu
+    results, proba_by_skill = predict_hybrid_unified(userId)
     weak_skills = [skill for skill, status in results.items() if "Weak" in status]
 
+    # Tính confidence tổng.
+    # Ưu tiên trung bình P(Weak) trên các skill bị dự đoán WEAK; nếu không có thì lấy
+    # trung bình max(P(Weak), P(Strong)) trên tất cả skills.
+    confidence = None
+    try:
+        if weak_skills:
+            vals = []
+            for s in weak_skills:
+                p = (proba_by_skill.get(s) or {}).get('pWeak')
+                if isinstance(p, (int, float)):
+                    vals.append(float(p))
+            if vals:
+                confidence = float(sum(vals) / len(vals))
+        if confidence is None:
+            vals = []
+            for v in (proba_by_skill or {}).values():
+                pS = v.get('pStrong')
+                pW = v.get('pWeak')
+                if isinstance(pS, (int, float)) or isinstance(pW, (int, float)):
+                    candidates = [x for x in [pS, pW] if isinstance(x, (int, float))]
+                    if candidates:
+                        vals.append(float(max(candidates)))
+            if vals:
+                confidence = float(sum(vals) / len(vals))
+    except Exception:
+        confidence = None
+
     if not weak_skills:
-        # Fallback: vẫn trả gợi ý luyện tập cho user mới / ít dữ liệu.
-        # Lý do: với dataset nhỏ hoặc model bias về STRONG, có thể không có skill nào bị gắn nhãn WEAK.
+        # Phương án dự phòng: vẫn trả gợi ý luyện tập cho user mới / ít dữ liệu.
+        # Lý do: với tập dữ liệu nhỏ hoặc mô hình thiên lệch về STRONG, có thể không có kỹ năng nào bị gắn nhãn WEAK.
         # Khi đó, chọn skill có accuracy thấp nhất trong lịch sử user để gợi ý luyện tập.
         try:
             conn_fb = pyodbc.connect(conn_str)
@@ -422,14 +605,14 @@ def full_pipeline(userId: int, k: int = 3):
                 weak_skills = [fallback_skill]
             else:
                 print("✅ User không có skill yếu và cũng không đủ mapping skill để gợi ý.")
-                return {"weak_skills": [], "recommendations": {}}
+                return {"weak_skills": [], "recommendations": {}, "confidence": confidence, "skill_predictions": []}
         except Exception as e:
             print(f"⚠️ Fallback recommendation failed: {e}")
-            return {"weak_skills": [], "recommendations": {}}
+            return {"weak_skills": [], "recommendations": {}, "confidence": confidence, "skill_predictions": []}
 
     print(f"\n🎯 Weak Skills: {weak_skills}")
     
-    # Step 2: Recommend questions cho từng weak skill
+    # Bước 2: Gợi ý câu hỏi cho từng kỹ năng yếu
     conn = pyodbc.connect(conn_str)
     recommendations = {}
     
@@ -437,7 +620,7 @@ def full_pipeline(userId: int, k: int = 3):
         print(f"\n📚 Đang tìm câu hỏi gợi ý cho skill: {skill}...")
         safe_skill = str(skill).replace("'", "''")
 
-        # 1) Prefer anchors from questions the user got WRONG in this skill (more personalized)
+        # 1) Ưu tiên anchor từ các câu user làm SAI trong kỹ năng này (cá nhân hoá hơn)
         wrong_query = f"""
         SELECT TOP 50
             ur.questionId AS id,
@@ -454,7 +637,7 @@ def full_pipeline(userId: int, k: int = 3):
         """
         wrong_df = pd.read_sql(wrong_query, conn)
 
-        # 2) Fallback pool: random questions from this skill
+        # 2) Pool dự phòng: lấy ngẫu nhiên câu hỏi theo kỹ năng này
         pool_query = f"""
         SELECT TOP 50 q.id, q.question
         FROM Questions q
@@ -469,7 +652,7 @@ def full_pipeline(userId: int, k: int = 3):
             print(f"   ⚠️ Không tìm thấy câu hỏi cho skill {skill}")
             continue
 
-        # Build anchor list: wrong first, then random fill (dedupe by questionId)
+        # Tạo danh sách anchor: ưu tiên câu sai, sau đó bù bằng câu ngẫu nhiên (loại trùng theo questionId)
         anchor_ids = []
         seen_anchor_ids = set()
 
@@ -490,29 +673,50 @@ def full_pipeline(userId: int, k: int = 3):
                 if len(anchor_ids) >= 20:
                     break
         
-        # Recommend similar questions
+        # Gợi ý câu hỏi tương tự
         all_suggestions = {}  # Key: question ID
         seen_content = set()  # Track unique content
-        
+
+        # Tối ưu hiệu năng: gọi Node.js một lần cho mỗi skill với nhiều anchors.
+        # Giữ hành vi cũ bằng cách xử lý anchors theo đúng thứ tự và áp dụng cùng
+        # quy tắc loại trùng + dừng sớm.
+        batch_map = None
+        try:
+            batch_json = recommend_questions_batch(anchor_ids, k=k)
+            if batch_json:
+                batch_map = json.loads(batch_json)
+        except Exception as e:
+            print(f"⚠️ Batch recommend failed; fallback per-anchor. Error: {e}")
+            batch_map = None
+
         for anchor_id in anchor_ids:  # up to 20 anchors
-            similar_json = recommend_questions(anchor_id, k=k)
-            if similar_json:
-                try:
-                    similar = json.loads(similar_json)
-                    for s in similar:
-                        # ✅ DEDUPLICATE: Skip nếu content đã tồn tại
-                        content_normalized = s['question'].strip() if s.get('question') else ''
-                        if content_normalized and content_normalized not in seen_content:
-                            all_suggestions[s['id']] = {
-                                "id": s['id'],
-                                "question": s['question']
-                            }
-                            seen_content.add(content_normalized)
-                except Exception as e:
-                    print(f"⚠️ Parse error: {e}")
-                    pass
-            
-            # Early exit nếu đã đủ 30 unique questions
+            similar = None
+
+            if isinstance(batch_map, dict):
+                # Node xuất key dưới dạng string trong JSON
+                similar = batch_map.get(str(anchor_id)) or batch_map.get(anchor_id)
+
+            if similar is None:
+                similar_json = recommend_questions(anchor_id, k=k)
+                if similar_json:
+                    try:
+                        similar = json.loads(similar_json)
+                    except Exception as e:
+                        print(f"⚠️ Parse error: {e}")
+                        similar = None
+
+            if isinstance(similar, list):
+                for s in similar:
+                    # Loại trùng lặp: bỏ qua nếu nội dung đã tồn tại
+                    content_normalized = s['question'].strip() if s.get('question') else ''
+                    if content_normalized and content_normalized not in seen_content:
+                        all_suggestions[s['id']] = {
+                            "id": s['id'],
+                            "question": s['question']
+                        }
+                        seen_content.add(content_normalized)
+
+            # Dừng sớm nếu đã đủ 30 câu hỏi duy nhất
             if len(all_suggestions) >= 30:
                 break
 
@@ -521,14 +725,27 @@ def full_pipeline(userId: int, k: int = 3):
         print(f"   ✅ Tìm được {len(recommendations[skill])} câu hỏi unique (deduplicated)")
     
     conn.close()
+
+    skill_predictions = []
+    for skill, status in results.items():
+        p = proba_by_skill.get(skill, {})
+        skill_predictions.append({
+            "skill": skill,
+            "status": status,
+            "model": p.get('model'),
+            "pStrong": p.get('pStrong'),
+            "pWeak": p.get('pWeak')
+        })
     
     return {
         "weak_skills": weak_skills,
-        "recommendations": recommendations
+        "recommendations": recommendations,
+        "confidence": confidence,
+        "skill_predictions": skill_predictions
     }
 
 # ============================================================================
-# MAIN: Test script
+# MAIN: Chạy thử script
 # ============================================================================
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Predict weak skills and recommend questions (Hybrid Unified)')
@@ -541,8 +758,8 @@ if __name__ == "__main__":
 
     userId = args.userId
 
-    # If quiet, suppress stdout to avoid huge console output.
-    # Keep stderr intact so callers (Node.js) can capture tracebacks on failure.
+    # Nếu có --quiet, tắt stdout để tránh đầu ra quá lớn.
+    # Giữ stderr để bên gọi (Node.js) có thể bắt traceback khi lỗi.
     if args.quiet:
         try:
             devnull = open(os.devnull, 'w', encoding='utf-8')
@@ -551,26 +768,27 @@ if __name__ == "__main__":
         except Exception:
             pass
 
-    # Run full pipeline
+    # Chạy full pipeline
     result = full_pipeline(userId, k=args.k)
 
-    # Determine output path (store under ml/results/)
+    # Xác định đường dẫn đầu ra (lưu dưới ml/results/)
     results_dir = os.path.join(os.path.dirname(__file__), "results")
     os.makedirs(results_dir, exist_ok=True)
     default_out = os.path.join(results_dir, f"result_user_{userId}.json")
     out_path = args.out if args.out else default_out
 
-    # Write JSON result to file (UTF-8)
+    # Ghi JSON kết quả ra file (UTF-8)
     try:
         with open(out_path, 'w', encoding='utf-8') as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
-        # Always print a short confirmation to original stdout
-        try:
-            sys.__stdout__.write(f"JSON result written to: {out_path}\n")
-        except Exception:
-            print(f"JSON result written to: {out_path}")
+        # Chỉ in xác nhận khi không bật quiet
+        if not args.quiet:
+            try:
+                sys.__stdout__.write(f"JSON result written to: {out_path}\n")
+            except Exception:
+                print(f"JSON result written to: {out_path}")
     except Exception as e:
-        # If writing fails, fallback to printing JSON to original stdout
+        # Nếu ghi file lỗi, chuyển sang phương án dự phòng: in JSON ra stdout gốc
         try:
             sys.__stdout__.write(f"Failed to write file: {e}\n")
             sys.__stdout__.write(json.dumps(result, ensure_ascii=False))

@@ -33,7 +33,7 @@ async function forceUpdateML() {
       userId: userId,
       weakSkills: result.weak_skills || [],
       questionIds: questionIds,
-      confidence: 0.8,
+      confidence: Number.isFinite(Number(result.confidence)) ? Number(result.confidence) : 0.8,
       totalAttempts: 0,
       overallAccuracy: null
     });

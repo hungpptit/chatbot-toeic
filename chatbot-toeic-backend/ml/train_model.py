@@ -1,40 +1,40 @@
 """
 ================================================================================
-TRAIN GLOBAL MODEL (WEAK SKILL DETECTION)
+HUẤN LUYỆN MÔ HÌNH TOÀN CỤC (PHÁT HIỆN KỸ NĂNG YẾU)
 ================================================================================
 
  MỤC ĐÍCH:
-   Train GLOBAL MODEL để detect weak skills từ TẤT CẢ users trong database.
-   Model này dùng cho users có ÍT DATA (<10 attempts per skill).
+   Huấn luyện mô hình toàn cục để phát hiện kỹ năng yếu từ TẤT CẢ users trong
+   cơ sở dữ liệu.
+   Mô hình này dùng cho user có ÍT dữ liệu (dưới 10 lần làm cho mỗi kỹ năng).
 
- OUTPUT:
-   - weak_skill_model.pkl: Global Naive Bayes model
+ ĐẦU RA:
+   - weak_skill_model.pkl: mô hình Naive Bayes toàn cục
 
- ALGORITHM:
-   - Gaussian Naive Bayes: Được chọn vì tốc độ, sự đơn giản và hiệu quả
-     trên các feature số. Rất phù hợp cho model baseline toàn cục.
+ THUẬT TOÁN:
+   - Gaussian Naive Bayes: được chọn vì tốc độ, đơn giản và hiệu quả trên các
+     đặc trưng dạng số; phù hợp làm mô hình baseline toàn cục.
 
- INPUT FEATURES (3 features):
-   - attempts: Số lần thử skill
-   - correct: Số câu đúng
-   - accuracy: Tỷ lệ đúng (correct/attempts)
+ ĐẶC TRƯNG ĐẦU VÀO (3 đặc trưng):
+   - attempts: số lần làm của kỹ năng
+   - correct: số câu đúng
+   - accuracy: tỷ lệ đúng (correct/attempts)
 
- TARGET:
+ NHÃN ĐẦU RA:
    - isWeak: 1 nếu accuracy < 60%, 0 nếu accuracy >= 60%
 
- KHI NÀO RETRAIN:
-   - Định kỳ (mỗi tuần/tháng) khi có thêm users mới
-   - Setup cron job hoặc scheduled task
-   - Hoặc manual khi thấy accuracy giảm
+ KHI NÀO HUẤN LUYỆN LẠI:
+   - Định kỳ (tuần/tháng) khi có thêm user mới
+   - Thiết lập cron job / scheduled task
+   - Hoặc chạy thủ công khi thấy chất lượng giảm
 
- SỬ DỤNG:
+ CÁCH CHẠY:
    python train_model.py
 
- Created: Original
- Author: Backend Team
- Related files:
-   - predict_hybrid.py (sử dụng model này cho attempts < 10)
-   - predict_hybrid_unified.py (sử dụng model này cho attempts < 10)
+ Tác giả: Backend Team
+ File liên quan:
+   - predict_hybrid.py (dùng mô hình này khi attempts < 10)
+   - predict_hybrid_unified.py (dùng mô hình này khi attempts < 10)
 ================================================================================
 """
 
@@ -48,7 +48,7 @@ import joblib
 from dotenv import load_dotenv
 import sys
 
-# Fix UTF-8 encoding for Windows console
+# Sửa encoding UTF-8 cho console Windows
 try:
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
@@ -60,7 +60,7 @@ except Exception:
     except Exception:
         pass
 
-# Load biến môi trường từ file .env (ở thư mục gốc backend)
+# Nạp biến môi trường từ file .env (ở thư mục gốc backend)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"))
 
@@ -82,7 +82,7 @@ conn_str = (
 
 conn = pyodbc.connect(conn_str)
 
-# Query dữ liệu
+# Truy vấn dữ liệu
 query = """
 SELECT 
     ur.userId,
@@ -104,7 +104,7 @@ df = pd.read_sql(query, conn)
 print("✅ Dữ liệu từ DB:")
 print(df.head())
 
-# Train model
+# Huấn luyện mô hình
 X = df[['attempts', 'correct', 'accuracy']]
 y = df['isWeak']
 
@@ -116,7 +116,7 @@ model.fit(X_train, y_train)
 print("\nĐánh giá model:")
 print(classification_report(y_test, model.predict(X_test)))
 
-# Lưu model (dùng absolute path để tránh lỗi khi chạy từ cron)
+# Lưu mô hình (dùng absolute path để tránh lỗi khi chạy từ cron)
 model_dir = os.path.join(os.path.dirname(__file__), 'model')
 os.makedirs(model_dir, exist_ok=True)  # Tạo thư mục nếu chưa có
 

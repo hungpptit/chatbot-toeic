@@ -6,20 +6,30 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Default: quiet (reduce noisy logs in production).
+// To re-enable logs, set env var `ML_RETRAIN_VERBOSE=true` (or `ML_VERBOSE=true`).
+const ML_RETRAIN_VERBOSE =
+  String(process.env.ML_RETRAIN_VERBOSE || '').toLowerCase() === 'true' ||
+  String(process.env.ML_VERBOSE || '').toLowerCase() === 'true';
+
+const log = (...args) => {
+  if (ML_RETRAIN_VERBOSE) console.log(...args);
+};
+
 // Production: "0 */6 * * *" = At minute 0 past every 6th hour (0h, 6h, 12h, 18h)
 // Test mode: "*/3 * * * *" = Every 3 minutes
 cron.schedule("*/3 * * * *", async () => {
-  console.log("⏰ Cron Job: ML Model Retraining started at:", new Date().toLocaleString('vi-VN'));
+  log("⏰ Cron Job: ML Model Retraining started at:", new Date().toLocaleString('vi-VN'));
   
   try {
     await retrainModels();
-    console.log("✅ Cron Job: ML Models retrained successfully");
+    log("✅ Cron Job: ML Models retrained successfully");
   } catch (err) {
     console.error("❌ Cron Job: Failed to retrain ML models:", err);
   }
 });
 
-console.log("🤖 [PRODUCTION MODE] ML Retrain Cron Job initialized - Running every 6 hours (0h, 6h, 12h, 18h)");
+log("🤖 ML Retrain Cron Job initialized");
 
 // Retrain all ML models by running Python scripts sequentially
 async function retrainModels() {
@@ -29,14 +39,14 @@ async function retrainModels() {
   
   try {
     // Train global model first
-    console.log('🐍 Training global model...');
+    log('🐍 Training global model...');
     await runPythonScript(globalModelScript, mlPath);
-    console.log('✅ Global model trained successfully');
+    log('✅ Global model trained successfully');
     
     // Then train unified model
-    console.log('🐍 Training unified model...');
+    log('🐍 Training unified model...');
     await runPythonScript(unifiedModelScript, mlPath);
-    console.log('✅ Unified model trained successfully');
+    log('✅ Unified model trained successfully');
     
     return { success: true };
   } catch (error) {
@@ -62,7 +72,9 @@ function runPythonScript(scriptPath, workingDir) {
     pythonProcess.stdout.on('data', (data) => {
       const output = data.toString();
       stdout += output;
-      console.log('[ML Retrain]', output.trim());
+      if (ML_RETRAIN_VERBOSE) {
+        console.log('[ML Retrain]', output.trim());
+      }
     });
     
     pythonProcess.stderr.on('data', (data) => {

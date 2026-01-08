@@ -68,6 +68,7 @@ async function runPythonPrediction(userId) {
       try {
         const raw = await fs.readFile(outPath, { encoding: 'utf-8' });
         const result = JSON.parse(raw);
+        const computedConfidence = Number.isFinite(Number(result.confidence)) ? Number(result.confidence) : 0.8;
 
         // Extract question IDs from recommendations
         const questionIds = [];
@@ -100,7 +101,7 @@ async function runPythonPrediction(userId) {
           userId: userId,
           weakSkills: result.weak_skills || [],
           questionIds: questionIds,
-          confidence: 0.8,
+          confidence: computedConfidence,
           totalAttempts: Number(stats?.totalAttempts || 0),
           overallAccuracy: stats?.overallAccuracy != null ? Number(stats.overallAccuracy) : null,
           updatedAt: db.sequelize.fn('GETDATE') // Use SQL Server GETDATE()
@@ -111,7 +112,7 @@ async function runPythonPrediction(userId) {
           userId: userId,
           weakSkills: result.weak_skills || [],
           questionIds: questionIds,
-          confidence: 0.8
+          confidence: computedConfidence
           // Do NOT set createdAt - let SQL Server default (getdate()) handle it
         });
 
@@ -128,7 +129,7 @@ async function runPythonPrediction(userId) {
           userId,
           weakSkills: result.weak_skills || [],
           questionIds: questionIds,
-          confidence: 0.8
+          confidence: computedConfidence
         });
       } catch (parseError) {
         console.error('Failed to read/parse Python output:', parseError);

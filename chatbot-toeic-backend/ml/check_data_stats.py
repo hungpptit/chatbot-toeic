@@ -1,14 +1,14 @@
 """
 ================================================================================
-STATISTICS: UserResults DATA
+THỐNG KÊ: DỮ LIỆU USERRESULTS
 ================================================================================
 
 MỤC ĐÍCH:
-   Thống kê dữ liệu UserResults hiện tại
+    Thống kê dữ liệu UserResults hiện tại.
 
-SỬ DỤNG:
-   python check_data_stats.py
-   
+CÁCH CHẠY:
+    python check_data_stats.py
+
 ================================================================================
 """
 
@@ -18,14 +18,14 @@ import pandas as pd
 from dotenv import load_dotenv
 import sys
 
-# Fix UTF-8 encoding
+# Sửa encoding UTF-8
 try:
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
 except:
     pass
 
-# Load env từ parent directory (backend folder)
+# Nạp biến môi trường từ thư mục cha (backend)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"))
 
@@ -49,7 +49,7 @@ print("📊 STATISTICS: UserResults DATA")
 print("=" * 70)
 
 # ============================================================================
-# 1. TỔNG RECORDS
+# 1. TỔNG SỐ BẢN GHI
 # ============================================================================
 query = "SELECT COUNT(*) FROM UserResults"
 total_records = pd.read_sql(query, conn).iloc[0, 0]
@@ -63,7 +63,7 @@ total_users = pd.read_sql(query, conn).iloc[0, 0]
 print(f"2️⃣  Total unique users: {total_users}")
 
 # ============================================================================
-# 3. RECORDS PER USER
+# 3. SỐ BẢN GHI THEO USER
 # ============================================================================
 print(f"\n3️⃣  Records per user:")
 query = """
@@ -76,7 +76,7 @@ records_per_user = pd.read_sql(query, conn)
 print(records_per_user.to_string(index=False))
 
 # ============================================================================
-# 4. TRAINING DATA (Aggregated by userId + skillId)
+# 4. DỮ LIỆU HUẤN LUYỆN (gộp theo userId + skillId)
 # ============================================================================
 print(f"\n4️⃣  Training data (userId + skillId aggregation):")
 query = """
@@ -102,7 +102,7 @@ print("\n   Sample (first 20 rows):")
 print(training_data.head(20).to_string(index=False))
 
 # ============================================================================
-# 5. SUMMARY
+# 5. TÓM TẮT
 # ============================================================================
 print(f"\n5️⃣  SUMMARY:")
 print(f"   {'Raw records':<20} {total_records:>10}")
@@ -112,7 +112,7 @@ print(f"   {'Avg records/user':<20} {total_records//total_users:>10}")
 print(f"   {'Skills per user':<20} {len(training_data)//total_users:>10}")
 
 # ============================================================================
-# 6. WEAK SKILLS DISTRIBUTION
+# 6. PHÂN BỐ KỸ NĂNG YẾU
 # ============================================================================
 weak_count = len(training_data[training_data['isWeak'] == 1])
 strong_count = len(training_data[training_data['isWeak'] == 0])

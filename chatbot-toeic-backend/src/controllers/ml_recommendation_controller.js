@@ -178,7 +178,7 @@ export const getRecommendations = async (req, res) => {
                     userId: userIdNum,
                     weakSkills: result.weak_skills || [],
                     questionIds: questionIds,
-                    confidence: 0.8, // TODO: Calculate from model
+                    confidence: Number.isFinite(Number(result.confidence)) ? Number(result.confidence) : 0.8,
                     totalAttempts: Number(stats?.totalAttempts || 0),
                     overallAccuracy: stats?.overallAccuracy != null ? Number(stats.overallAccuracy) : null
                     // Don't manually set createdAt/updatedAt - Sequelize handles it
